@@ -2,7 +2,21 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'screens/splash_screen.dart';
 
-void main() {
+import 'package:firebase_core/firebase_core.dart';
+import 'services/notification_service.dart';
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  // We can't Initialize firebase here without the options (google-services.json)
+  // But we rely on it being present in the build.
+  // We'll initialize it safely.
+  try {
+    await Firebase.initializeApp();
+    await NotificationService().initialize();
+  } catch (e) {
+    print("WARNING: Firebase initialization failed: $e");
+    print("Push notifications will NOT work.");
+  }
   runApp(const MyApp());
 }
 

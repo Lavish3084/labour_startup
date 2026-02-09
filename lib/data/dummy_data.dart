@@ -92,34 +92,49 @@ class DummyData {
 
   static final List<ServiceCategory> serviceCategories = [
     ServiceCategory(
-      name: 'Plumber',
-      icon: Icons.plumbing,
-      description: 'Fix leaks, pipes, and bathroom fittings.',
+      name: 'Masonry',
+      icon: Icons.foundation, // or Icons.home_work
+      description: 'Construction and repair.',
     ),
     ServiceCategory(
-      name: 'Electrician',
-      icon: Icons.electrical_services,
-      description: 'Wiring, switchboards, and appliance repairs.',
+      name: 'Garden',
+      icon: Icons.yard,
+      description: 'Gardening and landscaping.',
     ),
     ServiceCategory(
-      name: 'Cleaner',
+      name: 'Moving',
+      icon: Icons.local_shipping,
+      description: 'Moving services.',
+    ),
+    ServiceCategory(
+      name: 'Loading',
+      icon: Icons.inventory_2, // Icons.inventory_2 looks like packages
+      description: 'Loading and unloading.',
+    ),
+    ServiceCategory(
+      name: 'General',
+      icon: Icons.engineering, // General labor
+      description: 'General labor tasks.',
+    ),
+    ServiceCategory(
+      name: 'Cleanup',
       icon: Icons.cleaning_services,
-      description: 'Deep cleaning for homes and offices.',
+      description: 'Cleanup services.',
     ),
     ServiceCategory(
-      name: 'Carpenter',
-      icon: Icons.carpenter,
-      description: 'Furniture repair, polishing, and wood works.',
+      name: 'Plumbing',
+      icon: Icons.plumbing,
+      description: 'Pipe installation and repairs.',
     ),
     ServiceCategory(
-      name: 'Painter',
+      name: 'Electric',
+      icon: Icons.electrical_services,
+      description: 'Electrical work.',
+    ),
+    ServiceCategory(
+      name: 'Painting',
       icon: Icons.format_paint,
-      description: 'Interior and exterior wall painting.',
-    ),
-    ServiceCategory(
-      name: 'Cook',
-      icon: Icons.restaurant,
-      description: 'Delicious home-cooked meals.',
+      description: 'Painting services.',
     ),
   ];
 }

@@ -3,6 +3,7 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../config.dart';
 import '../models/labourer.dart';
+import 'notification_service.dart';
 
 class ApiService {
   static const String baseUrl = Config.baseUrl;
@@ -50,6 +51,8 @@ class ApiService {
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
       await _saveAuthData(data['token'], data['role'], data['name']);
+      // Update FCM Token
+      await updateFcmToken();
       return {'success': true, 'data': data};
     } else {
       final error = jsonDecode(response.body);
@@ -138,6 +141,34 @@ class ApiService {
     print('Response body: ${response.body}');
 
     return response.statusCode == 200;
+  }
+
+  static Future<void> updateFcmToken() async {
+    final token = await NotificationService().fcmToken;
+    final authToken = await getToken();
+
+    if (token != null && authToken != null) {
+      print(
+        "ApiService: Updating FCM Token on server: ${token.substring(0, 10)}...",
+      );
+      try {
+        final response = await http.put(
+          Uri.parse('$baseUrl/profile/fcm-token'),
+          headers: {
+            'Content-Type': 'application/json',
+            'x-auth-token': authToken,
+          },
+          body: jsonEncode({'fcmToken': token}),
+        );
+        print("ApiService: FCM update response: ${response.statusCode}");
+      } catch (e) {
+        print("ApiService: Failed to update FCM token: $e");
+      }
+    } else {
+      print(
+        "ApiService: Skipped FCM update. Token: ${token != null}, Auth: ${authToken != null}",
+      );
+    }
   }
 
   // Bookings

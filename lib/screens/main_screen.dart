@@ -59,31 +59,19 @@ class _MainScreenState extends State<MainScreen> {
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           color: Colors.white,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 10,
-              offset: const Offset(0, -4),
-            ),
-          ],
+          border: Border(top: BorderSide(color: Colors.grey.withOpacity(0.1))),
         ),
         child: BottomNavigationBar(
           items: const <BottomNavigationBarItem>[
             BottomNavigationBarItem(
-              icon: Icon(Icons.home_outlined),
-              activeIcon: Icon(Icons.home),
+              icon: Icon(Icons.home_filled),
               label: 'Home',
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.calendar_today_outlined),
-              activeIcon: Icon(Icons.calendar_today),
+              icon: Icon(Icons.calendar_today),
               label: 'Bookings',
             ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.person_outline),
-              activeIcon: Icon(Icons.person),
-              label: 'Profile',
-            ),
+            BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
           ],
           currentIndex: _selectedIndex,
           selectedItemColor: Colors.black,
@@ -93,12 +81,12 @@ class _MainScreenState extends State<MainScreen> {
           backgroundColor: Colors.white,
           elevation: 0,
           selectedLabelStyle: GoogleFonts.inter(
-            fontWeight: FontWeight.w600,
-            fontSize: 12,
+            fontWeight: FontWeight.w500,
+            fontSize: 10,
           ),
           unselectedLabelStyle: GoogleFonts.inter(
             fontWeight: FontWeight.w500,
-            fontSize: 12,
+            fontSize: 10,
           ),
           onTap: _onItemTapped,
         ),

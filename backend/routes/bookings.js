@@ -19,6 +19,8 @@ const verifyToken = (req, res, next) => {
     }
 };
 
+const { sendNotification, sendBroadcastNotification } = require('../utils/notification');
+
 // @route   POST /api/bookings
 // @desc    Create a new booking
 // @access  Private (User)
@@ -35,20 +37,57 @@ router.post('/', verifyToken, async (req, res) => {
 
         // If specific labourer is requested (direct booking)
         if (labourerId) {
-            const labourer = await Labourer.findById(labourerId);
+            const labourer = await Labourer.findById(labourerId).populate('user');
             if (!labourer) {
                 return res.status(404).json({ msg: 'Labourer not found' });
             }
             bookingData.labourer = labourerId;
-            // Also ensure category matches labourer if not provided, or validate it
             if (!bookingData.category) bookingData.category = labourer.category;
+
+            const newBooking = new Booking(bookingData);
+            const booking = await newBooking.save();
+
+            // Notify the specific worker
+            if (labourer.user && labourer.user.fcmToken) {
+                console.log(`Sending direct notification to worker: ${labourer.user._id}`);
+                await sendNotification(
+                    labourer.user.fcmToken,
+                    'New Job Request',
+                    `You have a new booking request for ${date}!`,
+                    { bookingId: booking._id.toString() }
+                );
+            } else {
+                console.log(`Worker ${labourerId} (User: ${labourer.user ? labourer.user._id : 'null'}) has no FCM token.`);
+            }
+
+            res.json(booking);
         } else if (!category) {
             return res.status(400).json({ msg: 'Category is required for broadcast requests' });
-        }
+        } else {
+            // Broadcast Request
+            const newBooking = new Booking(bookingData);
+            const booking = await newBooking.save();
 
-        const newBooking = new Booking(bookingData);
-        const booking = await newBooking.save();
-        res.json(booking);
+            // Find all workers in this category
+            const workers = await Labourer.find({ category: category }).populate('user');
+            const tokens = workers
+                .map(w => w.user ? w.user.fcmToken : null)
+                .filter(t => t); // Filter out nulls/empty
+
+            if (tokens.length > 0) {
+                console.log(`Sending broadcast to ${tokens.length} workers.`);
+                await sendBroadcastNotification(
+                    tokens,
+                    'New Job Opportunity',
+                    `A new ${category} job is available nearby!`,
+                    { bookingId: booking._id.toString() }
+                );
+            } else {
+                console.log(`No workers found with FCM tokens for category: ${category}`);
+            }
+
+            res.json(booking);
+        }
     } catch (err) {
         console.error(err.message);
         res.status(500).send('Server Error');
@@ -130,6 +169,27 @@ router.put('/:id/claim', verifyToken, async (req, res) => {
         // Populate user for the response card
         await booking.populate('user', 'name email');
 
+        // Notify the user who created the booking
+        try {
+            // Need to fetch user document to get fcmToken (populate only gives select fields)
+            const userToNotify = await User.findById(booking.user._id);
+            // Also get worker name for the message
+            const workerUser = await User.findById(req.user.id);
+
+            if (userToNotify && userToNotify.fcmToken) {
+                console.log(`Sending confirmation notification to user: ${userToNotify._id}`);
+                await sendNotification(
+                    userToNotify.fcmToken,
+                    'Booking Confirmed!',
+                    `${workerUser.name} has accepted your request for ${labourer.category}.`,
+                    { bookingId: booking._id.toString(), status: 'confirmed' }
+                );
+            }
+        } catch (notifyErr) {
+            console.error("Failed to send confirmation notification:", notifyErr);
+            // Don't fail the request if notification fails
+        }
+
         res.json(booking);
     } catch (err) {
         console.error(err.message);
@@ -170,6 +230,37 @@ router.put('/:id/status', verifyToken, async (req, res) => {
 
         booking.status = status;
         await booking.save();
+
+        // Notify the counterparty about the status change
+        // If Worker changed it -> Notify User
+        // If User changed it -> Notify Worker
+
+        // We know who changed it by req.user.id
+        const isWorkerUpdate = req.user.id !== booking.user.toString();
+
+        let targetUserId;
+        if (isWorkerUpdate) {
+            targetUserId = booking.user;
+        } else {
+            // If user updated, notify worker (if assigned)
+            if (booking.labourer) {
+                const l = await Labourer.findById(booking.labourer);
+                targetUserId = l.user;
+            }
+        }
+
+        if (targetUserId) {
+            const userToNotify = await User.findById(targetUserId);
+            if (userToNotify && userToNotify.fcmToken) {
+                await sendNotification(
+                    userToNotify.fcmToken,
+                    'Booking Update',
+                    `Your booking status has been updated to ${status.toUpperCase()}`,
+                    { bookingId: booking._id.toString() }
+                );
+            }
+        }
+
         res.json(booking);
     } catch (err) {
         console.error(err.message);

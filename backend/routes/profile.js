@@ -123,6 +123,21 @@ router.post('/worker', verifyToken, async (req, res) => {
     }
 });
 
+// @route   PUT /api/profile/fcm-token
+// @desc    Update FCM Token
+// @access  Private
+router.put('/fcm-token', verifyToken, async (req, res) => {
+    const { fcmToken } = req.body;
+    console.log(`Received FCM Token update for user ${req.user.id}: ${fcmToken ? fcmToken.substring(0, 10) + '...' : 'null'}`);
+    try {
+        await User.findByIdAndUpdate(req.user.id, { fcmToken });
+        res.json({ msg: 'FCM Token updated' });
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Server Error');
+    }
+});
+
 // @route   PUT /api/profile/image
 // @desc    Update profile picture
 // @access  Private

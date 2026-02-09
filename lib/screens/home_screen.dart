@@ -1,13 +1,11 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../widgets/labourer_card.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
-import 'profile_screen.dart';
 import 'location_search_screen.dart';
 import 'service_request_screen.dart';
-import '../services/api_service.dart';
+
 import '../models/labourer.dart';
 import '../data/dummy_data.dart';
 import '../widgets/service_category_card.dart';
@@ -21,26 +19,11 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   String _currentLocation = 'Locating...';
-  String? _profilePicture;
 
   @override
   void initState() {
     super.initState();
     _getCurrentLocation();
-    _fetchProfile();
-  }
-
-  Future<void> _fetchProfile() async {
-    try {
-      final profileData = await ApiService.getProfile();
-      if (mounted) {
-        setState(() {
-          _profilePicture = profileData['user']['profilePicture'];
-        });
-      }
-    } catch (e) {
-      debugPrint('Error fetching profile: $e');
-    }
   }
 
   Future<void> _getCurrentLocation() async {
@@ -126,84 +109,42 @@ class _HomeScreenState extends State<HomeScreen> {
           children: [
             // Custom App Bar / Header
             Padding(
-              padding: const EdgeInsets.all(20),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              padding: const EdgeInsets.only(top: 20, left: 20, right: 20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Icon(
-                            Icons.location_on,
-                            color: Colors.grey[600],
-                            size: 16,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            'Current Location',
-                            style: GoogleFonts.inter(
-                              fontSize: 12,
-                              color: Colors.grey[600],
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 4),
-                      GestureDetector(
-                        onTap: _openLocationSearch,
-                        child: Text(
+                  // Location Row
+                  GestureDetector(
+                    onTap: _openLocationSearch,
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.location_on,
+                          color: Colors.grey[600],
+                          size: 18,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
                           _currentLocation,
                           style: GoogleFonts.inter(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.black87,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.grey[800],
                           ),
                         ),
-                      ),
-                    ],
-                  ),
-                  GestureDetector(
-                    onTap: () async {
-                      await Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const ProfileScreen(),
+                        const SizedBox(width: 4),
+                        Icon(
+                          Icons.keyboard_arrow_down,
+                          color: Colors.grey[600],
+                          size: 20,
                         ),
-                      );
-                      // Refresh profile when returning from ProfileScreen
-                      _fetchProfile();
-                    },
-                    child: Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        color: Colors.grey[200],
-                        shape: BoxShape.circle,
-                        image: DecorationImage(
-                          image:
-                              _profilePicture != null &&
-                                      _profilePicture!.isNotEmpty
-                                  ? (_profilePicture!.startsWith('http')
-                                          ? NetworkImage(_profilePicture!)
-                                          : MemoryImage(
-                                            base64Decode(
-                                              _profilePicture!.split(',').last,
-                                            ),
-                                          ))
-                                      as ImageProvider
-                                  : const NetworkImage(
-                                    'https://randomuser.me/api/portraits/men/1.jpg',
-                                  ),
-                          fit: BoxFit.cover,
-                        ),
-                      ),
+                      ],
                     ),
                   ),
                 ],
               ),
             ),
+            const SizedBox(height: 24),
 
             // Search Bar
             Padding(
@@ -226,37 +167,97 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
             ),
+            SizedBox(height: 13),
+            // Daily Wage Model Banner
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(24),
+                  // border: Border.all(color: Colors.grey.withOpacity(0.1)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Daily Wage Model',
+                      style: GoogleFonts.inter(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w400,
+                        color: Colors.black87,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Hire skilled manual laborers for standard 8-hour shifts at transparent local rates.',
+                      style: GoogleFonts.inter(
+                        fontSize: 14,
+                        color: Colors.grey[600],
+                        height: 1.5,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    GestureDetector(
+                      onTap: () {
+                        // TODO: Show how it works
+                      },
+                      child: Container(
+                        decoration: BoxDecoration(
+                          border: Border(
+                            bottom: BorderSide(
+                              color: Colors.black87,
+                              width: 1.0,
+                            ),
+                          ),
+                        ),
+                        child: Text(
+                          'How it works',
+                          style: GoogleFonts.inter(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.black87,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
 
-            const SizedBox(height: 20),
+            const SizedBox(height: 32),
 
             Expanded(
               child: SingleChildScrollView(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Services Grid
+                    // Services Grid Container
                     Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      padding: const EdgeInsets.symmetric(horizontal: 24),
                       child: Text(
-                        'Our Services',
+                        'LABOR CATEGORIES',
                         style: GoogleFonts.inter(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black87,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.grey[500],
+                          letterSpacing: 1.2,
                         ),
                       ),
                     ),
                     const SizedBox(height: 16),
                     GridView.builder(
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
                       shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),
                       gridDelegate:
                           const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 2,
-                            crossAxisSpacing: 16,
-                            mainAxisSpacing: 16,
-                            childAspectRatio: 0.85,
+                            crossAxisCount: 3,
+                            crossAxisSpacing: 12,
+                            mainAxisSpacing: 12,
+                            childAspectRatio: 1.0,
                           ),
                       itemCount: DummyData.serviceCategories.length,
                       itemBuilder: (context, index) {
