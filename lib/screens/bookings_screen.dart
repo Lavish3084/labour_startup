@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../services/api_service.dart';
+import '../services/payment_service.dart';
+import 'package:razorpay_flutter/razorpay_flutter.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class BookingsScreen extends StatefulWidget {
   const BookingsScreen({Key? key}) : super(key: key);
@@ -13,10 +16,105 @@ class BookingsScreen extends StatefulWidget {
 class _BookingsScreenState extends State<BookingsScreen> {
   late Future<List<dynamic>> _bookingsFuture;
 
+  final PaymentService _paymentService = PaymentService();
+  String? _pendingBookingId;
+
   @override
   void initState() {
     super.initState();
     _bookingsFuture = ApiService.getUserBookings();
+    _paymentService.initialize(
+      onSuccess: _handlePaymentSuccess,
+      onFailure: _handlePaymentFailure,
+      onExternalWallet: _handleExternalWallet,
+    );
+  }
+
+  @override
+  void dispose() {
+    _paymentService.dispose();
+    super.dispose();
+  }
+
+  void _handlePaymentSuccess(PaymentSuccessResponse response) async {
+    if (_pendingBookingId != null) {
+      try {
+        final success = await ApiService.verifyPayment(
+          response.orderId!,
+          response.paymentId!,
+          response.signature!,
+          _pendingBookingId!,
+        );
+
+        if (success) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text("Payment Successful!")));
+          _refreshBookings();
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Payment Verification Failed")),
+          );
+        }
+      } catch (e) {
+        print("Payment verification error: $e");
+      }
+    }
+  }
+
+  void _handlePaymentFailure(PaymentFailureResponse response) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text("Payment Failed: ${response.message}")),
+    );
+  }
+
+  void _handleExternalWallet(ExternalWalletResponse response) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text("External Wallet Selected: ${response.walletName}"),
+      ),
+    );
+  }
+
+  Future<void> _initiatePayment(dynamic booking) async {
+    try {
+      // Need a key from env or config. Ideally fetched from backend or stored in config.
+      // For now we will use a placeholder or ask user to provide it.
+      // NOTE: User must provide their Razorpay Key ID here or in a Config file.
+      final String razorpayKeyId = dotenv.get(
+        'RAZORPAY_KEY_ID',
+        fallback: 'rzp_test_YourKeyIDHere',
+      );
+
+      // Calculate amount (labourer hourly rate * 8 hours usually, or custom)
+      // For MVP we assume standard rate for now or 500 fixed.
+      // Using labourer rate if available.
+      int amount = 500;
+      if (booking['labourer'] != null &&
+          booking['labourer']['hourlyRate'] != null) {
+        amount = booking['labourer']['hourlyRate'];
+      }
+
+      final order = await ApiService.createPaymentOrder(booking['_id'], amount);
+
+      setState(() {
+        _pendingBookingId = booking['_id'];
+      });
+
+      _paymentService.openCheckout(
+        keyId: razorpayKeyId,
+        orderId: order['id'],
+        name: "Labour Application",
+        description: "Payment for ${booking['category']}",
+        email: "user@example.com", // Should get from user profile
+        contact: "9876543210", // Should get from user profile
+        amount: order['amount'],
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("Failed to initiate payment: $e")));
+    }
   }
 
   Future<void> _refreshBookings() async {
@@ -294,34 +392,97 @@ class _BookingsScreenState extends State<BookingsScreen> {
           ),
           const SizedBox(height: 16),
           // Actions Row
-          Align(
-            alignment: Alignment.centerRight,
-            child: SizedBox(
-              height: 32, // Smaller height
-              child: OutlinedButton(
-                onPressed: () {
-                  // Cancel/Withdraw action
-                },
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: Colors.red,
-                  side: const BorderSide(color: Colors.red),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 0,
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              if (status == 'confirmed' &&
+                  (booking['paymentStatus'] == 'pending' ||
+                      booking['paymentStatus'] == null))
+                Padding(
+                  padding: const EdgeInsets.only(right: 8.0),
+                  child: SizedBox(
+                    height: 32,
+                    child: ElevatedButton(
+                      onPressed: () => _initiatePayment(booking),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.green,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                      ),
+                      child: Text(
+                        'Pay Now',
+                        style: GoogleFonts.inter(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
                   ),
                 ),
-                child: Text(
-                  status == 'pending' ? 'Withdraw Request' : 'Cancel',
-                  style: GoogleFonts.inter(
-                    fontSize: 12, // Smaller font
-                    fontWeight: FontWeight.w600,
+              if (status == 'confirmed' && booking['paymentStatus'] == 'paid')
+                Padding(
+                  padding: const EdgeInsets.only(right: 8.0),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.green.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: Colors.green),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.check_circle,
+                          size: 14,
+                          color: Colors.green,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          'Paid',
+                          style: GoogleFonts.inter(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.green,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              SizedBox(
+                height: 32,
+                child: OutlinedButton(
+                  onPressed: () {
+                    // Cancel/Withdraw action
+                  },
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.red,
+                    side: const BorderSide(color: Colors.red),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 0,
+                    ),
+                  ),
+                  child: Text(
+                    status == 'pending' ? 'Withdraw Request' : 'Cancel',
+                    style: GoogleFonts.inter(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
               ),
-            ),
+            ],
           ),
         ],
       ),

@@ -269,4 +269,50 @@ class ApiService {
       throw Exception('Failed to load labourers');
     }
   }
+
+  // Payments
+  static Future<Map<String, dynamic>> createPaymentOrder(
+    String bookingId,
+    int amount,
+  ) async {
+    final token = await getToken();
+    final response = await http.post(
+      Uri.parse('$baseUrl/payments/create-order'),
+      headers: {
+        'Content-Type': 'application/json',
+        'x-auth-token': token ?? '',
+      },
+      body: jsonEncode({'bookingId': bookingId, 'amount': amount}),
+    );
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      throw Exception('Failed to create payment order');
+    }
+  }
+
+  static Future<bool> verifyPayment(
+    String orderId,
+    String paymentId,
+    String signature,
+    String bookingId,
+  ) async {
+    final token = await getToken();
+    final response = await http.post(
+      Uri.parse('$baseUrl/payments/verify-payment'),
+      headers: {
+        'Content-Type': 'application/json',
+        'x-auth-token': token ?? '',
+      },
+      body: jsonEncode({
+        'razorpay_order_id': orderId,
+        'razorpay_payment_id': paymentId,
+        'razorpay_signature': signature,
+        'bookingId': bookingId,
+      }),
+    );
+
+    return response.statusCode == 200;
+  }
 }
