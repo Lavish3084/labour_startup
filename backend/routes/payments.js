@@ -20,16 +20,31 @@ const verifyToken = (req, res, next) => {
 };
 
 // Initialize Razorpay
-const razorpay = new Razorpay({
-    key_id: process.env.RAZORPAY_KEY_ID,
-    key_secret: process.env.RAZORPAY_KEY_SECRET
-});
+// Initialize Razorpay
+let razorpay;
+try {
+    if (process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_SECRET) {
+        razorpay = new Razorpay({
+            key_id: process.env.RAZORPAY_KEY_ID,
+            key_secret: process.env.RAZORPAY_KEY_SECRET
+        });
+    } else {
+        console.warn("WARNING: RAZORPAY_KEY_ID or RAZORPAY_KEY_SECRET is missing in environment variables. Payment routes will fail.");
+    }
+} catch (err) {
+    console.warn("WARNING: Failed to initialize Razorpay:", err.message);
+}
 
 // @route   POST /api/payments/create-order
 // @desc    Create a Razorpay order
 // @access  Private
 router.post('/create-order', verifyToken, async (req, res) => {
     const { bookingId, amount } = req.body; // amount in INR (e.g., 500)
+
+    if (!razorpay) {
+        console.error("Razorpay instance not initialized");
+        return res.status(500).json({ msg: "Payment service configuration error. Please contact support." });
+    }
 
     try {
         const options = {
