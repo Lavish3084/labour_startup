@@ -22,11 +22,13 @@ const authRoutes = require('./routes/auth');
 const labourerRoutes = require('./routes/labourers');
 const profileRoutes = require('./routes/profile');
 const bookingRoutes = require('./routes/bookings');
+const paymentRoutes = require('./routes/payments');
 
 app.use('/api/auth', authRoutes);
 app.use('/api/labourers', labourerRoutes);
 app.use('/api/profile', profileRoutes);
 app.use('/api/bookings', bookingRoutes);
+app.use('/api/payments', paymentRoutes);
 
 // Database Connection
 mongoose.connect(process.env.MONGO_URI)
