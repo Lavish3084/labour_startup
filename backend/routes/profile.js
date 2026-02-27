@@ -178,4 +178,51 @@ router.put('/image', verifyToken, async (req, res) => {
     }
 });
 
+// @route   POST /api/profile/address
+// @desc    Add a saved address
+// @access  Private
+router.post('/address', verifyToken, async (req, res) => {
+    const { label, address, houseNumber, landmark, latitude, longitude } = req.body;
+
+    if (!address) {
+        return res.status(400).json({ msg: 'Address is required' });
+    }
+
+    try {
+        const user = await User.findById(req.user.id);
+        const newAddress = {
+            label: label || 'Saved Location',
+            address,
+            houseNumber: houseNumber || '',
+            landmark: landmark || '',
+            latitude,
+            longitude
+        };
+
+        user.addresses.unshift(newAddress);
+        await user.save();
+        res.json(user.addresses);
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Server Error');
+    }
+});
+
+// @route   DELETE /api/profile/address/:id
+// @desc    Delete a saved address
+// @access  Private
+router.delete('/address/:id', verifyToken, async (req, res) => {
+    try {
+        const user = await User.findById(req.user.id);
+        user.addresses = user.addresses.filter(
+            addr => addr._id.toString() !== req.params.id
+        );
+        await user.save();
+        res.json(user.addresses);
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Server Error');
+    }
+});
+
 module.exports = router;

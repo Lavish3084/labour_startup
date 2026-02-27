@@ -27,6 +27,18 @@ const UserSchema = new mongoose.Schema({
         type: String,
         default: ''
     },
+    addresses: [{
+        label: String,
+        address: String,
+        houseNumber: String,
+        landmark: String,
+        latitude: Number,
+        longitude: Number,
+        createdAt: {
+            type: Date,
+            default: Date.now
+        }
+    }],
     createdAt: {
         type: Date,
         default: Date.now

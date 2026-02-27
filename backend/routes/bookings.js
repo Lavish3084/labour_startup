@@ -25,14 +25,19 @@ const { sendNotification, sendBroadcastNotification } = require('../utils/notifi
 // @desc    Create a new booking
 // @access  Private (User)
 router.post('/', verifyToken, async (req, res) => {
-    const { labourerId, category, date, notes } = req.body;
+    const { labourerId, category, date, notes, address, houseNumber, landmark, latitude, longitude } = req.body;
 
     try {
         let bookingData = {
             user: req.user.id,
             date,
             notes,
-            category
+            category,
+            address,
+            houseNumber,
+            landmark,
+            latitude,
+            longitude
         };
 
         // If specific labourer is requested (direct booking)
