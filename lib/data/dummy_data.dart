@@ -93,48 +93,57 @@ class DummyData {
   static final List<ServiceCategory> serviceCategories = [
     ServiceCategory(
       name: 'Masonry',
-      icon: Icons.foundation, // or Icons.home_work
+      icon: Icons.foundation,
       description: 'Construction and repair.',
+      supportedModes: ['Hourly', 'Daily'],
     ),
     ServiceCategory(
       name: 'Garden',
       icon: Icons.yard,
       description: 'Gardening and landscaping.',
+      supportedModes: ['Hourly', 'Daily'],
     ),
     ServiceCategory(
       name: 'Moving',
       icon: Icons.local_shipping,
       description: 'Moving services.',
+      supportedModes: ['Hourly', 'Daily'],
     ),
     ServiceCategory(
       name: 'Loading',
-      icon: Icons.inventory_2, // Icons.inventory_2 looks like packages
+      icon: Icons.inventory_2,
       description: 'Loading and unloading.',
+      supportedModes: ['Hourly', 'Daily'],
     ),
     ServiceCategory(
       name: 'General',
-      icon: Icons.engineering, // General labor
+      icon: Icons.engineering,
       description: 'General labor tasks.',
+      supportedModes: ['Hourly', 'Daily'],
     ),
     ServiceCategory(
       name: 'Cleanup',
       icon: Icons.cleaning_services,
       description: 'Cleanup services.',
+      supportedModes: ['Hourly', 'Daily'],
     ),
     ServiceCategory(
       name: 'Plumbing',
       icon: Icons.plumbing,
       description: 'Pipe installation and repairs.',
+      supportedModes: ['Hourly', 'Task-based'],
     ),
     ServiceCategory(
       name: 'Electric',
       icon: Icons.electrical_services,
       description: 'Electrical work.',
+      supportedModes: ['Hourly', 'Task-based'],
     ),
     ServiceCategory(
       name: 'Painting',
       icon: Icons.format_paint,
       description: 'Painting services.',
+      supportedModes: ['Hourly', 'Daily'],
     ),
   ];
 }

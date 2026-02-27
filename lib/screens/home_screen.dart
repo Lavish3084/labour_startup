@@ -1,14 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../widgets/labourer_card.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
-import 'location_search_screen.dart';
 import 'service_request_screen.dart';
-
-import '../models/labourer.dart';
+import '../providers/location_provider.dart';
+import 'package:provider/provider.dart';
 import '../data/dummy_data.dart';
 import '../widgets/service_category_card.dart';
+import '../widgets/address_selection_sheet.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -18,12 +17,20 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  String _currentLocation = 'Locating...';
-
   @override
   void initState() {
     super.initState();
-    _getCurrentLocation();
+    _initLocation();
+  }
+
+  Future<void> _initLocation() async {
+    final locationProvider = Provider.of<LocationProvider>(
+      context,
+      listen: false,
+    );
+    if (locationProvider.currentAddress == null) {
+      await _getCurrentLocation();
+    }
   }
 
   Future<void> _getCurrentLocation() async {
@@ -31,33 +38,15 @@ class _HomeScreenState extends State<HomeScreen> {
     LocationPermission permission;
 
     serviceEnabled = await Geolocator.isLocationServiceEnabled();
-    if (!serviceEnabled) {
-      if (mounted) {
-        setState(() {
-          _currentLocation = 'Location Disabled';
-        });
-      }
-      return;
-    }
+    if (!serviceEnabled) return;
 
     permission = await Geolocator.checkPermission();
     if (permission == LocationPermission.denied) {
-      if (mounted) {
-        setState(() {
-          _currentLocation = 'Permission Denied';
-        });
-      }
-      return;
+      permission = await Geolocator.requestPermission();
+      if (permission == LocationPermission.denied) return;
     }
 
-    if (permission == LocationPermission.deniedForever) {
-      if (mounted) {
-        setState(() {
-          _currentLocation = 'Permission Denied';
-        });
-      }
-      return;
-    }
+    if (permission == LocationPermission.deniedForever) return;
 
     try {
       Position position = await Geolocator.getCurrentPosition();
@@ -68,40 +57,45 @@ class _HomeScreenState extends State<HomeScreen> {
 
       if (placemarks.isNotEmpty) {
         Placemark place = placemarks[0];
+        final address = '${place.locality}, ${place.country}';
         if (mounted) {
-          setState(() {
-            _currentLocation = '${place.locality}, ${place.country}';
-          });
+          Provider.of<LocationProvider>(
+            context,
+            listen: false,
+          ).updateCurrentAddress(
+            address: address,
+            latitude: position.latitude,
+            longitude: position.longitude,
+          );
         }
       }
     } catch (e) {
-      if (mounted) {
-        setState(() {
-          _currentLocation = 'Error fetching location';
-        });
-      }
+      debugPrint('Error fetching location: $e');
     }
   }
 
-  Future<void> _openLocationSearch() async {
-    final result = await Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => const LocationSearchScreen()),
+  void _showAddressSelectionBottomSheet() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => const AddressSelectionSheet(),
     );
-
-    if (result != null) {
-      if (result == 'CURRENT_LOCATION') {
-        _getCurrentLocation();
-      } else {
-        setState(() {
-          _currentLocation = result;
-        });
-      }
-    }
   }
 
   @override
   Widget build(BuildContext context) {
+    final locationProvider = Provider.of<LocationProvider>(context);
+    final String displayAddress;
+    if (locationProvider.currentAddress == null) {
+      displayAddress = 'Select Location';
+    } else {
+      final house = locationProvider.currentHouseNumber;
+      final addr = locationProvider.currentAddress;
+      displayAddress =
+          (house != null && house.isNotEmpty) ? '$house, $addr' : addr!;
+    }
+
     return Scaffold(
       backgroundColor: const Color(0xFFF9F9F9),
       body: SafeArea(
@@ -115,7 +109,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 children: [
                   // Location Row
                   GestureDetector(
-                    onTap: _openLocationSearch,
+                    onTap: _showAddressSelectionBottomSheet,
                     child: Row(
                       children: [
                         Icon(
@@ -124,12 +118,16 @@ class _HomeScreenState extends State<HomeScreen> {
                           size: 18,
                         ),
                         const SizedBox(width: 8),
-                        Text(
-                          _currentLocation,
-                          style: GoogleFonts.inter(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.grey[800],
+                        Expanded(
+                          child: Text(
+                            displayAddress,
+                            style: GoogleFonts.inter(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.grey[800],
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
                         const SizedBox(width: 4),
@@ -167,7 +165,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
             ),
-            SizedBox(height: 13),
+            const SizedBox(height: 13),
             // Daily Wage Model Banner
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -176,7 +174,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(24),
-                  // border: Border.all(color: Colors.grey.withOpacity(0.1)),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,

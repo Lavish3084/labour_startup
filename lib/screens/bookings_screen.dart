@@ -3,6 +3,8 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../services/api_service.dart';
 import '../services/payment_service.dart';
+import 'package:provider/provider.dart';
+import '../providers/app_state_provider.dart';
 import 'package:razorpay_flutter/razorpay_flutter.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
@@ -14,15 +16,13 @@ class BookingsScreen extends StatefulWidget {
 }
 
 class _BookingsScreenState extends State<BookingsScreen> {
-  late Future<List<dynamic>> _bookingsFuture;
-
   final PaymentService _paymentService = PaymentService();
   String? _pendingBookingId;
 
   @override
   void initState() {
     super.initState();
-    _bookingsFuture = ApiService.getUserBookings();
+    // Data is fetched in MainScreen or via RefreshIndicator
     _paymentService.initialize(
       onSuccess: _handlePaymentSuccess,
       onFailure: _handlePaymentFailure,
@@ -118,13 +118,15 @@ class _BookingsScreenState extends State<BookingsScreen> {
   }
 
   Future<void> _refreshBookings() async {
-    setState(() {
-      _bookingsFuture = ApiService.getUserBookings();
-    });
+    await Provider.of<AppStateProvider>(context, listen: false).fetchBookings();
   }
 
   @override
   Widget build(BuildContext context) {
+    final appState = Provider.of<AppStateProvider>(context);
+    final bookings = appState.bookings;
+    final isLoading = appState.isBookingsLoading;
+
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -140,30 +142,13 @@ class _BookingsScreenState extends State<BookingsScreen> {
         elevation: 0,
         centerTitle: true,
         automaticallyImplyLeading: false,
-        leading: IconButton(
-          icon: const Icon(
-            Icons.arrow_back_ios,
-            color: Colors.black87,
-            size: 20,
-          ),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
       ),
-      body: FutureBuilder<List<dynamic>>(
-        future: _bookingsFuture,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          } else if (snapshot.hasError) {
-            return Center(child: Text('Error: ${snapshot.error}'));
-          } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-            return _buildEmptyState();
-          }
-
-          final allBookings = snapshot.data!;
-          return _buildbookingsList(allBookings);
-        },
-      ),
+      body:
+          isLoading && bookings.isEmpty
+              ? const Center(child: CircularProgressIndicator())
+              : (bookings.isEmpty
+                  ? _buildEmptyState()
+                  : _buildbookingsList(bookings)),
     );
   }
 
@@ -319,13 +304,45 @@ class _BookingsScreenState extends State<BookingsScreen> {
                       ),
                     ),
                     const SizedBox(height: 2),
-                    Text(
-                      category,
-                      style: GoogleFonts.inter(
-                        color: const Color(0xFF64748B), // Slate 500
-                        fontSize: 13,
-                        fontWeight: FontWeight.w500,
-                      ),
+                    Row(
+                      children: [
+                        Text(
+                          category,
+                          style: GoogleFonts.inter(
+                            color: const Color(0xFF64748B), // Slate 500
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        if (booking['bookingMode'] != null) ...[
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.blueAccent.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(4),
+                              border: Border.all(
+                                color: Colors.blueAccent.withOpacity(0.3),
+                              ),
+                            ),
+                            child: Text(
+                              booking['bookingMode'] +
+                                  (booking['bookingMode'] == 'Hourly' &&
+                                          booking['numberOfHours'] != null
+                                      ? ' (${booking['numberOfHours']} ${booking['numberOfHours'] == 1 ? 'hr' : 'hrs'})'
+                                      : ''),
+                              style: GoogleFonts.inter(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.blueAccent,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
                   ],
                 ),

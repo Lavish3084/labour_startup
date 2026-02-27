@@ -51,6 +51,8 @@
 	<string>We need access to your camera to allow you to take a profile picture.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>We need your location to find workers or jobs near you.</string>
+	<key>NSLocationAlwaysUsageDescription</key>
+	<string>We need your location to find workers or jobs near you even when the app is in the background.</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
 	<string>We need your location to find workers or jobs near you even when the app is in the background.</string>
 	<key>UIBackgroundModes</key>

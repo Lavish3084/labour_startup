@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../services/api_service.dart';
 import 'login_screen.dart';
 import 'profile_screen.dart';
@@ -64,6 +65,36 @@ class _WorkerHomeScreenState extends State<WorkerHomeScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
         );
+      }
+    }
+  }
+
+  Future<void> _openMap(String? address, double? lat, double? lng) async {
+    Uri url;
+    if (lat != null && lng != null) {
+      // Use coordinates if available
+      url = Uri.parse(
+        "https://www.google.com/maps/search/?api=1&query=$lat,$lng",
+      );
+    } else if (address != null && address.isNotEmpty) {
+      // Fallback to address search
+      url = Uri.parse(
+        "https://www.google.com/maps/search/?api=1&query=${Uri.encodeComponent(address)}",
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No location available for this job')),
+      );
+      return;
+    }
+
+    if (await canLaunchUrl(url)) {
+      await launchUrl(url, mode: LaunchMode.externalApplication);
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Could not open maps')));
       }
     }
   }
@@ -246,6 +277,70 @@ class _WorkerHomeScreenState extends State<WorkerHomeScreen> {
                             child: Text(
                               booking['notes'],
                               style: GoogleFonts.inter(color: Colors.grey[700]),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                    if (booking['address'] != null &&
+                        booking['address'].isNotEmpty) ...[
+                      const SizedBox(height: 8),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Icon(
+                            Icons.location_on,
+                            size: 16,
+                            color: Colors.grey,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  booking['address'] ?? 'No Address',
+                                  style: GoogleFonts.inter(
+                                    color: Colors.grey[700],
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                if (booking['houseNumber'] != null &&
+                                    booking['houseNumber'].isNotEmpty)
+                                  Text(
+                                    'Flat/House: ${booking['houseNumber']}',
+                                    style: GoogleFonts.inter(
+                                      color: Colors.black87,
+                                    ),
+                                  ),
+                                if (booking['landmark'] != null &&
+                                    booking['landmark'].isNotEmpty)
+                                  Text(
+                                    'Landmark: ${booking['landmark']}',
+                                    style: GoogleFonts.inter(
+                                      color: Colors.grey[600],
+                                      fontStyle: FontStyle.italic,
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          InkWell(
+                            onTap:
+                                () => _openMap(
+                                  booking['address'],
+                                  booking['latitude']?.toDouble(),
+                                  booking['longitude']?.toDouble(),
+                                ),
+                            child: const Text(
+                              'View on Maps',
+                              style: TextStyle(
+                                color: Colors.blueAccent,
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                decoration: TextDecoration.underline,
+                              ),
                             ),
                           ),
                         ],

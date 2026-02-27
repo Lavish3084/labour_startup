@@ -25,6 +25,7 @@ class _SignupScreenState extends State<SignupScreen> {
   final _picker = ImagePicker();
 
   bool _isPickingImage = false;
+  bool _isLoading = false;
 
   Future<void> _pickImage() async {
     if (_isPickingImage) return;
@@ -69,32 +70,32 @@ class _SignupScreenState extends State<SignupScreen> {
       return;
     }
 
-    // Signup API Call
-    // Signup API Call
-    String? profilePicture;
-    if (_imageFile != null) {
-      final bytes = await _imageFile!.readAsBytes();
-      profilePicture = base64Encode(bytes);
-      // Ensure prefix for proper display if needed, but backend stores raw string.
-      // Usually standard web/app usage might need 'data:image/jpeg;base64,' prefix.
-      // For now we store the base64 string.
-      profilePicture = 'data:image/jpeg;base64,$profilePicture';
-    }
+    setState(() {
+      _isLoading = true;
+    });
 
-    final result = await ApiService.signup(
-      name,
-      email,
-      password,
-      _selectedRole,
-      profilePicture,
-    );
+    try {
+      // Signup API Call
+      String? profilePicture;
+      if (_imageFile != null) {
+        final bytes = await _imageFile!.readAsBytes();
+        profilePicture = base64Encode(bytes);
+        profilePicture = 'data:image/jpeg;base64,$profilePicture';
+      }
 
-    if (result['success']) {
-      if (context.mounted) {
-        // Request Location Permission before navigating
-        await Geolocator.requestPermission();
+      final result = await ApiService.signup(
+        name,
+        email,
+        password,
+        _selectedRole,
+        profilePicture,
+      );
 
+      if (result['success']) {
         if (context.mounted) {
+          // Request Location Permission before navigating
+          await Geolocator.requestPermission();
+
           if (context.mounted) {
             if (_selectedRole == 'worker') {
               Navigator.pushReplacement(
@@ -111,12 +112,24 @@ class _SignupScreenState extends State<SignupScreen> {
             }
           }
         }
+      } else {
+        if (context.mounted) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(result['message'])));
+        }
       }
-    } else {
+    } catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text(result['message'])));
+        ).showSnackBar(SnackBar(content: Text('Error: $e')));
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
       }
     }
   }
@@ -157,7 +170,7 @@ class _SignupScreenState extends State<SignupScreen> {
 
               Center(
                 child: GestureDetector(
-                  onTap: _pickImage,
+                  onTap: _isPickingImage || _isLoading ? null : _pickImage,
                   child: Stack(
                     children: [
                       CircleAvatar(
@@ -202,7 +215,10 @@ class _SignupScreenState extends State<SignupScreen> {
                 children: [
                   Expanded(
                     child: GestureDetector(
-                      onTap: () => setState(() => _selectedRole = 'user'),
+                      onTap:
+                          _isLoading
+                              ? null
+                              : () => setState(() => _selectedRole = 'user'),
                       child: Container(
                         padding: const EdgeInsets.symmetric(vertical: 12),
                         decoration: BoxDecoration(
@@ -235,7 +251,10 @@ class _SignupScreenState extends State<SignupScreen> {
                   const SizedBox(width: 16),
                   Expanded(
                     child: GestureDetector(
-                      onTap: () => setState(() => _selectedRole = 'worker'),
+                      onTap:
+                          _isLoading
+                              ? null
+                              : () => setState(() => _selectedRole = 'worker'),
                       child: Container(
                         padding: const EdgeInsets.symmetric(vertical: 12),
                         decoration: BoxDecoration(
@@ -272,6 +291,7 @@ class _SignupScreenState extends State<SignupScreen> {
               // Name Field
               TextFormField(
                 controller: _nameController,
+                enabled: !_isLoading,
                 decoration: InputDecoration(
                   labelText: 'Full Name',
                   hintText: 'John Doe',
@@ -286,6 +306,7 @@ class _SignupScreenState extends State<SignupScreen> {
               // Email Field
               TextFormField(
                 controller: _emailController,
+                enabled: !_isLoading,
                 decoration: InputDecoration(
                   labelText: 'Email',
                   hintText: 'hello@example.com',
@@ -301,6 +322,7 @@ class _SignupScreenState extends State<SignupScreen> {
               TextFormField(
                 controller: _passwordController,
                 obscureText: true,
+                enabled: !_isLoading,
                 decoration: InputDecoration(
                   labelText: 'Password',
                   hintText: '••••••••',
@@ -316,6 +338,7 @@ class _SignupScreenState extends State<SignupScreen> {
               TextFormField(
                 controller: _confirmPasswordController,
                 obscureText: true,
+                enabled: !_isLoading,
                 decoration: InputDecoration(
                   labelText: 'Confirm Password',
                   hintText: '••••••••',
@@ -333,21 +356,31 @@ class _SignupScreenState extends State<SignupScreen> {
                 width: double.infinity,
                 height: 56,
                 child: ElevatedButton(
-                  onPressed: _handleSignup,
+                  onPressed: _isLoading ? null : _handleSignup,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.black,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),
                     ),
                   ),
-                  child: Text(
-                    'Sign Up',
-                    style: GoogleFonts.inter(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
+                  child:
+                      _isLoading
+                          ? const SizedBox(
+                            height: 24,
+                            width: 24,
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 2,
+                            ),
+                          )
+                          : Text(
+                            'Sign Up',
+                            style: GoogleFonts.inter(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
                 ),
               ),
             ],

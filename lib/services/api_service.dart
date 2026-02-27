@@ -30,7 +30,7 @@ class ApiService {
 
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
-      await _saveAuthData(data['token'], data['role'], data['name']);
+      await _saveAuthData(data['token'], data['role'], data['name'], email);
       return {'success': true, 'data': data};
     } else {
       final error = jsonDecode(response.body);
@@ -50,7 +50,7 @@ class ApiService {
 
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
-      await _saveAuthData(data['token'], data['role'], data['name']);
+      await _saveAuthData(data['token'], data['role'], data['name'], email);
       // Update FCM Token
       await updateFcmToken();
       return {'success': true, 'data': data};
@@ -63,6 +63,9 @@ class ApiService {
   static Future<void> logout() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('token');
+    await prefs.remove('role');
+    await prefs.remove('name');
+    await prefs.remove('email');
   }
 
   static Future<String?> getToken() async {
@@ -80,15 +83,22 @@ class ApiService {
     return prefs.getString('name');
   }
 
+  static Future<String?> getEmail() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString('email');
+  }
+
   static Future<void> _saveAuthData(
     String token,
     String role,
     String name,
+    String email,
   ) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('token', token);
     await prefs.setString('role', role);
     await prefs.setString('name', name);
+    await prefs.setString('email', email);
   }
 
   // Profile
@@ -176,7 +186,14 @@ class ApiService {
     String? labourerId,
     required String category,
     required DateTime date,
+    required String bookingMode,
+    int? numberOfHours,
     String? notes,
+    String? address,
+    String? houseNumber,
+    String? landmark,
+    double? latitude,
+    double? longitude,
   }) async {
     final token = await getToken();
     final response = await http.post(
@@ -189,7 +206,14 @@ class ApiService {
         'labourerId': labourerId,
         'category': category,
         'date': date.toIso8601String(),
+        'bookingMode': bookingMode,
+        'numberOfHours': numberOfHours,
         'notes': notes,
+        'address': address,
+        'houseNumber': houseNumber,
+        'landmark': landmark,
+        'latitude': latitude,
+        'longitude': longitude,
       }),
     );
     return response.statusCode == 200;
@@ -313,6 +337,35 @@ class ApiService {
       }),
     );
 
+    return response.statusCode == 200;
+  }
+
+  static Future<bool> addSavedAddress(Map<String, dynamic> data) async {
+    final token = await getToken();
+    print('ApiService: Adding saved address to $baseUrl/profile/address');
+    print('ApiService: Request Body: ${jsonEncode(data)}');
+
+    final response = await http.post(
+      Uri.parse('$baseUrl/profile/address'),
+      headers: {
+        'Content-Type': 'application/json',
+        'x-auth-token': token ?? '',
+      },
+      body: jsonEncode(data),
+    );
+
+    print('ApiService: Status Code: ${response.statusCode}');
+    print('ApiService: Response Body: ${response.body}');
+
+    return response.statusCode == 200;
+  }
+
+  static Future<bool> deleteSavedAddress(String addressId) async {
+    final token = await getToken();
+    final response = await http.delete(
+      Uri.parse('$baseUrl/profile/address/$addressId'),
+      headers: {'x-auth-token': token ?? ''},
+    );
     return response.statusCode == 200;
   }
 }

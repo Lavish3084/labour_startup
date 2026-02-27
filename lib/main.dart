@@ -6,6 +6,9 @@ import 'package:firebase_core/firebase_core.dart';
 import 'services/notification_service.dart';
 
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:provider/provider.dart';
+import 'providers/app_state_provider.dart';
+import 'providers/location_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -25,7 +28,15 @@ void main() async {
     print("WARNING: Firebase initialization failed: $e");
     print("Push notifications will NOT work.");
   }
-  runApp(const MyApp());
+  runApp(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => AppStateProvider()),
+        ChangeNotifierProvider(create: (_) => LocationProvider()),
+      ],
+      child: const MyApp(),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {

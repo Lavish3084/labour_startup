@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../models/labourer.dart';
 import '../services/api_service.dart';
+import '../data/dummy_data.dart';
+import '../models/service_category.dart';
 
 class LabourerDetailScreen extends StatefulWidget {
   final Labourer labourer;
@@ -15,6 +17,25 @@ class LabourerDetailScreen extends StatefulWidget {
 
 class _LabourerDetailScreenState extends State<LabourerDetailScreen> {
   bool _isLoading = false;
+  late String _selectedMode;
+  int _numberOfHours = 1;
+
+  @override
+  void initState() {
+    super.initState();
+    // Find category to get default modes
+    final category = DummyData.serviceCategories.firstWhere(
+      (c) => c.name == widget.labourer.category,
+      orElse:
+          () => ServiceCategory(
+            name: widget.labourer.category,
+            icon: Icons.work,
+            description: '',
+            supportedModes: ['Hourly'],
+          ),
+    );
+    _selectedMode = category.supportedModes.first;
+  }
 
   Future<void> _showBookingDialog() async {
     final DateTime? pickedDate = await showDatePicker(
@@ -43,6 +64,110 @@ class _LabourerDetailScreenState extends State<LabourerDetailScreen> {
                     style: GoogleFonts.inter(),
                   ),
                   const SizedBox(height: 16),
+                  Text(
+                    'Booking Type',
+                    style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+                  ),
+                  const SizedBox(height: 8),
+                  StatefulBuilder(
+                    builder: (context, setDialogState) {
+                      final category = DummyData.serviceCategories.firstWhere(
+                        (c) => c.name == widget.labourer.category,
+                        orElse:
+                            () => ServiceCategory(
+                              name: widget.labourer.category,
+                              icon: Icons.work,
+                              description: '',
+                              supportedModes: ['Hourly'],
+                            ),
+                      );
+                      return Row(
+                        children:
+                            category.supportedModes.map((mode) {
+                              final isSelected = _selectedMode == mode;
+                              return Expanded(
+                                child: ChoiceChip(
+                                  label: Text(
+                                    mode,
+                                    style: TextStyle(
+                                      color:
+                                          isSelected
+                                              ? Colors.white
+                                              : Colors.black,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                  selected: isSelected,
+                                  onSelected: (val) {
+                                    if (val) {
+                                      setDialogState(() {
+                                        _selectedMode = mode;
+                                      });
+                                      setState(() {
+                                        _selectedMode = mode;
+                                      });
+                                    }
+                                  },
+                                  selectedColor: Colors.blueAccent,
+                                  backgroundColor: Colors.grey[200],
+                                ),
+                              );
+                            }).toList(),
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  if (_selectedMode == 'Hourly') ...[
+                    Text(
+                      'Duration (Hours)',
+                      style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+                    ),
+                    const SizedBox(height: 8),
+                    StatefulBuilder(
+                      builder: (context, setDialogState) {
+                        return Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              '$_numberOfHours ${_numberOfHours == 1 ? 'Hour' : 'Hours'}',
+                              style: GoogleFonts.inter(fontSize: 16),
+                            ),
+                            Row(
+                              children: [
+                                IconButton(
+                                  onPressed: () {
+                                    if (_numberOfHours > 1) {
+                                      setDialogState(() {
+                                        _numberOfHours--;
+                                      });
+                                      setState(() {
+                                        _numberOfHours--;
+                                      });
+                                    }
+                                  },
+                                  icon: const Icon(Icons.remove_circle_outline),
+                                ),
+                                IconButton(
+                                  onPressed: () {
+                                    if (_numberOfHours < 24) {
+                                      setDialogState(() {
+                                        _numberOfHours++;
+                                      });
+                                      setState(() {
+                                        _numberOfHours++;
+                                      });
+                                    }
+                                  },
+                                  icon: const Icon(Icons.add_circle_outline),
+                                ),
+                              ],
+                            ),
+                          ],
+                        );
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                  ],
                   TextField(
                     controller: notesController,
                     decoration: const InputDecoration(
@@ -84,7 +209,15 @@ class _LabourerDetailScreenState extends State<LabourerDetailScreen> {
         labourerId: widget.labourer.id,
         category: widget.labourer.category,
         date: date,
+        bookingMode: _selectedMode,
+        numberOfHours: _selectedMode == 'Hourly' ? _numberOfHours : null,
         notes: notes,
+        address:
+            null, // Specific worker booking usually uses current location or user profile default
+        houseNumber: null,
+        landmark: null,
+        latitude: null,
+        longitude: null,
       );
       if (mounted) {
         if (success) {

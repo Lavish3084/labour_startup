@@ -3,6 +3,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'home_screen.dart';
 import 'bookings_screen.dart';
 import 'profile_screen.dart';
+import 'package:provider/provider.dart';
+import '../providers/app_state_provider.dart';
 import '../services/api_service.dart';
 import 'worker_home_screen.dart';
 
@@ -26,10 +28,19 @@ class _MainScreenState extends State<MainScreen> {
 
   Future<void> _loadUserRole() async {
     final role = await ApiService.getRole();
-    setState(() {
-      _userRole = role;
-      _isLoading = false;
-    });
+    if (mounted) {
+      setState(() {
+        _userRole = role;
+        _isLoading = false;
+      });
+
+      if (role != 'worker') {
+        // Fetch initial data for user
+        final appState = Provider.of<AppStateProvider>(context, listen: false);
+        appState.fetchProfile();
+        appState.fetchBookings();
+      }
+    }
   }
 
   static const List<Widget> _pages = <Widget>[

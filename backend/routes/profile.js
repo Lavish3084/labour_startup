@@ -182,7 +182,9 @@ router.put('/image', verifyToken, async (req, res) => {
 // @desc    Add a saved address
 // @access  Private
 router.post('/address', verifyToken, async (req, res) => {
+    console.log(`POST /api/profile/address called for user ${req.user.id}`);
     const { label, address, houseNumber, landmark, latitude, longitude } = req.body;
+    console.log('Request body:', req.body);
 
     if (!address) {
         return res.status(400).json({ msg: 'Address is required' });
@@ -201,6 +203,7 @@ router.post('/address', verifyToken, async (req, res) => {
 
         user.addresses.unshift(newAddress);
         await user.save();
+        console.log('Address saved successfully. Total addresses:', user.addresses.length);
         res.json(user.addresses);
     } catch (err) {
         console.error(err.message);
