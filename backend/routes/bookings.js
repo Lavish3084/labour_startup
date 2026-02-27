@@ -223,15 +223,17 @@ router.put('/:id/status', verifyToken, async (req, res) => {
         }
 
         // Verify ownership (either the user who booked or the worker assigned)
-        // Note: For 'confirmed' (accept) / 'cancelled' (reject), usually the worker does it.
-        // But user can also cancel.
-        // We need to check if req.user.id is either booking.user or booking.labourer.user
+        const isUserOwner = booking.user.toString() === req.user.id;
+        let isWorkerOwner = false;
 
-        // However, booking.labourer is an ID of Labourer model, not User model.
-        // We need to fetch the associated Labourer to check the user ID.
-        const labourer = await Labourer.findById(booking.labourer);
+        if (booking.labourer) {
+            const labourer = await Labourer.findById(booking.labourer);
+            if (labourer && labourer.user.toString() === req.user.id) {
+                isWorkerOwner = true;
+            }
+        }
 
-        if (booking.user.toString() !== req.user.id && labourer.user.toString() !== req.user.id) {
+        if (!isUserOwner && !isWorkerOwner) {
             return res.status(401).json({ msg: 'Not authorized' });
         }
 
@@ -241,19 +243,12 @@ router.put('/:id/status', verifyToken, async (req, res) => {
         // Notify the counterparty about the status change
         // If Worker changed it -> Notify User
         // If User changed it -> Notify Worker
-
-        // We know who changed it by req.user.id
-        const isWorkerUpdate = req.user.id !== booking.user.toString();
-
         let targetUserId;
-        if (isWorkerUpdate) {
+        if (isWorkerOwner) {
             targetUserId = booking.user;
-        } else {
-            // If user updated, notify worker (if assigned)
-            if (booking.labourer) {
-                const l = await Labourer.findById(booking.labourer);
-                targetUserId = l.user;
-            }
+        } else if (isUserOwner && booking.labourer) {
+            const l = await Labourer.findById(booking.labourer);
+            targetUserId = l.user;
         }
 
         if (targetUserId) {
