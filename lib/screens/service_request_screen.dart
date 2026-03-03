@@ -393,12 +393,46 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
                       ),
                       const SizedBox(height: 16),
 
+                      // Price Summary in Sheet
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.grey[50],
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.grey.shade200),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'Estimated Total',
+                              style: GoogleFonts.inter(
+                                fontSize: 14,
+                                color: Colors.grey[600],
+                              ),
+                            ),
+                            Text(
+                              '₹${_calculateTotalPrice().toStringAsFixed(0)}',
+                              style: GoogleFonts.inter(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.blueAccent,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+
                       // Confirm Button
                       SizedBox(
                         width: double.infinity,
                         height: 50,
                         child: ElevatedButton(
-                          onPressed: _isLoading ? null : _submitRequest,
+                          onPressed:
+                              _isLoading
+                                  ? null
+                                  : () => _submitRequest(setSheetState),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.black,
                             shape: RoundedRectangleBorder(
@@ -411,7 +445,7 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
                                     color: Colors.white,
                                   )
                                   : Text(
-                                    'Confirm Request',
+                                    'Confirm & Pay ₹${_calculateTotalPrice().toStringAsFixed(0)}',
                                     style: GoogleFonts.inter(
                                       fontSize: 16,
                                       fontWeight: FontWeight.w600,
@@ -429,16 +463,30 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
     );
   }
 
-  Future<void> _submitRequest() async {
-    if (_selectedAddress == null || _houseController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please select address and enter house number'),
-        ),
-      );
+  double _calculateTotalPrice() {
+    if (_selectedBookingMode == 'Hourly') {
+      return widget.category.hourlyRate * _numberOfHours;
+    } else if (_selectedBookingMode == 'Daily') {
+      return widget.category.dailyRate;
+    } else {
+      // Task-based
+      return widget.category.hourlyRate; // Default or base task rate
+    }
+  }
+
+  Future<void> _submitRequest([StateSetter? setSheetState]) async {
+    if (_selectedAddress == null) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Please select an address')));
       return;
     }
 
+    if (setSheetState != null) {
+      setSheetState(() {
+        _isLoading = true;
+      });
+    }
     setState(() {
       _isLoading = true;
     });
@@ -464,6 +512,7 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
         landmark: _landmarkController.text,
         latitude: _latitude,
         longitude: _longitude,
+        amount: _calculateTotalPrice(),
       );
 
       if (mounted) {
@@ -532,6 +581,11 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
       }
     } finally {
       if (mounted) {
+        if (setSheetState != null) {
+          setSheetState(() {
+            _isLoading = false;
+          });
+        }
         setState(() {
           _isLoading = false;
         });
@@ -559,18 +613,7 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
           ),
         ),
         centerTitle: true,
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 16.0),
-            child: CircleAvatar(
-              radius: 18,
-              backgroundImage: const NetworkImage(
-                'https://randomuser.me/api/portraits/men/32.jpg',
-              ),
-              backgroundColor: Colors.grey[200],
-            ),
-          ),
-        ],
+        actions: const [],
       ),
       body: SingleChildScrollView(
         child: Padding(
@@ -594,11 +637,6 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
               const SizedBox(height: 16),
               _buildTimeSelection(),
               const SizedBox(height: 32),
-              _buildSectionTitle('JOB DETAILS'),
-              const SizedBox(height: 12),
-              _buildJobDetailsTags(),
-              const SizedBox(height: 16),
-              _buildDescriptionField(),
               const SizedBox(height: 40),
               _buildActionButton(),
               const SizedBox(height: 20),
@@ -945,89 +983,6 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
     );
   }
 
-  Widget _buildJobDetailsTags() {
-    // Generate some tags based on category
-    final tags = _getTagsForCategory(widget.category.name);
-
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      children:
-          tags.map((tag) {
-            final isSelected = tag == 'Repair'; // Mock selection or use a set
-            return Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              decoration: BoxDecoration(
-                color:
-                    isSelected
-                        ? const Color(0xFFFFEFE6)
-                        : const Color(0xFFF1F5F9),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(
-                  color:
-                      isSelected
-                          ? const Color(0xFFFF6B2C).withOpacity(0.3)
-                          : Colors.transparent,
-                ),
-              ),
-              child: Text(
-                tag,
-                style: GoogleFonts.inter(
-                  fontSize: 13,
-                  fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                  color:
-                      isSelected
-                          ? const Color(0xFFFF6B2C)
-                          : const Color(0xFF64748B),
-                ),
-              ),
-            );
-          }).toList(),
-    );
-  }
-
-  List<String> _getTagsForCategory(String category) {
-    switch (category) {
-      case 'Plumbing':
-        return ['Plumbing', 'Electrical', 'Cleaning', 'Repair'];
-      case 'Electric':
-        return ['Wiring', 'Installation', 'Repair', 'Switchboard'];
-      default:
-        return ['General', 'Installation', 'Repair', 'Maintenance'];
-    }
-  }
-
-  Widget _buildDescriptionField() {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.03),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: TextFormField(
-        controller: _notesController,
-        maxLines: 4,
-        style: GoogleFonts.inter(fontSize: 14, color: const Color(0xFF1E293B)),
-        decoration: InputDecoration(
-          hintText:
-              'Describe the job in detail (e.g., Leaking pipe in the master bathroom)...',
-          hintStyle: GoogleFonts.inter(
-            color: const Color(0xFF94A3B8),
-            fontSize: 13,
-          ),
-          contentPadding: const EdgeInsets.all(16),
-          border: InputBorder.none,
-        ),
-      ),
-    );
-  }
-
   Widget _buildActionButton() {
     return SizedBox(
       width: double.infinity,
@@ -1042,18 +997,43 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
           elevation: 0,
         ),
         child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisAlignment:
+              MainAxisAlignment.spaceBetween, // Changed to spaceBetween
           children: [
-            Text(
-              'Request Laborer Now',
-              style: GoogleFonts.inter(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
+            Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '₹${_calculateTotalPrice().toStringAsFixed(0)}',
+                  style: GoogleFonts.inter(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+                Text(
+                  _selectedBookingMode == 'Hourly'
+                      ? '$_numberOfHours Hours'
+                      : _selectedBookingMode,
+                  style: GoogleFonts.inter(fontSize: 11, color: Colors.white70),
+                ),
+              ],
             ),
-            const SizedBox(width: 8),
-            const Icon(Icons.arrow_forward, color: Colors.white, size: 20),
+            Row(
+              children: [
+                Text(
+                  'Review Request',
+                  style: GoogleFonts.inter(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                const Icon(Icons.arrow_forward, color: Colors.white, size: 20),
+              ],
+            ),
           ],
         ),
       ),

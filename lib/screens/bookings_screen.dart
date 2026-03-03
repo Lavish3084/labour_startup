@@ -121,6 +121,153 @@ class _BookingsScreenState extends State<BookingsScreen> {
     await Provider.of<AppStateProvider>(context, listen: false).fetchBookings();
   }
 
+  Future<void> _handleCancelWithdraw(dynamic booking) async {
+    final status = (booking['status'] as String).toLowerCase();
+
+    if (status == 'pending') {
+      // Direct withdrawal for pending requests
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder:
+            (context) => AlertDialog(
+              title: Text(
+                'Withdraw Request?',
+                style: GoogleFonts.inter(fontWeight: FontWeight.bold),
+              ),
+              content: Text(
+                'Are you sure you want to withdraw this job request?',
+                style: GoogleFonts.inter(),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context, false),
+                  child: Text(
+                    'Keep Request',
+                    style: GoogleFonts.inter(color: Colors.grey),
+                  ),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.pop(context, true),
+                  child: Text(
+                    'Withdraw',
+                    style: GoogleFonts.inter(
+                      color: Colors.red,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+      );
+
+      if (confirmed == true) {
+        await _performStatusUpdate(booking['_id'], 'cancelled');
+      }
+    } else if (status == 'confirmed') {
+      // Show fee warning for confirmed/accepted bookings
+      _showCancellationFeeDialog(booking);
+    }
+  }
+
+  void _showCancellationFeeDialog(dynamic booking) {
+    showDialog(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+            ),
+            title: Row(
+              children: [
+                const Icon(
+                  Icons.warning_amber_rounded,
+                  color: Colors.orange,
+                  size: 28,
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  'Cancellation Fee',
+                  style: GoogleFonts.inter(fontWeight: FontWeight.bold),
+                ),
+              ],
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'A cancellation fee may apply since a worker has already accepted this booking.',
+                  style: GoogleFonts.inter(fontWeight: FontWeight.w500),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  '• Standard fee: ₹50\n• Notice: This fee compensates the worker for their time and travel commitment.',
+                  style: GoogleFonts.inter(
+                    fontSize: 13,
+                    color: Colors.grey[600],
+                  ),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text(
+                  'Keep Booking',
+                  style: GoogleFonts.inter(
+                    color: Colors.grey,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  _performStatusUpdate(booking['_id'], 'cancelled');
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.red,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: Text(
+                  'Confirm Cancel',
+                  style: GoogleFonts.inter(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ),
+    );
+  }
+
+  Future<void> _performStatusUpdate(String bookingId, String status) async {
+    try {
+      final success = await ApiService.updateBookingStatus(bookingId, status);
+      if (success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              "Booking ${status == 'cancelled' ? 'cancelled' : 'updated'} successfuly",
+            ),
+          ),
+        );
+        _refreshBookings();
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Failed to update booking status")),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("Error: $e")));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final appState = Provider.of<AppStateProvider>(context);
@@ -476,9 +623,7 @@ class _BookingsScreenState extends State<BookingsScreen> {
               SizedBox(
                 height: 32,
                 child: OutlinedButton(
-                  onPressed: () {
-                    // Cancel/Withdraw action
-                  },
+                  onPressed: () => _handleCancelWithdraw(booking),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: Colors.red,
                     side: const BorderSide(color: Colors.red),

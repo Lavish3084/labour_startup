@@ -194,29 +194,44 @@ class ApiService {
     String? landmark,
     double? latitude,
     double? longitude,
+    double? amount,
   }) async {
-    final token = await getToken();
-    final response = await http.post(
-      Uri.parse('$baseUrl/bookings'),
-      headers: {
-        'Content-Type': 'application/json',
-        'x-auth-token': token ?? '',
-      },
-      body: jsonEncode({
-        'labourerId': labourerId,
-        'category': category,
-        'date': date.toIso8601String(),
-        'bookingMode': bookingMode,
-        'numberOfHours': numberOfHours,
-        'notes': notes,
-        'address': address,
-        'houseNumber': houseNumber,
-        'landmark': landmark,
-        'latitude': latitude,
-        'longitude': longitude,
-      }),
-    );
-    return response.statusCode == 200;
+    try {
+      final token = await getToken();
+      final response = await http.post(
+        Uri.parse('$baseUrl/bookings'),
+        headers: {
+          'Content-Type': 'application/json',
+          'x-auth-token': token ?? '',
+        },
+        body: jsonEncode({
+          'labourerId': labourerId,
+          'category': category,
+          'date': date.toIso8601String(),
+          'bookingMode': bookingMode,
+          'numberOfHours': numberOfHours,
+          'notes': notes,
+          'address': address,
+          'houseNumber': houseNumber,
+          'landmark': landmark,
+          'latitude': latitude,
+          'longitude': longitude,
+          'amount': amount,
+        }),
+      );
+
+      if (response.statusCode != 200) {
+        print(
+          'ApiService: createBooking failed with status: ${response.statusCode}',
+        );
+        print('ApiService: Error response: ${response.body}');
+        return false;
+      }
+      return true;
+    } catch (e) {
+      print('ApiService: Error creating booking: $e');
+      return false;
+    }
   }
 
   static Future<bool> claimBooking(String bookingId) async {

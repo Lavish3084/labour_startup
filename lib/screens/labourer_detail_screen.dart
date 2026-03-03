@@ -32,6 +32,8 @@ class _LabourerDetailScreenState extends State<LabourerDetailScreen> {
             icon: Icons.work,
             description: '',
             supportedModes: ['Hourly'],
+            hourlyRate: widget.labourer.hourlyRate,
+            dailyRate: widget.labourer.hourlyRate * 8,
           ),
     );
     _selectedMode = category.supportedModes.first;
@@ -79,6 +81,8 @@ class _LabourerDetailScreenState extends State<LabourerDetailScreen> {
                               icon: Icons.work,
                               description: '',
                               supportedModes: ['Hourly'],
+                              hourlyRate: widget.labourer.hourlyRate,
+                              dailyRate: widget.labourer.hourlyRate * 8,
                             ),
                       );
                       return Row(

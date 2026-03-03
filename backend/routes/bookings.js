@@ -25,7 +25,7 @@ const { sendNotification, sendBroadcastNotification } = require('../utils/notifi
 // @desc    Create a new booking
 // @access  Private (User)
 router.post('/', verifyToken, async (req, res) => {
-    const { labourerId, category, date, notes, address, houseNumber, landmark, latitude, longitude, bookingMode, numberOfHours } = req.body;
+    const { labourerId, category, date, notes, address, houseNumber, landmark, latitude, longitude, bookingMode, numberOfHours, amount } = req.body;
 
     try {
         let bookingData = {
@@ -39,7 +39,8 @@ router.post('/', verifyToken, async (req, res) => {
             latitude,
             longitude,
             bookingMode,
-            numberOfHours
+            numberOfHours,
+            amount
         };
 
         // If specific labourer is requested (direct booking)
@@ -60,7 +61,7 @@ router.post('/', verifyToken, async (req, res) => {
                 await sendNotification(
                     labourer.user.fcmToken,
                     'New Job Request',
-                    `You have a new booking request for ${date}!`,
+                    `You have a new booking request for ${date}! Price: ₹${amount || 'Negotiable'}`,
                     { bookingId: booking._id.toString() }
                 );
             } else {
@@ -86,7 +87,7 @@ router.post('/', verifyToken, async (req, res) => {
                 await sendBroadcastNotification(
                     tokens,
                     'New Job Opportunity',
-                    `A new ${category} job is available nearby!`,
+                    `A new ${category} job is available nearby! Price: ₹${amount || 'Negotiable'}`,
                     { bookingId: booking._id.toString() }
                 );
             } else {
