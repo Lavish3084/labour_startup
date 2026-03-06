@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 class ServiceCategory {
   final String name;
   final IconData icon;
+  final String iconName;
   final String description;
   final List<String> supportedModes;
   final double hourlyRate;
@@ -11,6 +12,7 @@ class ServiceCategory {
   ServiceCategory({
     required this.name,
     required this.icon,
+    this.iconName = 'category',
     required this.description,
     required this.supportedModes,
     required this.hourlyRate,
@@ -18,14 +20,27 @@ class ServiceCategory {
   });
 
   factory ServiceCategory.fromJson(Map<String, dynamic> json) {
+    final iconName = json['iconName'] ?? 'category';
     return ServiceCategory(
       name: json['name'],
-      icon: _getIconFromName(json['iconName']),
+      icon: _getIconFromName(iconName),
+      iconName: iconName,
       description: json['description'] ?? '',
       supportedModes: List<String>.from(json['supportedModes']),
       hourlyRate: (json['hourlyRate'] as num).toDouble(),
       dailyRate: (json['dailyRate'] as num).toDouble(),
     );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'name': name,
+      'iconName': iconName,
+      'description': description,
+      'supportedModes': supportedModes,
+      'hourlyRate': hourlyRate,
+      'dailyRate': dailyRate,
+    };
   }
 
   static IconData _getIconFromName(String name) {

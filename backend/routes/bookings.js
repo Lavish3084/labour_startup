@@ -78,12 +78,24 @@ router.post('/', verifyToken, async (req, res) => {
 
             // Find all workers in this category
             const workers = await Labourer.find({ category: category }).populate('user');
+            console.log(`Found ${workers.length} workers in category: ${category}`);
+
             const tokens = workers
-                .map(w => w.user ? w.user.fcmToken : null)
+                .map(w => {
+                    if (w.user && w.user.fcmToken) {
+                        return w.user.fcmToken;
+                    }
+                    if (w.user) {
+                        console.log(`Worker User ${w.user._id} (${w.user.name}) has no FCM token.`);
+                    } else {
+                        console.log(`Labourer ${w._id} has no associated user.`);
+                    }
+                    return null;
+                })
                 .filter(t => t); // Filter out nulls/empty
 
             if (tokens.length > 0) {
-                console.log(`Sending broadcast to ${tokens.length} workers.`);
+                console.log(`Sending broadcast to ${tokens.length} workers: ${tokens.map(t => t.substring(0, 10) + '...').join(', ')}`);
                 await sendBroadcastNotification(
                     tokens,
                     'New Job Opportunity',
@@ -91,7 +103,7 @@ router.post('/', verifyToken, async (req, res) => {
                     { bookingId: booking._id.toString() }
                 );
             } else {
-                console.log(`No workers found with FCM tokens for category: ${category}`);
+                console.log(`No valid FCM tokens found for category: ${category}. Category count: ${workers.length}`);
             }
 
             res.json(booking);

@@ -230,6 +230,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           'Location',
                           profileData?['labourer']['location'] ?? '',
                         ),
+                        _buildProfileOption(
+                          Icons.payments_outlined,
+                          'Hourly Rate',
+                          '₹${profileData?['labourer']['hourlyRate'] ?? '0'}/hr',
+                        ),
+                        if (profileData?['labourer']['skills'] != null)
+                          _buildProfileOption(
+                            Icons.psychology_outlined,
+                            'Skills',
+                            (profileData!['labourer']['skills'] as List).join(
+                              ', ',
+                            ),
+                          ),
                       ],
 
                       const SizedBox(height: 20),

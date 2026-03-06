@@ -27,6 +27,9 @@ class _SplashScreenState extends State<SplashScreen> {
 
     if (mounted) {
       if (token != null && token.isNotEmpty) {
+        // Update FCM Token on auto-login
+        ApiService.updateFcmToken();
+
         if (role == 'worker') {
           Navigator.pushReplacement(
             context,

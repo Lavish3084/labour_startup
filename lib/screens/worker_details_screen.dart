@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
 import '../services/api_service.dart';
+import '../providers/app_state_provider.dart';
 import 'worker_home_screen.dart';
 
 class WorkerDetailsScreen extends StatefulWidget {
@@ -15,24 +17,23 @@ class _WorkerDetailsScreenState extends State<WorkerDetailsScreen> {
   final _experienceController = TextEditingController();
   final _locationController = TextEditingController();
   final _skillsController = TextEditingController();
-  String _selectedCategory = 'Plumber';
+  String? _selectedCategory;
   bool _isLoading = false;
 
-  final List<String> _categories = [
-    'Plumber',
-    'Electrician',
-    'Cleaner',
-    'Carpenter',
-    'Painter',
-    'Cook',
-    'Other',
-  ];
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Provider.of<AppStateProvider>(context, listen: false).loadCategories();
+    });
+  }
 
   Future<void> _handleSubmit() async {
     if (_hourlyRateController.text.isEmpty ||
         _experienceController.text.isEmpty ||
         _locationController.text.isEmpty ||
-        _skillsController.text.isEmpty) {
+        _skillsController.text.isEmpty ||
+        _selectedCategory == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please fill in all fields')),
       );
@@ -111,30 +112,48 @@ class _WorkerDetailsScreenState extends State<WorkerDetailsScreen> {
                 style: GoogleFonts.inter(fontWeight: FontWeight.w600),
               ),
               const SizedBox(height: 8),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.grey.shade400),
-                ),
-                child: DropdownButtonHideUnderline(
-                  child: DropdownButton<String>(
-                    value: _selectedCategory,
-                    isExpanded: true,
-                    items:
-                        _categories.map((String category) {
-                          return DropdownMenuItem<String>(
-                            value: category,
-                            child: Text(category, style: GoogleFonts.inter()),
-                          );
-                        }).toList(),
-                    onChanged: (String? newValue) {
-                      setState(() {
-                        _selectedCategory = newValue!;
-                      });
-                    },
-                  ),
-                ),
+              Consumer<AppStateProvider>(
+                builder: (context, appState, child) {
+                  final categories = appState.categories;
+
+                  if (categories.isEmpty && appState.isCategoriesLoading) {
+                    return const Center(child: LinearProgressIndicator());
+                  }
+
+                  if (_selectedCategory == null && categories.isNotEmpty) {
+                    _selectedCategory = categories.first.name;
+                  }
+
+                  return Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.grey.shade400),
+                    ),
+                    child: DropdownButtonHideUnderline(
+                      child: DropdownButton<String>(
+                        value: _selectedCategory,
+                        isExpanded: true,
+                        hint: const Text('Select Category'),
+                        items:
+                            categories.map((category) {
+                              return DropdownMenuItem<String>(
+                                value: category.name,
+                                child: Text(
+                                  category.name,
+                                  style: GoogleFonts.inter(),
+                                ),
+                              );
+                            }).toList(),
+                        onChanged: (String? newValue) {
+                          setState(() {
+                            _selectedCategory = newValue!;
+                          });
+                        },
+                      ),
+                    ),
+                  );
+                },
               ),
               const SizedBox(height: 16),
 

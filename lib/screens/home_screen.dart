@@ -8,7 +8,7 @@ import '../providers/location_provider.dart';
 import 'package:provider/provider.dart';
 import '../widgets/feature_category_card.dart';
 import '../widgets/address_selection_sheet.dart';
-import '../services/api_service.dart';
+import '../providers/app_state_provider.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -18,12 +18,12 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  late Future<List<ServiceCategory>> _categoriesFuture;
-
   @override
   void initState() {
     super.initState();
-    _categoriesFuture = ApiService.getCategories();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Provider.of<AppStateProvider>(context, listen: false).loadCategories();
+    });
     _initLocation();
   }
 
@@ -270,10 +270,11 @@ class _HomeScreenState extends State<HomeScreen> {
 
               const SizedBox(height: 25),
 
-              FutureBuilder<List<ServiceCategory>>(
-                future: _categoriesFuture,
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
+              Consumer<AppStateProvider>(
+                builder: (context, appState, child) {
+                  final allCategories = appState.categories;
+
+                  if (appState.isCategoriesLoading && allCategories.isEmpty) {
                     return const Center(
                       child: Padding(
                         padding: EdgeInsets.all(40.0),
@@ -284,19 +285,27 @@ class _HomeScreenState extends State<HomeScreen> {
                     );
                   }
 
-                  if (snapshot.hasError) {
+                  if (appState.categoriesError != null &&
+                      allCategories.isEmpty) {
                     return Center(
                       child: Padding(
                         padding: const EdgeInsets.all(20.0),
-                        child: Text(
-                          'Error loading categories',
-                          style: GoogleFonts.inter(color: Colors.red),
+                        child: Column(
+                          children: [
+                            Text(
+                              'Error loading categories',
+                              style: GoogleFonts.inter(color: Colors.red),
+                            ),
+                            TextButton(
+                              onPressed: () => appState.fetchCategories(),
+                              child: const Text('Retry'),
+                            ),
+                          ],
                         ),
                       ),
                     );
                   }
 
-                  final allCategories = snapshot.data ?? [];
                   if (allCategories.isEmpty) {
                     return Center(
                       child: Padding(

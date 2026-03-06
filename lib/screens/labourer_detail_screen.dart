@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../models/labourer.dart';
 import '../services/api_service.dart';
-import '../data/dummy_data.dart';
 import '../models/service_category.dart';
+import 'package:provider/provider.dart';
+import '../providers/app_state_provider.dart';
 
 class LabourerDetailScreen extends StatefulWidget {
   final Labourer labourer;
@@ -23,20 +24,27 @@ class _LabourerDetailScreenState extends State<LabourerDetailScreen> {
   @override
   void initState() {
     super.initState();
-    // Find category to get default modes
-    final category = DummyData.serviceCategories.firstWhere(
-      (c) => c.name == widget.labourer.category,
-      orElse:
-          () => ServiceCategory(
-            name: widget.labourer.category,
-            icon: Icons.work,
-            description: '',
-            supportedModes: ['Hourly'],
-            hourlyRate: widget.labourer.hourlyRate,
-            dailyRate: widget.labourer.hourlyRate * 8,
-          ),
-    );
-    _selectedMode = category.supportedModes.first;
+    // Use initial default or first available mode from provider in build
+    _selectedMode = 'Hourly';
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final appState = Provider.of<AppStateProvider>(context, listen: false);
+      final category = appState.categories.firstWhere(
+        (c) => c.name == widget.labourer.category,
+        orElse:
+            () => ServiceCategory(
+              name: widget.labourer.category,
+              icon: Icons.work,
+              description: '',
+              supportedModes: ['Hourly'],
+              hourlyRate: widget.labourer.hourlyRate,
+              dailyRate: widget.labourer.hourlyRate * 8,
+            ),
+      );
+      setState(() {
+        _selectedMode = category.supportedModes.first;
+      });
+    });
   }
 
   Future<void> _showBookingDialog() async {
@@ -71,9 +79,9 @@ class _LabourerDetailScreenState extends State<LabourerDetailScreen> {
                     style: GoogleFonts.inter(fontWeight: FontWeight.w600),
                   ),
                   const SizedBox(height: 8),
-                  StatefulBuilder(
-                    builder: (context, setDialogState) {
-                      final category = DummyData.serviceCategories.firstWhere(
+                  Consumer<AppStateProvider>(
+                    builder: (context, appState, child) {
+                      final category = appState.categories.firstWhere(
                         (c) => c.name == widget.labourer.category,
                         orElse:
                             () => ServiceCategory(
@@ -85,38 +93,42 @@ class _LabourerDetailScreenState extends State<LabourerDetailScreen> {
                               dailyRate: widget.labourer.hourlyRate * 8,
                             ),
                       );
-                      return Row(
-                        children:
-                            category.supportedModes.map((mode) {
-                              final isSelected = _selectedMode == mode;
-                              return Expanded(
-                                child: ChoiceChip(
-                                  label: Text(
-                                    mode,
-                                    style: TextStyle(
-                                      color:
-                                          isSelected
-                                              ? Colors.white
-                                              : Colors.black,
-                                      fontSize: 12,
+                      return StatefulBuilder(
+                        builder: (context, setDialogState) {
+                          return Row(
+                            children:
+                                category.supportedModes.map((mode) {
+                                  final isSelected = _selectedMode == mode;
+                                  return Expanded(
+                                    child: ChoiceChip(
+                                      label: Text(
+                                        mode,
+                                        style: TextStyle(
+                                          color:
+                                              isSelected
+                                                  ? Colors.white
+                                                  : Colors.black,
+                                          fontSize: 12,
+                                        ),
+                                      ),
+                                      selected: isSelected,
+                                      onSelected: (val) {
+                                        if (val) {
+                                          setDialogState(() {
+                                            _selectedMode = mode;
+                                          });
+                                          setState(() {
+                                            _selectedMode = mode;
+                                          });
+                                        }
+                                      },
+                                      selectedColor: Colors.blueAccent,
+                                      backgroundColor: Colors.grey[200],
                                     ),
-                                  ),
-                                  selected: isSelected,
-                                  onSelected: (val) {
-                                    if (val) {
-                                      setDialogState(() {
-                                        _selectedMode = mode;
-                                      });
-                                      setState(() {
-                                        _selectedMode = mode;
-                                      });
-                                    }
-                                  },
-                                  selectedColor: Colors.blueAccent,
-                                  backgroundColor: Colors.grey[200],
-                                ),
-                              );
-                            }).toList(),
+                                  );
+                                }).toList(),
+                          );
+                        },
                       );
                     },
                   ),
