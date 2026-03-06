@@ -7,7 +7,7 @@ class DummyData {
     Labourer(
       id: '1',
       name: 'Ramesh Kumar',
-      category: 'Plumber',
+      category: 'Plumbing',
       rating: 4.8,
       jobsCompleted: 154,
       hourlyRate: 250.0,
@@ -21,7 +21,7 @@ class DummyData {
     Labourer(
       id: '2',
       name: 'Suresh Patel',
-      category: 'Electrician',
+      category: 'Electric',
       rating: 4.6,
       jobsCompleted: 98,
       hourlyRate: 300.0,
@@ -35,7 +35,7 @@ class DummyData {
     Labourer(
       id: '3',
       name: 'Anita Devi',
-      category: 'Cleaner',
+      category: 'Cleanup',
       rating: 4.9,
       jobsCompleted: 210,
       hourlyRate: 150.0,
@@ -63,7 +63,7 @@ class DummyData {
     Labourer(
       id: '5',
       name: 'Vikram Singh',
-      category: 'Painter',
+      category: 'Painting',
       rating: 4.5,
       jobsCompleted: 85,
       hourlyRate: 200.0,

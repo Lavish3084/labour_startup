@@ -7,7 +7,7 @@ dotenv.config();
 const labourers = [
     {
         name: 'Ramesh Kumar',
-        category: 'Plumber',
+        category: 'Plumbing',
         rating: 4.8,
         jobsCompleted: 154,
         hourlyRate: 250.0,
@@ -20,7 +20,7 @@ const labourers = [
     },
     {
         name: 'Suresh Patel',
-        category: 'Electrician',
+        category: 'Electric',
         rating: 4.6,
         jobsCompleted: 98,
         hourlyRate: 300.0,
@@ -33,7 +33,7 @@ const labourers = [
     },
     {
         name: 'Anita Devi',
-        category: 'Cleaner',
+        category: 'Cleanup',
         rating: 4.9,
         jobsCompleted: 210,
         hourlyRate: 150.0,
@@ -59,7 +59,7 @@ const labourers = [
     },
     {
         name: 'Vikram Singh',
-        category: 'Painter',
+        category: 'Painting',
         rating: 4.5,
         jobsCompleted: 85,
         hourlyRate: 200.0,

@@ -59,3 +59,15 @@ backend/serviceAccountKey.json
 
 # iOS
 ios/Runner/GoogleService-Info.plist
+
+# Admin Dashboard
+admin/node_modules/
+admin/build/
+admin/coverage/
+admin/dist/
+admin/.env*
+admin/.pnp*
+admin/pnp.js
+admin/npm-debug.log*
+admin/yarn-debug.log*
+admin/yarn-error.log*

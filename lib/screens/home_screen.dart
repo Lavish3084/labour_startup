@@ -6,9 +6,9 @@ import '../models/service_category.dart';
 import 'service_request_screen.dart';
 import '../providers/location_provider.dart';
 import 'package:provider/provider.dart';
-import '../data/dummy_data.dart';
 import '../widgets/feature_category_card.dart';
 import '../widgets/address_selection_sheet.dart';
+import '../services/api_service.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -18,9 +18,12 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  late Future<List<ServiceCategory>> _categoriesFuture;
+
   @override
   void initState() {
     super.initState();
+    _categoriesFuture = ApiService.getCategories();
     _initLocation();
   }
 
@@ -94,15 +97,6 @@ class _HomeScreenState extends State<HomeScreen> {
       displayAddress = locationProvider.currentAddress!;
     }
 
-    final featuredCategories =
-        DummyData.serviceCategories
-            .where((c) => c.name == 'Masonry' || c.name == 'Plumbing')
-            .toList();
-    final otherCategories =
-        DummyData.serviceCategories
-            .where((c) => c.name != 'Masonry' && c.name != 'Plumbing')
-            .toList();
-
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
       body: SafeArea(
@@ -168,12 +162,9 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                       ),
                     ),
-         
                   ],
                 ),
               ),
-
-            
 
               // Redesigned Banner
               Padding(
@@ -279,110 +270,183 @@ class _HomeScreenState extends State<HomeScreen> {
 
               const SizedBox(height: 25),
 
-              // Categories Header
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Labor Categories',
-                          style: GoogleFonts.inter(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                            color: const Color(0xFF1E293B),
-                          ),
+              FutureBuilder<List<ServiceCategory>>(
+                future: _categoriesFuture,
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(40.0),
+                        child: CircularProgressIndicator(
+                          color: Color(0xFFFF6B2C),
                         ),
-                        Text(
-                          'Find the right expertise for your project',
-                          style: GoogleFonts.inter(
-                            fontSize: 13,
-                            color: const Color(0xFF64748B),
-                          ),
+                      ),
+                    );
+                  }
+
+                  if (snapshot.hasError) {
+                    return Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(20.0),
+                        child: Text(
+                          'Error loading categories',
+                          style: GoogleFonts.inter(color: Colors.red),
                         ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
+                      ),
+                    );
+                  }
 
-              const SizedBox(height: 16),
+                  final allCategories = snapshot.data ?? [];
+                  if (allCategories.isEmpty) {
+                    return Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(20.0),
+                        child: Text(
+                          'No categories available',
+                          style: GoogleFonts.inter(color: Colors.grey),
+                        ),
+                      ),
+                    );
+                  }
 
-              // Feature Categories Row
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: Row(
-                  children: [
-                    FeatureCategoryCard(
-                      category: featuredCategories[0],
-                      backgroundColor: const Color(0xFFFF6B2C),
-                      onTap: () => _navigateToRequest(featuredCategories[0]),
-                    ),
-                    const SizedBox(width: 16),
-                    FeatureCategoryCard(
-                      category: featuredCategories[1],
-                      backgroundColor: const Color(0xFF3B82F6),
-                      onTap: () => _navigateToRequest(featuredCategories[1]),
-                    ),
-                  ],
-                ),
-              ),
+                  final featuredCategories =
+                      allCategories
+                          .where(
+                            (c) => c.name == 'Masonry' || c.name == 'Plumbing',
+                          )
+                          .toList();
+                  final otherCategories =
+                      allCategories
+                          .where(
+                            (c) => c.name != 'Masonry' && c.name != 'Plumbing',
+                          )
+                          .toList();
 
-              const SizedBox(height: 24),
+                  // Fallback if featured categories are not found in the dynamic list
+                  final List<ServiceCategory> displayFeatured =
+                      featuredCategories.length >= 2
+                          ? featuredCategories
+                          : allCategories.take(2).toList();
 
-              // Other Categories Grid
-              GridView.builder(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 3,
-                  crossAxisSpacing: 16,
-                  mainAxisSpacing: 20,
-                  childAspectRatio: 1.0,
-                ),
-                itemCount: otherCategories.length,
-                itemBuilder: (context, index) {
-                  final category = otherCategories[index];
-                  return GestureDetector(
-                    onTap: () => _navigateToRequest(category),
-                    child: Column(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(30),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(16),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.03),
-                                blurRadius: 10,
-                                offset: const Offset(0, 4),
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Categories Header
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Labor Categories',
+                                  style: GoogleFonts.inter(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.bold,
+                                    color: const Color(0xFF1E293B),
+                                  ),
+                                ),
+                                Text(
+                                  'Find the right expertise for your project',
+                                  style: GoogleFonts.inter(
+                                    fontSize: 13,
+                                    color: const Color(0xFF64748B),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      const SizedBox(height: 16),
+
+                      // Feature Categories Row
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        child: Row(
+                          children: [
+                            if (displayFeatured.isNotEmpty)
+                              FeatureCategoryCard(
+                                category: displayFeatured[0],
+                                backgroundColor: const Color(0xFFFF6B2C),
+                                onTap:
+                                    () =>
+                                        _navigateToRequest(displayFeatured[0]),
+                              ),
+                            if (displayFeatured.length > 1) ...[
+                              const SizedBox(width: 16),
+                              FeatureCategoryCard(
+                                category: displayFeatured[1],
+                                backgroundColor: const Color(0xFF3B82F6),
+                                onTap:
+                                    () =>
+                                        _navigateToRequest(displayFeatured[1]),
                               ),
                             ],
-                          ),
-                          child: Icon(
-                            category.icon,
-                            color: const Color(0xFF475569),
-                            size: 24,
-                          ),
+                          ],
                         ),
-                        const SizedBox(height: 8),
-                        Text(
-                          category.name.toUpperCase(),
-                          style: GoogleFonts.inter(
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
-                            color: const Color(0xFF64748B),
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
-                    ),
+                      ),
+
+                      const SizedBox(height: 24),
+
+                      // Other Categories Grid
+                      GridView.builder(
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        gridDelegate:
+                            const SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: 3,
+                              crossAxisSpacing: 16,
+                              mainAxisSpacing: 20,
+                              childAspectRatio: 1.0,
+                            ),
+                        itemCount: otherCategories.length,
+                        itemBuilder: (context, index) {
+                          final category = otherCategories[index];
+                          return GestureDetector(
+                            onTap: () => _navigateToRequest(category),
+                            child: Column(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(30),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(16),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withOpacity(0.03),
+                                        blurRadius: 10,
+                                        offset: const Offset(0, 4),
+                                      ),
+                                    ],
+                                  ),
+                                  child: Icon(
+                                    category.icon,
+                                    color: const Color(0xFF475569),
+                                    size: 24,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  category.name.toUpperCase(),
+                                  style: GoogleFonts.inter(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold,
+                                    color: const Color(0xFF64748B),
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+                    ],
                   );
                 },
               ),

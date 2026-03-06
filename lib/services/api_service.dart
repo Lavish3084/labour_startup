@@ -3,6 +3,7 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../config.dart';
 import '../models/labourer.dart';
+import '../models/service_category.dart';
 import 'notification_service.dart';
 
 class ApiService {
@@ -298,6 +299,17 @@ class ApiService {
   }
 
   // Data
+  static Future<List<ServiceCategory>> getCategories() async {
+    final response = await http.get(Uri.parse('$baseUrl/categories'));
+
+    if (response.statusCode == 200) {
+      final List<dynamic> data = jsonDecode(response.body);
+      return data.map((json) => ServiceCategory.fromJson(json)).toList();
+    } else {
+      throw Exception('Failed to load categories');
+    }
+  }
+
   static Future<List<Labourer>> getLabourers() async {
     final response = await http.get(Uri.parse('$baseUrl/labourers'));
 

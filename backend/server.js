@@ -24,11 +24,16 @@ const profileRoutes = require('./routes/profile');
 const bookingRoutes = require('./routes/bookings');
 const paymentRoutes = require('./routes/payments');
 
+const adminRoutes = require('./routes/admin');
+const categoriesRoutes = require('./routes/categories');
+
 app.use('/api/auth', authRoutes);
+app.use('/api/categories', categoriesRoutes);
 app.use('/api/labourers', labourerRoutes);
 app.use('/api/profile', profileRoutes);
 app.use('/api/bookings', bookingRoutes);
 app.use('/api/payments', paymentRoutes);
+app.use('/api/admin', adminRoutes);
 
 // Database Connection
 mongoose.connect(process.env.MONGO_URI)
