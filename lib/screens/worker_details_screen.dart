@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../services/api_service.dart';
 import '../providers/app_state_provider.dart';
 import 'worker_home_screen.dart';
+import 'location_search_screen.dart';
 
 class WorkerDetailsScreen extends StatefulWidget {
   const WorkerDetailsScreen({Key? key}) : super(key: key);
@@ -18,24 +19,50 @@ class _WorkerDetailsScreenState extends State<WorkerDetailsScreen> {
   final _locationController = TextEditingController();
   final _skillsController = TextEditingController();
   String? _selectedCategory;
+  double? _latitude;
+  double? _longitude;
   bool _isLoading = false;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      Provider.of<AppStateProvider>(context, listen: false).loadCategories();
+      final appState = Provider.of<AppStateProvider>(context, listen: false);
+      appState.loadCategories();
+
+      // If profile data exists (editing mode), pre-fill fields
+      if (appState.profileData?['labourer'] != null) {
+        final labourer = appState.profileData!['labourer'];
+        _hourlyRateController.text = labourer['hourlyRate']?.toString() ?? '';
+        _experienceController.text =
+            labourer['experienceYears']?.toString() ?? '';
+        _locationController.text = labourer['location']?.toString() ?? '';
+        _skillsController.text =
+            (labourer['skills'] as List?)?.join(', ') ?? '';
+        _selectedCategory = labourer['category'];
+        _latitude = (labourer['latitude'] as num?)?.toDouble();
+        _longitude = (labourer['longitude'] as num?)?.toDouble();
+        setState(() {});
+      }
     });
   }
 
   Future<void> _handleSubmit() async {
-    if (_hourlyRateController.text.isEmpty ||
-        _experienceController.text.isEmpty ||
-        _locationController.text.isEmpty ||
-        _skillsController.text.isEmpty ||
-        _selectedCategory == null) {
+    final appState = Provider.of<AppStateProvider>(context, listen: false);
+    final category = appState.categories.firstWhere(
+      (c) => c.name == _selectedCategory,
+      orElse: () => appState.categories.first,
+    );
+
+    final hourlyRate = double.tryParse(_hourlyRateController.text) ?? 0;
+    if (hourlyRate < category.minHourlyRate ||
+        hourlyRate > category.maxHourlyRate) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please fill in all fields')),
+        SnackBar(
+          content: Text(
+            'Rate must be between ₹${category.minHourlyRate.toInt()} and ₹${category.maxHourlyRate.toInt()}',
+          ),
+        ),
       );
       return;
     }
@@ -47,6 +74,8 @@ class _WorkerDetailsScreenState extends State<WorkerDetailsScreen> {
       'hourlyRate': double.tryParse(_hourlyRateController.text) ?? 0,
       'experienceYears': int.tryParse(_experienceController.text) ?? 0,
       'location': _locationController.text,
+      'latitude': _latitude,
+      'longitude': _longitude,
       'skills': _skillsController.text, // Backend handles split
     };
 
@@ -54,11 +83,21 @@ class _WorkerDetailsScreenState extends State<WorkerDetailsScreen> {
       final success = await ApiService.updateWorkerProfile(data);
       if (success) {
         if (context.mounted) {
-          Navigator.pushAndRemoveUntil(
+          // Re-fetch profile to ensure state is updated
+          await Provider.of<AppStateProvider>(
             context,
-            MaterialPageRoute(builder: (context) => const WorkerHomeScreen()),
-            (route) => false,
-          );
+            listen: false,
+          ).fetchProfile();
+
+          if (Navigator.canPop(context)) {
+            Navigator.pop(context);
+          } else {
+            Navigator.pushAndRemoveUntil(
+              context,
+              MaterialPageRoute(builder: (context) => const WorkerHomeScreen()),
+              (route) => false,
+            );
+          }
         }
       } else {
         if (context.mounted) {
@@ -158,15 +197,41 @@ class _WorkerDetailsScreenState extends State<WorkerDetailsScreen> {
               const SizedBox(height: 16),
 
               // Hourly Rate
-              TextFormField(
-                controller: _hourlyRateController,
-                keyboardType: TextInputType.number,
-                decoration: InputDecoration(
-                  labelText: 'Hourly Rate (₹)',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
+              Consumer<AppStateProvider>(
+                builder: (context, appState, child) {
+                  final category = appState.categories.firstWhere(
+                    (c) => c.name == _selectedCategory,
+                    orElse: () => appState.categories.first,
+                  );
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      TextFormField(
+                        controller: _hourlyRateController,
+                        keyboardType: TextInputType.number,
+                        decoration: InputDecoration(
+                          labelText: 'Hourly Rate (₹)',
+                          hintText:
+                              'Allowed: ₹${category.minHourlyRate.toInt()} - ₹${category.maxHourlyRate.toInt()}',
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.only(top: 4, left: 4),
+                        child: Text(
+                          'Allowed range: ₹${category.minHourlyRate.toInt()} - ₹${category.maxHourlyRate.toInt()}',
+                          style: GoogleFonts.inter(
+                            fontSize: 12,
+                            color: Colors.blueAccent,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ],
+                  );
+                },
               ),
               const SizedBox(height: 16),
 
@@ -183,14 +248,35 @@ class _WorkerDetailsScreenState extends State<WorkerDetailsScreen> {
               ),
               const SizedBox(height: 16),
 
-              // Location
-              TextFormField(
-                controller: _locationController,
-                decoration: InputDecoration(
-                  labelText: 'Location/City',
-                  hintText: 'e.g., Andheri, Mumbai',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
+              const SizedBox(height: 16),
+              GestureDetector(
+                onTap: () async {
+                  final result = await Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const LocationSearchScreen(),
+                    ),
+                  );
+
+                  if (result != null && result is Map) {
+                    setState(() {
+                      _locationController.text = result['address'] ?? '';
+                      _latitude = result['latitude'];
+                      _longitude = result['longitude'];
+                    });
+                  }
+                },
+                child: AbsorbPointer(
+                  child: TextFormField(
+                    controller: _locationController,
+                    decoration: InputDecoration(
+                      labelText: 'Location/City',
+                      hintText: 'Tap to search location',
+                      prefixIcon: const Icon(Icons.location_on_outlined),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
                   ),
                 ),
               ),

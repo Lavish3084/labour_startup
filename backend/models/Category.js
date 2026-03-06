@@ -23,6 +23,16 @@ const CategorySchema = new mongoose.Schema({
         type: Number,
         required: true
     },
+    minHourlyRate: {
+        type: Number,
+        required: true,
+        default: 0
+    },
+    maxHourlyRate: {
+        type: Number,
+        required: true,
+        default: 1000
+    },
     dailyRate: {
         type: Number,
         required: true

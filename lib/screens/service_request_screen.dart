@@ -124,6 +124,28 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
                       ),
                       const SizedBox(height: 24),
                       Text(
+                        widget.category.name.toUpperCase(),
+                        style: GoogleFonts.inter(
+                          color:
+                              Colors
+                                  .black, // Changed color to black for visibility in bottom sheet
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 1.2,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '₹${widget.category.minHourlyRate.toInt()} - ₹${widget.category.maxHourlyRate.toInt()}/hr',
+                        style: GoogleFonts.inter(
+                          color:
+                              Colors.grey[700], // Changed color for visibility
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
                         'Where should we come?',
                         style: GoogleFonts.inter(
                           fontSize: 20,
@@ -604,13 +626,25 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
           icon: const Icon(Icons.arrow_back, color: Colors.black87),
           onPressed: () => Navigator.pop(context),
         ),
-        title: Text(
-          'Request Service',
-          style: GoogleFonts.inter(
-            color: const Color(0xFF1E293B),
-            fontWeight: FontWeight.bold,
-            fontSize: 18,
-          ),
+        title: Column(
+          children: [
+            Text(
+              'Request Service',
+              style: GoogleFonts.inter(
+                color: const Color(0xFF1E293B),
+                fontWeight: FontWeight.bold,
+                fontSize: 18,
+              ),
+            ),
+            Text(
+              'Estimated Range: ₹${widget.category.minHourlyRate.toInt()} - ₹${widget.category.maxHourlyRate.toInt()}/hr',
+              style: GoogleFonts.inter(
+                color: const Color(0xFF64748B),
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
         ),
         centerTitle: true,
         actions: const [],

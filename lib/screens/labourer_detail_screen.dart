@@ -39,6 +39,8 @@ class _LabourerDetailScreenState extends State<LabourerDetailScreen> {
               supportedModes: ['Hourly'],
               hourlyRate: widget.labourer.hourlyRate,
               dailyRate: widget.labourer.hourlyRate * 8,
+              minHourlyRate: widget.labourer.hourlyRate * 0.8,
+              maxHourlyRate: widget.labourer.hourlyRate * 1.5,
             ),
       );
       setState(() {
@@ -91,6 +93,8 @@ class _LabourerDetailScreenState extends State<LabourerDetailScreen> {
                               supportedModes: ['Hourly'],
                               hourlyRate: widget.labourer.hourlyRate,
                               dailyRate: widget.labourer.hourlyRate * 8,
+                              minHourlyRate: widget.labourer.hourlyRate * 0.8,
+                              maxHourlyRate: widget.labourer.hourlyRate * 1.5,
                             ),
                       );
                       return StatefulBuilder(

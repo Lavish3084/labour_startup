@@ -8,6 +8,8 @@ class ServiceCategory {
   final List<String> supportedModes;
   final double hourlyRate;
   final double dailyRate;
+  final double minHourlyRate;
+  final double maxHourlyRate;
 
   ServiceCategory({
     required this.name,
@@ -17,6 +19,8 @@ class ServiceCategory {
     required this.supportedModes,
     required this.hourlyRate,
     required this.dailyRate,
+    required this.minHourlyRate,
+    required this.maxHourlyRate,
   });
 
   factory ServiceCategory.fromJson(Map<String, dynamic> json) {
@@ -29,6 +33,8 @@ class ServiceCategory {
       supportedModes: List<String>.from(json['supportedModes']),
       hourlyRate: (json['hourlyRate'] as num).toDouble(),
       dailyRate: (json['dailyRate'] as num).toDouble(),
+      minHourlyRate: (json['minHourlyRate'] as num? ?? 0).toDouble(),
+      maxHourlyRate: (json['maxHourlyRate'] as num? ?? 1000).toDouble(),
     );
   }
 
@@ -40,6 +46,8 @@ class ServiceCategory {
       'supportedModes': supportedModes,
       'hourlyRate': hourlyRate,
       'dailyRate': dailyRate,
+      'minHourlyRate': minHourlyRate,
+      'maxHourlyRate': maxHourlyRate,
     };
   }
 

@@ -87,7 +87,7 @@ router.get('/categories', verifyAdmin, async (req, res) => {
 // @route   POST /api/admin/categories
 // @desc    Create a category
 router.post('/categories', verifyAdmin, async (req, res) => {
-    const { name, iconName, description, supportedModes, hourlyRate, dailyRate } = req.body;
+    const { name, iconName, description, supportedModes, hourlyRate, dailyRate, minHourlyRate, maxHourlyRate } = req.body;
     try {
         let category = new Category({
             name,
@@ -95,7 +95,9 @@ router.post('/categories', verifyAdmin, async (req, res) => {
             description,
             supportedModes,
             hourlyRate,
-            dailyRate
+            dailyRate,
+            minHourlyRate: minHourlyRate || hourlyRate,
+            maxHourlyRate: maxHourlyRate || (hourlyRate * 2)
         });
         await category.save();
         res.json(category);

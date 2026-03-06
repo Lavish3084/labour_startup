@@ -98,6 +98,8 @@ class DummyData {
       supportedModes: ['Hourly', 'Daily'],
       hourlyRate: 350.0,
       dailyRate: 2500.0,
+      minHourlyRate: 300.0,
+      maxHourlyRate: 500.0,
     ),
     ServiceCategory(
       name: 'Garden',
@@ -106,6 +108,8 @@ class DummyData {
       supportedModes: ['Hourly', 'Daily'],
       hourlyRate: 200.0,
       dailyRate: 1500.0,
+      minHourlyRate: 150.0,
+      maxHourlyRate: 300.0,
     ),
     ServiceCategory(
       name: 'Moving',
@@ -114,6 +118,8 @@ class DummyData {
       supportedModes: ['Hourly', 'Daily'],
       hourlyRate: 300.0,
       dailyRate: 2000.0,
+      minHourlyRate: 250.0,
+      maxHourlyRate: 450.0,
     ),
     ServiceCategory(
       name: 'Loading',
@@ -122,6 +128,8 @@ class DummyData {
       supportedModes: ['Hourly', 'Daily'],
       hourlyRate: 250.0,
       dailyRate: 1800.0,
+      minHourlyRate: 200.0,
+      maxHourlyRate: 400.0,
     ),
     ServiceCategory(
       name: 'General',
@@ -130,6 +138,8 @@ class DummyData {
       supportedModes: ['Hourly', 'Daily'],
       hourlyRate: 150.0,
       dailyRate: 1000.0,
+      minHourlyRate: 100.0,
+      maxHourlyRate: 250.0,
     ),
     ServiceCategory(
       name: 'Cleanup',
@@ -138,6 +148,8 @@ class DummyData {
       supportedModes: ['Hourly', 'Daily'],
       hourlyRate: 150.0,
       dailyRate: 1000.0,
+      minHourlyRate: 100.0,
+      maxHourlyRate: 250.0,
     ),
     ServiceCategory(
       name: 'Plumbing',
@@ -146,6 +158,8 @@ class DummyData {
       supportedModes: ['Hourly', 'Task-based'],
       hourlyRate: 250.0,
       dailyRate: 2000.0,
+      minHourlyRate: 200.0,
+      maxHourlyRate: 400.0,
     ),
     ServiceCategory(
       name: 'Electric',
@@ -154,6 +168,8 @@ class DummyData {
       supportedModes: ['Hourly', 'Task-based'],
       hourlyRate: 300.0,
       dailyRate: 2500.0,
+      minHourlyRate: 250.0,
+      maxHourlyRate: 500.0,
     ),
     ServiceCategory(
       name: 'Painting',
@@ -162,6 +178,8 @@ class DummyData {
       supportedModes: ['Hourly', 'Daily'],
       hourlyRate: 200.0,
       dailyRate: 1600.0,
+      minHourlyRate: 150.0,
+      maxHourlyRate: 350.0,
     ),
   ];
 }

@@ -14,6 +14,8 @@ const LabourerSchema = new mongoose.Schema({
     description: { type: String, default: '' },
     imageUrl: { type: String, default: '' }, // We will sync this with user.profilePicture or keep independent
     location: { type: String, required: true },
+    latitude: { type: Number },
+    longitude: { type: Number },
     skills: { type: [String], default: [] },
     experienceYears: { type: Number, required: true }
 });

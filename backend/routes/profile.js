@@ -63,6 +63,8 @@ router.post('/worker', verifyToken, async (req, res) => {
         hourlyRate,
         description,
         location,
+        latitude,
+        longitude,
         skills,
         experienceYears
     } = req.body;
@@ -87,6 +89,8 @@ router.post('/worker', verifyToken, async (req, res) => {
     if (hourlyRate) profileFields.hourlyRate = hourlyRate;
     if (description) profileFields.description = description;
     if (location) profileFields.location = location;
+    if (latitude !== undefined) profileFields.latitude = latitude;
+    if (longitude !== undefined) profileFields.longitude = longitude;
     if (skills) {
         profileFields.skills = Array.isArray(skills)
             ? skills

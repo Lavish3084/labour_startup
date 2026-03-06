@@ -21,6 +21,8 @@ const Categories = () => {
         description: '',
         hourlyRate: '',
         dailyRate: '',
+        minHourlyRate: '',
+        maxHourlyRate: '',
         supportedModes: ['Hourly', 'Daily']
     });
 
@@ -48,6 +50,8 @@ const Categories = () => {
                 description: category.description,
                 hourlyRate: category.hourlyRate,
                 dailyRate: category.dailyRate,
+                minHourlyRate: category.minHourlyRate || '',
+                maxHourlyRate: category.maxHourlyRate || '',
                 supportedModes: category.supportedModes
             });
         } else {
@@ -58,6 +62,8 @@ const Categories = () => {
                 description: '',
                 hourlyRate: '',
                 dailyRate: '',
+                minHourlyRate: '',
+                maxHourlyRate: '',
                 supportedModes: ['Hourly', 'Daily']
             });
         }
@@ -134,8 +140,8 @@ const Categories = () => {
 
                         <div style={styles.priceRow}>
                             <div style={styles.priceItem}>
-                                <span style={styles.priceLabel}>Hourly</span>
-                                <span style={styles.priceValue}>₹{category.hourlyRate}</span>
+                                <span style={styles.priceLabel}>Hourly Range</span>
+                                <span style={styles.priceValue}>₹{category.minHourlyRate || 0} - ₹{category.maxHourlyRate || 0}</span>
                             </div>
                             <div style={styles.priceItem}>
                                 <span style={styles.priceLabel}>Daily</span>
@@ -193,7 +199,29 @@ const Categories = () => {
                             </div>
                             <div style={styles.formRow}>
                                 <div style={styles.field}>
-                                    <label style={styles.label}>Hourly Rate (₹)</label>
+                                    <label style={styles.label}>Min Hourly (₹)</label>
+                                    <input
+                                        type="number"
+                                        style={styles.input}
+                                        value={formData.minHourlyRate}
+                                        onChange={e => setFormData({ ...formData, minHourlyRate: e.target.value })}
+                                        required
+                                    />
+                                </div>
+                                <div style={styles.field}>
+                                    <label style={styles.label}>Max Hourly (₹)</label>
+                                    <input
+                                        type="number"
+                                        style={styles.input}
+                                        value={formData.maxHourlyRate}
+                                        onChange={e => setFormData({ ...formData, maxHourlyRate: e.target.value })}
+                                        required
+                                    />
+                                </div>
+                            </div>
+                            <div style={styles.formRow}>
+                                <div style={styles.field}>
+                                    <label style={styles.label}>Default Hourly (₹)</label>
                                     <input
                                         type="number"
                                         style={styles.input}

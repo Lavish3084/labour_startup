@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../providers/app_state_provider.dart';
 import '../services/api_service.dart';
 import 'login_screen.dart';
 import 'main_screen.dart';
@@ -29,6 +31,11 @@ class _SplashScreenState extends State<SplashScreen> {
       if (token != null && token.isNotEmpty) {
         // Update FCM Token on auto-login
         ApiService.updateFcmToken();
+
+        // Hydrate profile data for the entire app
+        if (mounted) {
+          Provider.of<AppStateProvider>(context, listen: false).fetchProfile();
+        }
 
         if (role == 'worker') {
           Navigator.pushReplacement(

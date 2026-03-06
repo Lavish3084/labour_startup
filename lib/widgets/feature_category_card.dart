@@ -73,6 +73,15 @@ class FeatureCategoryCard extends StatelessWidget {
                           letterSpacing: 1.2,
                         ),
                       ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '₹${category.minHourlyRate.toInt()} - ₹${category.maxHourlyRate.toInt()}/hr',
+                        style: GoogleFonts.inter(
+                          color: Colors.white.withOpacity(0.9),
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
                     ],
                   ),
                 ),
