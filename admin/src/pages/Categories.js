@@ -85,7 +85,8 @@ const Categories = () => {
                 await adminService.deleteCategory(id);
                 fetchCategories();
             } catch (err) {
-                alert('Failed to delete category');
+                const message = err.response?.data?.msg || 'Failed to delete category';
+                alert(message);
             }
         }
     };

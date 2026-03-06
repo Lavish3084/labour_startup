@@ -119,6 +119,31 @@ router.put('/categories/:id', verifyAdmin, async (req, res) => {
     }
 });
 
+// @route   DELETE /api/admin/categories/:id
+// @desc    Delete a category
+router.delete('/categories/:id', verifyAdmin, async (req, res) => {
+    try {
+        const category = await Category.findById(req.params.id);
+        if (!category) {
+            return res.status(404).json({ msg: 'Category not found' });
+        }
+
+        // Check if any labourers are using this category
+        const labourersCount = await Labourer.countDocuments({ category: category.name });
+        if (labourersCount > 0) {
+            return res.status(400).json({
+                msg: `Cannot delete category. There are ${labourersCount} workers assigned to '${category.name}'.`
+            });
+        }
+
+        await Category.findByIdAndDelete(req.params.id);
+        res.json({ msg: 'Category removed' });
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Server Error');
+    }
+});
+
 // @route   GET /api/admin/users
 // @desc    Get all users and workers
 router.get('/users', verifyAdmin, async (req, res) => {
