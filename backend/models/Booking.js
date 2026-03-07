@@ -41,6 +41,8 @@ const BookingSchema = new mongoose.Schema({
     paymentId: { type: String },
     orderId: { type: String },
     amount: { type: Number },
+    minAmount: { type: Number },
+    maxAmount: { type: Number },
     notes: {
         type: String
     },

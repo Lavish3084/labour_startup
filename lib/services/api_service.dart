@@ -196,6 +196,8 @@ class ApiService {
     double? latitude,
     double? longitude,
     double? amount,
+    double? minAmount,
+    double? maxAmount,
   }) async {
     try {
       final token = await getToken();
@@ -218,6 +220,8 @@ class ApiService {
           'latitude': latitude,
           'longitude': longitude,
           'amount': amount,
+          'minAmount': minAmount,
+          'maxAmount': maxAmount,
         }),
       );
 

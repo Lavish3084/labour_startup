@@ -434,7 +434,9 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
                               ),
                             ),
                             Text(
-                              '₹${_calculateTotalPrice().toStringAsFixed(0)}',
+                              _selectedBookingMode == 'Hourly'
+                                  ? '₹${(widget.category.minHourlyRate * _numberOfHours).toStringAsFixed(0)} - ₹${(widget.category.maxHourlyRate * _numberOfHours).toStringAsFixed(0)}'
+                                  : '₹${_calculateTotalPrice().toStringAsFixed(0)}',
                               style: GoogleFonts.inter(
                                 fontSize: 20,
                                 fontWeight: FontWeight.bold,
@@ -467,12 +469,16 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
                                     color: Colors.white,
                                   )
                                   : Text(
-                                    'Confirm & Pay ₹${_calculateTotalPrice().toStringAsFixed(0)}',
+                                    _selectedBookingMode == 'Hourly'
+                                        ? 'Confirm & Request (Range: ₹${(widget.category.minHourlyRate * _numberOfHours).toStringAsFixed(0)} - ₹${(widget.category.maxHourlyRate * _numberOfHours).toStringAsFixed(0)})'
+                                        : 'Confirm & Pay ₹${_calculateTotalPrice().toStringAsFixed(0)}',
                                     style: GoogleFonts.inter(
-                                      fontSize: 16,
+                                      fontSize:
+                                          14, // Slightly smaller to fit range
                                       fontWeight: FontWeight.w600,
                                       color: Colors.white,
                                     ),
+                                    textAlign: TextAlign.center,
                                   ),
                         ),
                       ),
@@ -535,6 +541,14 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
         latitude: _latitude,
         longitude: _longitude,
         amount: _calculateTotalPrice(),
+        minAmount:
+            _selectedBookingMode == 'Hourly'
+                ? (widget.category.minHourlyRate * _numberOfHours)
+                : null,
+        maxAmount:
+            _selectedBookingMode == 'Hourly'
+                ? (widget.category.maxHourlyRate * _numberOfHours)
+                : null,
       );
 
       if (mounted) {
@@ -671,6 +685,34 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
               const SizedBox(height: 16),
               _buildTimeSelection(),
               const SizedBox(height: 32),
+              _buildSectionTitle('ADDITIONAL NOTES'),
+              const SizedBox(height: 12),
+              Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.03),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: TextField(
+                  controller: _notesController,
+                  maxLines: 3,
+                  decoration: InputDecoration(
+                    hintText: 'Any special instructions or details...',
+                    hintStyle: GoogleFonts.inter(
+                      color: const Color(0xFF94A3B8),
+                      fontSize: 14,
+                    ),
+                    contentPadding: const EdgeInsets.all(16),
+                    border: InputBorder.none,
+                  ),
+                ),
+              ),
               const SizedBox(height: 40),
               _buildActionButton(),
               const SizedBox(height: 20),
@@ -1039,9 +1081,11 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  '₹${_calculateTotalPrice().toStringAsFixed(0)}',
+                  _selectedBookingMode == 'Hourly'
+                      ? '₹${(widget.category.minHourlyRate * _numberOfHours).toStringAsFixed(0)} - ₹${(widget.category.maxHourlyRate * _numberOfHours).toStringAsFixed(0)}'
+                      : '₹${_calculateTotalPrice().toStringAsFixed(0)}',
                   style: GoogleFonts.inter(
-                    fontSize: 18,
+                    fontSize: 15, // Adjusted to fit range
                     fontWeight: FontWeight.bold,
                     color: Colors.white,
                   ),

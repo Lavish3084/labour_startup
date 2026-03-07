@@ -69,6 +69,7 @@ const Bookings = () => {
                             <th style={styles.th}>Customer</th>
                             <th style={styles.th}>Service</th>
                             <th style={styles.th}>Location</th>
+                            <th style={styles.th}>Notes</th>
                             <th style={styles.th}>Amount</th>
                             <th style={styles.th}>Status</th>
                         </tr>
@@ -98,7 +99,16 @@ const Bookings = () => {
                                     </div>
                                 </td>
                                 <td style={styles.td}>
-                                    <span style={styles.amountText}>₹{booking.amount || '0'}</span>
+                                    <div style={styles.notesCell} title={booking.notes}>
+                                        {booking.notes || '-'}
+                                    </div>
+                                </td>
+                                <td style={styles.td}>
+                                    <span style={styles.amountText}>
+                                        {booking.minAmount && booking.maxAmount
+                                            ? `Reference Range: ₹${booking.minAmount} - ₹${booking.maxAmount}`
+                                            : `₹${booking.amount || '0'}`}
+                                    </span>
                                 </td>
                                 <td style={styles.td}>
                                     <div style={{
@@ -254,6 +264,15 @@ const styles = {
         overflow: 'hidden',
         textOverflow: 'ellipsis',
         whiteSpace: 'nowrap',
+    },
+    notesCell: {
+        fontSize: '0.85rem',
+        color: '#64748b',
+        maxWidth: '150px',
+        overflow: 'hidden',
+        textOverflow: 'ellipsis',
+        whiteSpace: 'nowrap',
+        fontStyle: 'italic',
     },
     amountText: {
         fontWeight: '700',

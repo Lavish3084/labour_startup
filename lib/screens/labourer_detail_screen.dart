@@ -224,6 +224,7 @@ class _LabourerDetailScreenState extends State<LabourerDetailScreen> {
 
   Future<void> _createBooking(DateTime date, String notes) async {
     setState(() => _isLoading = true);
+    final appState = Provider.of<AppStateProvider>(context, listen: false);
     try {
       final success = await ApiService.createBooking(
         labourerId: widget.labourer.id,
@@ -238,6 +239,24 @@ class _LabourerDetailScreenState extends State<LabourerDetailScreen> {
         landmark: null,
         latitude: null,
         longitude: null,
+        amount:
+            (_selectedMode == 'Hourly'
+                ? widget.labourer.hourlyRate * _numberOfHours
+                : widget.labourer.hourlyRate * 8),
+        minAmount:
+            _selectedMode == 'Hourly'
+                ? (appState.categories
+                        .firstWhere((c) => c.name == widget.labourer.category)
+                        .minHourlyRate *
+                    _numberOfHours)
+                : null,
+        maxAmount:
+            _selectedMode == 'Hourly'
+                ? (appState.categories
+                        .firstWhere((c) => c.name == widget.labourer.category)
+                        .maxHourlyRate *
+                    _numberOfHours)
+                : null,
       );
       if (mounted) {
         if (success) {
@@ -555,9 +574,11 @@ class _LabourerDetailScreenState extends State<LabourerDetailScreen> {
                           ),
                         ),
                         Text(
-                          '₹${widget.labourer.hourlyRate.toInt()}/hr',
+                          _selectedMode == 'Hourly'
+                              ? '₹${(Provider.of<AppStateProvider>(context, listen: false).categories.firstWhere((c) => c.name == widget.labourer.category).minHourlyRate * _numberOfHours).toStringAsFixed(0)} - ₹${(Provider.of<AppStateProvider>(context, listen: false).categories.firstWhere((c) => c.name == widget.labourer.category).maxHourlyRate * _numberOfHours).toStringAsFixed(0)}'
+                              : '₹${(widget.labourer.hourlyRate * 8).toInt()}',
                           style: GoogleFonts.inter(
-                            fontSize: 20,
+                            fontSize: 16, // Slightly smaller to fit range
                             fontWeight: FontWeight.bold,
                             color: Colors.black,
                           ),

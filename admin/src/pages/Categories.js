@@ -140,7 +140,7 @@ const Categories = () => {
 
                         <div style={styles.priceRow}>
                             <div style={styles.priceItem}>
-                                <span style={styles.priceLabel}>Hourly Range</span>
+                                <span style={styles.priceLabel}>Hourly Range (1 hr)</span>
                                 <span style={styles.priceValue}>₹{category.minHourlyRate || 0} - ₹{category.maxHourlyRate || 0}</span>
                             </div>
                             <div style={styles.priceItem}>
@@ -239,6 +239,26 @@ const Categories = () => {
                                         onChange={e => setFormData({ ...formData, dailyRate: e.target.value })}
                                         required
                                     />
+                                </div>
+                            </div>
+                            <div style={styles.field}>
+                                <label style={styles.label}>Supported Modes</label>
+                                <div style={styles.checkboxGroup}>
+                                    {['Hourly', 'Daily', 'Task-based'].map(mode => (
+                                        <label key={mode} style={styles.checkboxLabel}>
+                                            <input
+                                                type="checkbox"
+                                                checked={formData.supportedModes.includes(mode)}
+                                                onChange={() => {
+                                                    const modes = formData.supportedModes.includes(mode)
+                                                        ? formData.supportedModes.filter(m => m !== mode)
+                                                        : [...formData.supportedModes, mode];
+                                                    setFormData({ ...formData, supportedModes: modes });
+                                                }}
+                                            />
+                                            <span>{mode}</span>
+                                        </label>
+                                    ))}
                                 </div>
                             </div>
                             <div style={styles.modalFooter}>
@@ -511,7 +531,20 @@ const styles = {
         height: '100%',
         alignItems: 'center',
         justifyContent: 'center',
-    }
+    },
+    checkboxGroup: {
+        display: 'flex',
+        gap: '1.5rem',
+        marginTop: '0.5rem',
+    },
+    checkboxLabel: {
+        display: 'flex',
+        alignItems: 'center',
+        gap: '0.5rem',
+        fontSize: '0.875rem',
+        fontWeight: '500',
+        cursor: 'pointer',
+    },
 };
 
 export default Categories;
