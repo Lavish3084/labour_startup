@@ -250,7 +250,12 @@ const Categories = () => {
                                                 type="checkbox"
                                                 checked={formData.supportedModes.includes(mode)}
                                                 onChange={() => {
-                                                    const modes = formData.supportedModes.includes(mode)
+                                                    const isChecked = formData.supportedModes.includes(mode);
+                                                    if (!isChecked && formData.supportedModes.length >= 2) {
+                                                        alert('You can only select up to 2 modes per category.');
+                                                        return;
+                                                    }
+                                                    const modes = isChecked
                                                         ? formData.supportedModes.filter(m => m !== mode)
                                                         : [...formData.supportedModes, mode];
                                                     setFormData({ ...formData, supportedModes: modes });
