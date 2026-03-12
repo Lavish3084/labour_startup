@@ -3,7 +3,6 @@ import api from '../services/api';
 import {
     Search,
     Filter,
-    Calendar,
     User,
     MapPin,
     Clock,
