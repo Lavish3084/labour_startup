@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 import '../providers/app_state_provider.dart';
 import '../providers/location_provider.dart';
 
+import 'package:url_launcher/url_launcher.dart' as url_launcher;
 import '../services/api_service.dart';
 import 'login_screen.dart';
 import 'saved_addresses_screen.dart';
@@ -264,6 +265,26 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                   );
                                 },
                               ),
+
+                            const SizedBox(height: 10),
+                            _buildSectionHeader('About & Policies'),
+                            const SizedBox(height: 10),
+                            _buildProfileOption(
+                              Icons.privacy_tip_outlined,
+                              'Privacy Policy',
+                              'Read our privacy policy',
+                              onTap: () {
+                                _launchURL('https://labour-dashboard.onrender.com/privacy-policy');
+                              },
+                            ),
+                            _buildProfileOption(
+                              Icons.description_outlined,
+                              'Terms of Service',
+                              'Read our terms and conditions',
+                              onTap: () {
+                                _launchURL('https://labour-dashboard.onrender.com/terms');
+                              },
+                            ),
 
                             const SizedBox(height: 20),
                             SizedBox(
@@ -592,5 +613,26 @@ class _ProfileScreenState extends State<ProfileScreen> {
         onTap: onTap,
       ),
     );
+  }
+
+  Future<void> _launchURL(String urlString) async {
+    final Uri url = Uri.parse(urlString);
+    try {
+      if (await url_launcher.canLaunchUrl(url)) {
+        await url_launcher.launchUrl(url, mode: url_launcher.LaunchMode.externalApplication);
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Could not launch $urlString')),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e')),
+        );
+      }
+    }
   }
 }

@@ -23,6 +23,7 @@ const Categories = () => {
         dailyRate: '',
         minHourlyRate: '',
         maxHourlyRate: '',
+        taskRate: '',
         supportedModes: ['Hourly', 'Daily']
     });
 
@@ -52,6 +53,7 @@ const Categories = () => {
                 dailyRate: category.dailyRate,
                 minHourlyRate: category.minHourlyRate || '',
                 maxHourlyRate: category.maxHourlyRate || '',
+                taskRate: category.taskRate || '',
                 supportedModes: category.supportedModes
             });
         } else {
@@ -64,6 +66,7 @@ const Categories = () => {
                 dailyRate: '',
                 minHourlyRate: '',
                 maxHourlyRate: '',
+                taskRate: '',
                 supportedModes: ['Hourly', 'Daily']
             });
         }
@@ -146,6 +149,10 @@ const Categories = () => {
                             <div style={styles.priceItem}>
                                 <span style={styles.priceLabel}>Daily</span>
                                 <span style={styles.priceValue}>₹{category.dailyRate}</span>
+                            </div>
+                            <div style={styles.priceItem}>
+                                <span style={styles.priceLabel}>Task</span>
+                                <span style={styles.priceValue}>₹{category.taskRate || 0}</span>
                             </div>
                         </div>
 
@@ -237,6 +244,16 @@ const Categories = () => {
                                         style={styles.input}
                                         value={formData.dailyRate}
                                         onChange={e => setFormData({ ...formData, dailyRate: e.target.value })}
+                                        required
+                                    />
+                                </div>
+                                <div style={styles.field}>
+                                    <label style={styles.label}>Task Rate (₹)</label>
+                                    <input
+                                        type="number"
+                                        style={styles.input}
+                                        value={formData.taskRate}
+                                        onChange={e => setFormData({ ...formData, taskRate: e.target.value })}
                                         required
                                     />
                                 </div>

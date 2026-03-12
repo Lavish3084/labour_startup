@@ -6,6 +6,8 @@ import Dashboard from './pages/Dashboard';
 import Categories from './pages/Categories';
 import Bookings from './pages/Bookings';
 import Users from './pages/Users';
+import PrivacyPolicy from './pages/PrivacyPolicy';
+import Terms from './pages/Terms';
 import Layout from './components/Layout/Layout';
 import './App.css';
 
@@ -22,6 +24,8 @@ function App() {
       <Router>
         <Routes>
           <Route path="/login" element={<Login />} />
+          <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+          <Route path="/terms" element={<Terms />} />
           <Route
             path="/*"
             element={
