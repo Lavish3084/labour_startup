@@ -22,6 +22,9 @@ class _WorkerHomeScreenState extends State<WorkerHomeScreen> {
   void initState() {
     super.initState();
     _fetchBookings();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Provider.of<AppStateProvider>(context, listen: false).fetchProfile();
+    });
   }
 
   void _fetchBookings() {
