@@ -166,7 +166,7 @@ router.get('/bookings', verifyAdmin, async (req, res) => {
             .populate('user', 'name email')
             .populate({
                 path: 'labourer',
-                select: 'name'
+                select: 'name upiId'
             })
             .sort({ createdAt: -1 });
         res.json(bookings);
