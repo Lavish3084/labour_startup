@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
-import { IndianRupee, MapPin, CheckCircle, Clock } from 'lucide-react';
+import { Clock } from 'lucide-react';
 
 const Payouts = () => {
     const [bookings, setBookings] = useState([]);
@@ -11,6 +11,7 @@ const Payouts = () => {
 
     useEffect(() => {
         fetchPayouts();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const fetchPayouts = async () => {
