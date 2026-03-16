@@ -57,7 +57,7 @@ const Payouts = () => {
             <div style={styles.header}>
                 <div>
                     <h1 style={styles.title}>Worker Payouts</h1>
-                    <p style={styles.subtitle}>Manage and release payments to workers</p>
+                    <p style={styles.subtitle}>Payouts are automated via Razorpay Route. Use this page to monitor or manually retry failed payouts.</p>
                 </div>
             </div>
 
@@ -119,7 +119,7 @@ const Payouts = () => {
                                                     disabled={processingId === booking._id}
                                                     style={styles.actionBtn}
                                                 >
-                                                    {processingId === booking._id ? 'Processing...' : 'Mark as Paid'}
+                                                    {processingId === booking._id ? 'Processing...' : 'Manual Retry'}
                                                 </button>
                                             )}
                                         </td>

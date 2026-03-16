@@ -3,6 +3,8 @@ const router = express.Router();
 const Razorpay = require('razorpay');
 const crypto = require('crypto');
 const Booking = require('../models/Booking');
+const Setting = require('../models/Setting');
+const Labourer = require('../models/Labourer');
 const jwt = require('jsonwebtoken');
 
 // Middleware
@@ -47,6 +49,17 @@ router.post('/create-order', verifyToken, async (req, res) => {
     }
 
     try {
+        const booking = await Booking.findById(bookingId).populate('labourer');
+        if (!booking) {
+            return res.status(404).json({ msg: "Booking not found" });
+        }
+
+        const settings = await Setting.findOne();
+        const commissionPercentage = settings ? settings.adminCommissionPercentage : 0;
+        
+        const commissionAmount = (amount * commissionPercentage) / 100;
+        const workerPayoutAmount = amount - commissionAmount;
+
         const options = {
             amount: amount * 100, // amount in the smallest currency unit (paise)
             currency: "INR",
@@ -56,6 +69,24 @@ router.post('/create-order', verifyToken, async (req, res) => {
                 userId: req.user.id
             }
         };
+
+        // If worker has a linked Razorpay account, set up the split in escrow
+        if (booking.labourer && booking.labourer.razorpayAccountId) {
+            options.transfers = [
+                {
+                    account: booking.labourer.razorpayAccountId,
+                    amount: Math.round(workerPayoutAmount * 100), // Transfer amount must be in paise
+                    currency: "INR",
+                    notes: {
+                        booking: bookingId,
+                        rollout: "automated"
+                    },
+                    linked_account_notes: ["rollout"],
+                    on_hold: true, // Crucial: holds the money until the job is confirmed
+                    on_hold_until: undefined // Holds indefinitely until we explicitly release it
+                }
+            ];
+        }
 
         const order = await razorpay.orders.create(options);
 

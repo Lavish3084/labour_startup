@@ -4,6 +4,16 @@ const Booking = require('../models/Booking');
 const Labourer = require('../models/Labourer');
 const User = require('../models/User');
 const jwt = require('jsonwebtoken');
+const admin = require('firebase-admin');
+const Razorpay = require('razorpay');
+
+let razorpay;
+if (process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_SECRET) {
+    razorpay = new Razorpay({
+        key_id: process.env.RAZORPAY_KEY_ID,
+        key_secret: process.env.RAZORPAY_KEY_SECRET,
+    });
+}
 
 // Middleware
 const verifyToken = (req, res, next) => {
@@ -325,6 +335,25 @@ router.put('/:id/confirm-work', verifyToken, async (req, res) => {
         booking.commissionAmount = commission;
         booking.workerPayoutAmount = payout;
         booking.status = 'completed'; // Also mark as completed
+        
+        // Automated Razorpay Route Payout Release
+        if (razorpay && booking.paymentId) {
+            try {
+                const transfersRes = await razorpay.transfers.all({ payment_id: booking.paymentId });
+                if (transfersRes && transfersRes.items && transfersRes.items.length > 0) {
+                    const transfer = transfersRes.items[0]; // The worker's split transfer
+                    if (transfer.on_hold) {
+                        await razorpay.transfers.edit(transfer.id, { on_hold: false });
+                        booking.paymentStatus = 'released'; // Automatically mark as released
+                        console.log(`Successfully released hold on transfer ${transfer.id} for booking ${booking._id}`);
+                    }
+                }
+            } catch (rzpErr) {
+                console.error('Razorpay Error releasing transfer:', rzpErr);
+                // Keep moving, the admin can intervene if the API call fails
+            }
+        }
+
         await booking.save();
 
         res.json(booking);
@@ -351,6 +380,23 @@ router.put('/:id/payout', verifyToken, async (req, res) => {
 
         if (!booking.isWorkConfirmed) {
             return res.status(400).json({ msg: 'Work has not been confirmed by user yet' });
+        }
+
+        // Automated Razorpay Route Payout Release (Manual Retry by Admin)
+        if (razorpay && booking.paymentId) {
+            try {
+                const transfersRes = await razorpay.transfers.all({ payment_id: booking.paymentId });
+                if (transfersRes && transfersRes.items && transfersRes.items.length > 0) {
+                    const transfer = transfersRes.items[0]; 
+                    if (transfer.on_hold) {
+                        await razorpay.transfers.edit(transfer.id, { on_hold: false });
+                        console.log(`Successfully manual-released hold on transfer ${transfer.id} for booking ${booking._id}`);
+                    }
+                }
+            } catch (rzpErr) {
+                console.error('Razorpay Error on manual retry:', rzpErr);
+                return res.status(500).json({ msg: 'Failed to release payout via Razorpay. Check API logs.' });
+            }
         }
 
         booking.paymentStatus = 'released';

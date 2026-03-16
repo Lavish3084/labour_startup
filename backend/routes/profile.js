@@ -8,6 +8,15 @@ const Labourer = require('../models/Labourer');
 // Checking previous files... I don't see a middleware/auth.js created in the walkthrough.
 // I will create a simple inline middleware function to extract user ID from token.
 const jwt = require('jsonwebtoken');
+const Razorpay = require('razorpay');
+
+let razorpay;
+if (process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_SECRET) {
+    razorpay = new Razorpay({
+        key_id: process.env.RAZORPAY_KEY_ID,
+        key_secret: process.env.RAZORPAY_KEY_SECRET,
+    });
+}
 
 const verifyToken = (req, res, next) => {
     const token = req.header('x-auth-token');
@@ -110,6 +119,38 @@ router.post('/worker', verifyToken, async (req, res) => {
         let labourer = await Labourer.findOne({ user: req.user.id });
 
         if (labourer) {
+            // Check if we need to create a Razorpay Linked Account (if UPI exists but no account ID)
+            if (upiId && !labourer.razorpayAccountId && razorpay) {
+                 try {
+                     const account = await razorpay.accounts.create({
+                         email: req.user.email || 'worker@example.com', // Best effort if email missing
+                         phone: '9999999999', // Placeholder as it might be required
+                         type: 'route',
+                         reference_id: req.user.id.toString(),
+                         legal_business_name: profileFields.name || 'Worker',
+                         business_type: 'individual',
+                         contact_name: profileFields.name || 'Worker',
+                         profile: {
+                             category: 'others',
+                             subcategory: 'other_services',
+                             addresses: {
+                                 operation: {
+                                     street1: profileFields.location || 'Default',
+                                     city: 'Default',
+                                     state: 'Default',
+                                     postal_code: '111111',
+                                     country: 'IN'
+                                 }
+                             }
+                         }
+                     });
+                     profileFields.razorpayAccountId = account.id;
+                     console.log('Created Razorpay Linked Account:', account.id);
+                 } catch (rzpErr) {
+                     console.error('Failed to create Razorpay account:', rzpErr);
+                 }
+            }
+
             // Update
             labourer = await Labourer.findOneAndUpdate(
                 { user: req.user.id },
@@ -117,6 +158,38 @@ router.post('/worker', verifyToken, async (req, res) => {
                 { new: true }
             );
             return res.json(labourer);
+        }
+
+        // New Profile - Check for Razorpay Linked Account creation
+        if (upiId && razorpay) {
+             try {
+                 const account = await razorpay.accounts.create({
+                     email: 'worker@example.com',
+                     phone: '9999999999',
+                     type: 'route',
+                     reference_id: req.user.id.toString(),
+                     legal_business_name: profileFields.name || 'Worker',
+                     business_type: 'individual',
+                     contact_name: profileFields.name || 'Worker',
+                     profile: {
+                         category: 'others',
+                         subcategory: 'other_services',
+                         addresses: {
+                             operation: {
+                                 street1: profileFields.location || 'Default',
+                                 city: 'Default',
+                                 state: 'Default',
+                                 postal_code: '111111',
+                                 country: 'IN'
+                             }
+                         }
+                     }
+                 });
+                 profileFields.razorpayAccountId = account.id;
+                 console.log('Created Razorpay Linked Account:', account.id);
+             } catch (rzpErr) {
+                 console.error('Failed to create Razorpay account:', rzpErr);
+             }
         }
 
         // Create
@@ -141,6 +214,39 @@ router.put('/worker/upi', verifyToken, async (req, res) => {
         }
 
         labourer.upiId = upiId;
+
+        // Create linked account if missing
+        if (!labourer.razorpayAccountId && razorpay) {
+             try {
+                 const account = await razorpay.accounts.create({
+                     email: 'worker@example.com', 
+                     phone: '9999999999',
+                     type: 'route',
+                     reference_id: req.user.id.toString(),
+                     legal_business_name: labourer.name || 'Worker',
+                     business_type: 'individual',
+                     contact_name: labourer.name || 'Worker',
+                     profile: {
+                         category: 'others',
+                         subcategory: 'other_services',
+                         addresses: {
+                             operation: {
+                                 street1: labourer.location || 'Default',
+                                 city: 'Default',
+                                 state: 'Default',
+                                 postal_code: '111111',
+                                 country: 'IN'
+                             }
+                         }
+                     }
+                 });
+                 labourer.razorpayAccountId = account.id;
+                 console.log('Created Razorpay Linked Account on UPI update:', account.id);
+             } catch (rzpErr) {
+                 console.error('Failed to create Razorpay account:', rzpErr);
+             }
+        }
+
         await labourer.save();
         res.json(labourer);
     } catch (err) {

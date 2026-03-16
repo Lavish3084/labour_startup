@@ -18,7 +18,8 @@ const LabourerSchema = new mongoose.Schema({
     longitude: { type: Number },
     skills: { type: [String], default: [] },
     experienceYears: { type: Number, required: true },
-    upiId: { type: String }
+    upiId: { type: String },
+    razorpayAccountId: { type: String }
 });
 
 module.exports = mongoose.model('Labourer', LabourerSchema);
