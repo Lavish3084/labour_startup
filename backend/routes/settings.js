@@ -1,7 +1,20 @@
 const express = require('express');
 const router = express.Router();
-const auth = require('../utils/auth');
-const Setting = require('../models/Setting');
+const jwt = require('jsonwebtoken');
+
+// Middleware to verify token
+const verifyToken = (req, res, next) => {
+    const token = req.header('x-auth-token');
+    if (!token) return res.status(401).json({ msg: 'No token, authorization denied' });
+
+    try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        req.user = decoded.user;
+        next();
+    } catch (err) {
+        res.status(401).json({ msg: 'Token is not valid' });
+    }
+};
 
 // GET settings (can be accessed by admin or regular users if needed, maybe only adminCommissionPercentage)
 // Actually, public access is fine for generic config, but maybe we only need it for admin and internally.
@@ -33,9 +46,7 @@ router.get('/:key', async (req, res) => {
 });
 
 // POST/PUT global settings (Admin Only)
-// Note: Assumes auth+admin check or just generic auth if the app does not strictly enforce 'admin' role yet.
-// For now we'll just check for a valid token, ideally check role === 'admin'.
-router.put('/', auth, async (req, res) => {
+router.put('/', verifyToken, async (req, res) => {
     // Add simple role check
     if (req.user.role !== 'admin') {
         return res.status(403).json({ msg: 'Access denied. Admins only.' });
