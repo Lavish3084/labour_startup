@@ -5,12 +5,14 @@ const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
     const [admin, setAdmin] = useState(null);
+    const [token, setToken] = useState(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        const token = localStorage.getItem('adminToken');
+        const storedToken = localStorage.getItem('adminToken');
         const user = localStorage.getItem('adminUser');
-        if (token && user) {
+        if (storedToken && user) {
+            setToken(storedToken);
             setAdmin(JSON.parse(user));
         }
         setLoading(false);
@@ -24,6 +26,7 @@ export const AuthProvider = ({ children }) => {
             }
             localStorage.setItem('adminToken', data.token);
             localStorage.setItem('adminUser', JSON.stringify(data));
+            setToken(data.token);
             setAdmin(data);
             return true;
         } catch (err) {
@@ -35,11 +38,12 @@ export const AuthProvider = ({ children }) => {
     const logout = () => {
         localStorage.removeItem('adminToken');
         localStorage.removeItem('adminUser');
+        setToken(null);
         setAdmin(null);
     };
 
     return (
-        <AuthContext.Provider value={{ admin, login, logout, loading }}>
+        <AuthContext.Provider value={{ admin, token, login, logout, loading }}>
             {children}
         </AuthContext.Provider>
     );
