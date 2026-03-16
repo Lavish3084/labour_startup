@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../models/service_category.dart';
 import '../services/api_service.dart';
+import '../services/error_handler.dart';
 import 'location_search_screen.dart';
 import 'package:provider/provider.dart';
 import '../providers/location_provider.dart';
@@ -612,7 +613,7 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+          SnackBar(content: Text(ErrorHandler.getErrorMessage(e, action: 'Booking failed')), backgroundColor: Colors.red),
         );
       }
     } finally {

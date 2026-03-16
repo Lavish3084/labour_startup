@@ -9,8 +9,10 @@ import '../providers/location_provider.dart';
 
 import 'package:url_launcher/url_launcher.dart' as url_launcher;
 import '../services/api_service.dart';
+import '../services/error_handler.dart';
 import 'login_screen.dart';
 import 'saved_addresses_screen.dart';
+import 'splash_screen.dart';
 import 'worker_details_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -71,7 +73,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           if (mounted) {
             ScaffoldMessenger.of(
               context,
-            ).showSnackBar(SnackBar(content: Text('Error: $e')));
+            ).showSnackBar(SnackBar(content: Text(ErrorHandler.getErrorMessage(e, action: 'Update failed'))));
           }
         }
       }
@@ -79,13 +81,145 @@ class _ProfileScreenState extends State<ProfileScreen> {
       if (mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text('Error picking image: $e')));
+        ).showSnackBar(SnackBar(content: Text(ErrorHandler.getErrorMessage(e, action: 'Error picking image'))));
       }
     } finally {
       if (mounted) {
         setState(() => _isPickingImage = false);
       }
     }
+  }
+
+  Future<void> _showDeleteAccountDialog(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(
+          'Delete Account?',
+          style: GoogleFonts.inter(fontWeight: FontWeight.bold),
+        ),
+        content: Text(
+          'This action is permanent and cannot be undone. All your data will be permanently removed.',
+          style: GoogleFonts.inter(),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text('Cancel', style: GoogleFonts.inter(color: Colors.grey)),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: Text(
+              'Delete',
+              style: GoogleFonts.inter(
+                color: Colors.redAccent,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      if (!context.mounted) return;
+
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(child: CircularProgressIndicator()),
+      );
+
+      try {
+        final success = await ApiService.deleteAccount();
+        if (!context.mounted) return;
+        Navigator.pop(context); // Close loading
+
+        if (success) {
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (context) => const SplashScreen()),
+            (route) => false,
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Failed to delete account. Please try again.'),
+            ),
+          );
+        }
+      } catch (e) {
+        if (!context.mounted) return;
+        Navigator.pop(context); // Close loading
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(ErrorHandler.getErrorMessage(e, action: 'Delete failed'))));
+      }
+    }
+  }
+
+  Future<void> _showUpdateUpiDialog(BuildContext context) async {
+    final appState = Provider.of<AppStateProvider>(context, listen: false);
+    final currentUpi = appState.profileData?['labourer']?['upiId']?.toString() ?? '';
+    final upiController = TextEditingController(text: currentUpi);
+    bool isSaving = false;
+
+    await showDialog<bool>(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) {
+          return AlertDialog(
+            title: Text('Update UPI ID', style: GoogleFonts.inter(fontWeight: FontWeight.bold)),
+            content: TextField(
+              controller: upiController,
+              decoration: InputDecoration(
+                labelText: 'UPI ID',
+                hintText: 'e.g., number@upi',
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: isSaving ? null : () => Navigator.pop(context),
+                child: Text('Cancel', style: GoogleFonts.inter(color: Colors.grey)),
+              ),
+              ElevatedButton(
+                onPressed: isSaving ? null : () async {
+                  final newUpi = upiController.text.trim();
+                  if (newUpi != currentUpi) {
+                    setState(() => isSaving = true);
+                    try {
+                      final success = await ApiService.updateUpiId(newUpi);
+                      if (success) {
+                        await appState.fetchProfile();
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('UPI ID updated successfully!'), backgroundColor: Colors.green),
+                          );
+                        }
+                      }
+                    } catch (e) {
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text(ErrorHandler.getErrorMessage(e, action: 'Update failed')), backgroundColor: Colors.red),
+                        );
+                      }
+                    } finally {
+                      setState(() => isSaving = false);
+                    }
+                  }
+                  if (context.mounted) Navigator.pop(context);
+                },
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.blueAccent),
+                child: isSaving 
+                  ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)) 
+                  : Text('Save', style: GoogleFonts.inter(color: Colors.white)),
+              ),
+            ],
+          );
+        }
+      ),
+    );
   }
 
   @override
@@ -245,6 +379,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 profileData?['user']['email'] ?? '',
                               ),
                             ],
+                            if (profileData?['user']?['role'] == 'worker') ...[
+                              _buildProfileOption(
+                                Icons.account_balance_wallet_outlined,
+                                'Update UPI ID',
+                                'Manage your payout method',
+                                onTap: () => _showUpdateUpiDialog(context),
+                              ),
+                            ],
 
                             const SizedBox(height: 20),
 
@@ -274,7 +416,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               'Privacy Policy',
                               'Read our privacy policy',
                               onTap: () {
-                                _launchURL('https://labour-dashboard.onrender.com/privacy-policy');
+                                _launchURL('https://justlavish.tech/privacy-policy');
                               },
                             ),
                             _buildProfileOption(
@@ -282,8 +424,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               'Terms of Service',
                               'Read our terms and conditions',
                               onTap: () {
-                                _launchURL('https://labour-dashboard.onrender.com/terms');
+                                _launchURL('https://justlavish.tech/terms');
                               },
+                            ),
+                            const Divider(height: 32),
+                            _buildProfileOption(
+                              Icons.delete_forever_outlined,
+                              'Delete Account',
+                              'Permanently remove your data',
+                              isDestructive: true,
+                              onTap: () => _showDeleteAccountDialog(context),
                             ),
 
                             const SizedBox(height: 20),
@@ -340,32 +490,33 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           ],
                         ),
                       ),
-                      // Custom Back Button
-                      Positioned(
-                        top: 10,
-                        left: 10,
-                        child: GestureDetector(
-                          onTap: () => Navigator.pop(context),
-                          child: Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              shape: BoxShape.circle,
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withOpacity(0.05),
-                                  blurRadius: 10,
-                                  offset: const Offset(0, 4),
-                                ),
-                              ],
-                            ),
-                            child: const Icon(
-                              Icons.arrow_back,
-                              color: Colors.black87,
+                      // Custom Back Button - only for workers
+                      if (profileData?['user']?['role'] == 'worker')
+                        Positioned(
+                          top: 10,
+                          left: 10,
+                          child: GestureDetector(
+                            onTap: () => Navigator.pop(context),
+                            child: Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                shape: BoxShape.circle,
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.05),
+                                    blurRadius: 10,
+                                    offset: const Offset(0, 4),
+                                  ),
+                                ],
+                              ),
+                              child: const Icon(
+                                Icons.arrow_back,
+                                color: Colors.black87,
+                              ),
                             ),
                           ),
                         ),
-                      ),
                     ],
                   ),
                 ),
@@ -481,6 +632,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
             'Experience',
             '${labourer['experienceYears'] ?? '0'} Years',
           ),
+          if (labourer['upiId'] != null && labourer['upiId'].toString().isNotEmpty) ...[
+            const SizedBox(height: 16),
+            _buildInfoRow(
+              Icons.account_balance_wallet_outlined,
+              'UPI ID',
+              labourer['upiId'].toString(),
+            ),
+          ],
           const SizedBox(height: 20),
           Text(
             'Skills',
@@ -564,7 +723,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
     String title,
     String subtitle, {
     VoidCallback? onTap,
+    bool isDestructive = false,
   }) {
+    final color = isDestructive ? Colors.redAccent : Colors.blueAccent;
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
@@ -582,10 +743,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
         leading: Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: Colors.blueAccent.withOpacity(0.1),
+            color: color.withOpacity(0.1),
             shape: BoxShape.circle,
           ),
-          child: Icon(icon, color: Colors.blueAccent, size: 20),
+          child: Icon(icon, color: color, size: 20),
         ),
         title: Text(
           title,
@@ -630,7 +791,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')),
+          SnackBar(content: Text(ErrorHandler.getErrorMessage(e, action: 'Launch failed'))),
         );
       }
     }

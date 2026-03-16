@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/service_category.dart';
 import '../services/api_service.dart';
+import '../services/error_handler.dart';
 
 class AppStateProvider with ChangeNotifier {
   Map<String, dynamic>? _profileData;
@@ -33,7 +34,7 @@ class AppStateProvider with ChangeNotifier {
     try {
       _profileData = await ApiService.getProfile();
     } catch (e) {
-      _profileError = e.toString();
+      _profileError = ErrorHandler.getErrorMessage(e);
     } finally {
       _isProfileLoading = false;
       notifyListeners();
@@ -48,7 +49,7 @@ class AppStateProvider with ChangeNotifier {
     try {
       _bookings = await ApiService.getUserBookings();
     } catch (e) {
-      _bookingsError = e.toString();
+      _bookingsError = ErrorHandler.getErrorMessage(e, action: 'Failed to load bookings');
     } finally {
       _isBookingsLoading = false;
       notifyListeners();
@@ -89,7 +90,7 @@ class AppStateProvider with ChangeNotifier {
       final encoded = jsonEncode(_categories.map((c) => c.toJson()).toList());
       await prefs.setString('cached_categories', encoded);
     } catch (e) {
-      _categoriesError = e.toString();
+      _categoriesError = ErrorHandler.getErrorMessage(e, action: 'Failed to load categories');
     } finally {
       _isCategoriesLoading = false;
       notifyListeners();

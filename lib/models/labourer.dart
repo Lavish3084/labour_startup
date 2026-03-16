@@ -10,6 +10,7 @@ class Labourer {
   final String location;
   final List<String> skills;
   final int experienceYears;
+  final String? upiId;
 
   Labourer({
     required this.id,
@@ -23,6 +24,7 @@ class Labourer {
     required this.location,
     required this.skills,
     required this.experienceYears,
+    this.upiId,
   });
 
   factory Labourer.fromJson(Map<String, dynamic> json) {
@@ -38,6 +40,7 @@ class Labourer {
       location: json['location'] ?? '',
       skills: List<String>.from(json['skills'] ?? []),
       experienceYears: json['experienceYears'] ?? 0,
+      upiId: json['upiId'],
     );
   }
 }

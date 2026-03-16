@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:geolocator/geolocator.dart';
 import '../services/api_service.dart';
+import '../services/error_handler.dart';
 import 'main_screen.dart';
 import 'signup_screen.dart';
 
@@ -165,7 +166,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             } catch (e) {
                               if (context.mounted) {
                                 ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(content: Text('Error: $e')),
+                                  SnackBar(content: Text(ErrorHandler.getErrorMessage(e, action: 'Login failed'))),
                                 );
                               }
                             } finally {

@@ -8,7 +8,7 @@ const PrivacyPolicy = () => {
           <h1 className="text-4xl font-extrabold text-gray-900 mb-8 border-b pb-4">Privacy Policy</h1>
           <div className="prose prose-blue max-w-none text-gray-600 space-y-6">
             <p className="text-sm text-gray-400 italic">Last Updated: March 12, 2026</p>
-            
+
             <section>
               <h2 className="text-2xl font-bold text-gray-800 mb-4">1. Introduction</h2>
               <p>Welcome to Labour. We are committed to protecting your personal information and your right to privacy. If you have any questions or concerns about our policy, or our practices with regards to your personal information, please contact us.</p>
@@ -43,7 +43,7 @@ const PrivacyPolicy = () => {
 
             <section>
               <h2 className="text-2xl font-bold text-gray-800 mb-4">5. Contact Us</h2>
-              <p>If you have questions or comments about this policy, you may email us at support@lavish3084.com or by post to our office address.</p>
+              <p>If you have questions or comments about this policy, you may email us at templavish9@gmail.com or by post to our office address.</p>
             </section>
           </div>
         </div>

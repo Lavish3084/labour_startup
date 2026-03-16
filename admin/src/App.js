@@ -6,6 +6,8 @@ import Dashboard from './pages/Dashboard';
 import Categories from './pages/Categories';
 import Bookings from './pages/Bookings';
 import Users from './pages/Users';
+import Settings from './pages/Settings';
+import Payouts from './pages/Payouts';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import Terms from './pages/Terms';
 import Layout from './components/Layout/Layout';
@@ -37,6 +39,8 @@ function App() {
                     <Route path="/categories" element={<Categories />} />
                     <Route path="/bookings" element={<Bookings />} />
                     <Route path="/users" element={<Users />} />
+                    <Route path="/settings" element={<Settings />} />
+                    <Route path="/payouts" element={<Payouts />} />
                     {/* Fallback */}
                     <Route path="*" element={<Navigate to="/" />} />
                   </Routes>

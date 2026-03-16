@@ -9,6 +9,7 @@ import 'package:provider/provider.dart';
 import '../widgets/feature_category_card.dart';
 import '../widgets/address_selection_sheet.dart';
 import '../providers/app_state_provider.dart';
+import '../services/error_handler.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -74,7 +75,7 @@ class _HomeScreenState extends State<HomeScreen> {
         }
       }
     } catch (e) {
-      debugPrint('Error fetching location: $e');
+      debugPrint(ErrorHandler.getErrorMessage(e, action: 'Location fetch failed'));
     }
   }
 
@@ -301,10 +302,10 @@ class _HomeScreenState extends State<HomeScreen> {
                           padding: const EdgeInsets.all(20.0),
                           child: Column(
                             children: [
-                              Text(
-                                'Error loading categories',
-                                style: GoogleFonts.inter(color: Colors.red),
-                              ),
+                                Text(
+                                  ErrorHandler.getErrorMessage(appState.categoriesError, action: 'Category load failed'),
+                                  style: GoogleFonts.inter(color: Colors.red),
+                                ),
                               TextButton(
                                 onPressed: () => appState.fetchCategories(),
                                 child: const Text('Retry'),

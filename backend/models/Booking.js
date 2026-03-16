@@ -41,6 +41,9 @@ const BookingSchema = new mongoose.Schema({
     paymentId: { type: String },
     orderId: { type: String },
     amount: { type: Number },
+    commissionAmount: { type: Number, default: 0 },
+    workerPayoutAmount: { type: Number, default: 0 },
+    isWorkConfirmed: { type: Boolean, default: false },
     minAmount: { type: Number },
     maxAmount: { type: Number },
     notes: {

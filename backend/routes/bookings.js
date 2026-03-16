@@ -289,4 +289,78 @@ router.put('/:id/status', verifyToken, async (req, res) => {
     }
 });
 
+const Setting = require('../models/Setting');
+
+// @route   PUT /api/bookings/:id/confirm-work
+// @desc    User confirms the work is done and we calculate commission
+// @access  Private (User)
+router.put('/:id/confirm-work', verifyToken, async (req, res) => {
+    try {
+        let booking = await Booking.findById(req.params.id);
+        if (!booking) {
+            return res.status(404).json({ msg: 'Booking not found' });
+        }
+
+        // Must be the user who booked it
+        if (booking.user.toString() !== req.user.id) {
+            return res.status(401).json({ msg: 'Not authorized to confirm this work' });
+        }
+
+        if (booking.isWorkConfirmed) {
+            return res.status(400).json({ msg: 'Work is already confirmed' });
+        }
+
+        // Fetch global commission setting
+        let adminCommissionPercentage = 0; // Default if not found
+        const commissionSetting = await Setting.findOne({ key: 'adminCommissionPercentage' });
+        if (commissionSetting && commissionSetting.value) {
+            adminCommissionPercentage = Number(commissionSetting.value);
+        }
+
+        const totalAmount = booking.amount || 0;
+        const commission = (totalAmount * adminCommissionPercentage) / 100;
+        const payout = totalAmount - commission;
+
+        booking.isWorkConfirmed = true;
+        booking.commissionAmount = commission;
+        booking.workerPayoutAmount = payout;
+        booking.status = 'completed'; // Also mark as completed
+        await booking.save();
+
+        res.json(booking);
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Server Error');
+    }
+});
+
+// @route   PUT /api/bookings/:id/payout
+// @desc    Admin manually marks a worker payout as released
+// @access  Private (Admin)
+router.put('/:id/payout', verifyToken, async (req, res) => {
+    // In a full implementation, enforce admin role here
+    if (req.user.role !== 'admin') {
+        return res.status(403).json({ msg: 'Access denied' });
+    }
+
+    try {
+        let booking = await Booking.findById(req.params.id);
+        if (!booking) {
+            return res.status(404).json({ msg: 'Booking not found' });
+        }
+
+        if (!booking.isWorkConfirmed) {
+            return res.status(400).json({ msg: 'Work has not been confirmed by user yet' });
+        }
+
+        booking.paymentStatus = 'released';
+        await booking.save();
+
+        res.json(booking);
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Server Error');
+    }
+});
+
 module.exports = router;

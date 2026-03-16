@@ -10,7 +10,8 @@ import {
     X,
     Bell,
     Settings,
-    UserCircle
+    UserCircle,
+    Wallet
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
@@ -23,7 +24,9 @@ const Layout = ({ children }) => {
         { icon: <LayoutDashboard size={20} />, label: 'Dashboard', path: '/dashboard' },
         { icon: <Tags size={20} />, label: 'Categories', path: '/categories' },
         { icon: <ClipboardList size={20} />, label: 'Bookings', path: '/bookings' },
+        { icon: <Wallet size={20} />, label: 'Payouts', path: '/payouts' },
         { icon: <Users size={20} />, label: 'Users', path: '/users' },
+        { icon: <Settings size={20} />, label: 'Settings', path: '/settings' },
     ];
 
     const handleLogout = () => {

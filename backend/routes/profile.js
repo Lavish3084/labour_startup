@@ -127,6 +127,26 @@ router.post('/worker', verifyToken, async (req, res) => {
     }
 });
 
+// @route   PUT /api/profile/worker/upi
+// @desc    Update worker UPI ID
+// @access  Private (Worker only)
+router.put('/worker/upi', verifyToken, async (req, res) => {
+    const { upiId } = req.body;
+    try {
+        let labourer = await Labourer.findOne({ user: req.user.id });
+        if (!labourer) {
+            return res.status(404).json({ msg: 'Worker profile not found. Please complete profile first.' });
+        }
+
+        labourer.upiId = upiId;
+        await labourer.save();
+        res.json(labourer);
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Server Error');
+    }
+});
+
 // @route   PUT /api/profile/fcm-token
 // @desc    Update FCM Token
 // @access  Private

@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import '../services/error_handler.dart';
 
 class LocationSearchScreen extends StatefulWidget {
   const LocationSearchScreen({Key? key}) : super(key: key);
@@ -313,7 +314,7 @@ class _LocationSearchScreenState extends State<LocationSearchScreen> {
     } catch (e) {
       setState(() {
         _isLoading = false;
-        _errorMessage = 'Search unavailable. Please check your connection.';
+        _errorMessage = ErrorHandler.getErrorMessage(e, action: 'Search failed');
         debugPrint('Search error: $e');
         _searchResults = [];
       });
@@ -432,7 +433,7 @@ class _LocationSearchScreenState extends State<LocationSearchScreen> {
                   debugPrint('Error in reverse geocoding: $e');
                   if (mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Failed to resolve address: $e')),
+                      SnackBar(content: Text(ErrorHandler.getErrorMessage(e, action: 'Location failed'))),
                     );
                   }
                 } finally {

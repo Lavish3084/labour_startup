@@ -134,6 +134,19 @@ class ApiService {
     return response.statusCode == 200;
   }
 
+  static Future<bool> updateUpiId(String upiId) async {
+    final token = await getToken();
+    final response = await http.put(
+      Uri.parse('$baseUrl/profile/worker/upi'),
+      headers: {
+        'Content-Type': 'application/json',
+        'x-auth-token': token ?? '',
+      },
+      body: jsonEncode({'upiId': upiId}),
+    );
+    return response.statusCode == 200;
+  }
+
   static Future<bool> updateProfilePicture(String base64Image) async {
     final token = await getToken();
     print('Sending PUT request to $baseUrl/profile/image');
@@ -286,6 +299,18 @@ class ApiService {
     }
   }
 
+  static Future<bool> confirmWork(String bookingId) async {
+    final token = await getToken();
+    final response = await http.put(
+      Uri.parse('$baseUrl/bookings/$bookingId/confirm-work'),
+      headers: {
+        'Content-Type': 'application/json',
+        'x-auth-token': token ?? '',
+      },
+    );
+    return response.statusCode == 200;
+  }
+
   static Future<bool> updateBookingStatus(
     String bookingId,
     String status,
@@ -398,5 +423,22 @@ class ApiService {
       headers: {'x-auth-token': token ?? ''},
     );
     return response.statusCode == 200;
+  }
+
+  static Future<bool> deleteAccount() async {
+    final token = await getToken();
+    final response = await http.delete(
+      Uri.parse('$baseUrl/profile'),
+      headers: {
+        'Content-Type': 'application/json',
+        'x-auth-token': token ?? '',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      await logout();
+      return true;
+    }
+    return false;
   }
 }

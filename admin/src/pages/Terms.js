@@ -8,7 +8,7 @@ const Terms = () => {
           <h1 className="text-4xl font-extrabold text-gray-900 mb-8 border-b pb-4">Terms of Service</h1>
           <div className="prose prose-blue max-w-none text-gray-600 space-y-6">
             <p className="text-sm text-gray-400 italic">Last Updated: March 12, 2026</p>
-            
+
             <section>
               <h2 className="text-2xl font-bold text-gray-800 mb-4">1. Acceptance of Terms</h2>
               <p>By accessing or using the Labour application, you agree to be bound by these Terms of Service and all applicable laws and regulations. If you do not agree with any of these terms, you are prohibited from using or accessing this app.</p>
@@ -36,7 +36,7 @@ const Terms = () => {
 
             <section>
               <h2 className="text-2xl font-bold text-gray-800 mb-4">6. Contact</h2>
-              <p>Any questions regarding the terms should be directed to support@lavish3084.com.</p>
+              <p>Any questions regarding the terms should be directed templavish9@gmail.com.</p>
             </section>
           </div>
         </div>

@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:image_picker/image_picker.dart';
 import '../services/api_service.dart';
+import '../services/error_handler.dart';
 import 'main_screen.dart';
 import 'worker_details_screen.dart';
 
@@ -123,7 +124,7 @@ class _SignupScreenState extends State<SignupScreen> {
       if (context.mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text('Error: $e')));
+        ).showSnackBar(SnackBar(content: Text(ErrorHandler.getErrorMessage(e, action: 'Signup failed'))));
       }
     } finally {
       if (mounted) {

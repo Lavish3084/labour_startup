@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../services/api_service.dart';
+import '../services/error_handler.dart';
 import '../providers/app_state_provider.dart';
 import 'worker_home_screen.dart';
 import 'location_search_screen.dart';
@@ -18,6 +19,7 @@ class _WorkerDetailsScreenState extends State<WorkerDetailsScreen> {
   final _experienceController = TextEditingController();
   final _locationController = TextEditingController();
   final _skillsController = TextEditingController();
+  final _upiIdController = TextEditingController();
   String? _selectedCategory;
   double? _latitude;
   double? _longitude;
@@ -39,6 +41,7 @@ class _WorkerDetailsScreenState extends State<WorkerDetailsScreen> {
         _locationController.text = labourer['location']?.toString() ?? '';
         _skillsController.text =
             (labourer['skills'] as List?)?.join(', ') ?? '';
+        _upiIdController.text = labourer['upiId']?.toString() ?? '';
         _selectedCategory = labourer['category'];
         _latitude = (labourer['latitude'] as num?)?.toDouble();
         _longitude = (labourer['longitude'] as num?)?.toDouble();
@@ -77,6 +80,7 @@ class _WorkerDetailsScreenState extends State<WorkerDetailsScreen> {
       'latitude': _latitude,
       'longitude': _longitude,
       'skills': _skillsController.text, // Backend handles split
+      'upiId': _upiIdController.text,
     };
 
     try {
@@ -110,7 +114,7 @@ class _WorkerDetailsScreenState extends State<WorkerDetailsScreen> {
       if (context.mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text('Error: $e')));
+        ).showSnackBar(SnackBar(content: Text(ErrorHandler.getErrorMessage(e, action: 'Update failed'))));
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -288,6 +292,19 @@ class _WorkerDetailsScreenState extends State<WorkerDetailsScreen> {
                 decoration: InputDecoration(
                   labelText: 'Skills (comma separated)',
                   hintText: 'e.g., Pipe Fitting, Repairs',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // UPI ID
+              TextFormField(
+                controller: _upiIdController,
+                decoration: InputDecoration(
+                  labelText: 'UPI ID (Optional)',
+                  hintText: 'e.g., number@upi',
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),

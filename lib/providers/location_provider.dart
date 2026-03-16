@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/api_service.dart';
+import '../services/error_handler.dart';
 
 class SavedLocation {
   final String id;
@@ -191,7 +192,7 @@ class LocationProvider with ChangeNotifier {
         await _persistLocations();
       }
     } catch (e) {
-      debugPrint('Error loading saved locations: $e');
+      debugPrint(ErrorHandler.getErrorMessage(e, action: 'Failed to load locations'));
     } finally {
       _isLoading = false;
       notifyListeners();

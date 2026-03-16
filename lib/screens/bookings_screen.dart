@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../services/api_service.dart';
+import '../services/error_handler.dart';
 import '../services/payment_service.dart';
 import 'package:provider/provider.dart';
 import '../providers/app_state_provider.dart';
@@ -57,7 +58,11 @@ class _BookingsScreenState extends State<BookingsScreen> {
           );
         }
       } catch (e) {
-        print("Payment verification error: $e");
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(ErrorHandler.getErrorMessage(e, action: 'Payment verification failed'))),
+          );
+        }
       }
     }
   }
@@ -111,9 +116,11 @@ class _BookingsScreenState extends State<BookingsScreen> {
         amount: order['amount'],
       );
     } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text("Failed to initiate payment: $e")));
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(ErrorHandler.getErrorMessage(e, action: 'Payment initiation failed'))),
+        );
+      }
     }
   }
 
@@ -276,9 +283,54 @@ class _BookingsScreenState extends State<BookingsScreen> {
         );
       }
     } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text("Error: $e")));
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(ErrorHandler.getErrorMessage(e, action: 'Update failed'))),
+        );
+      }
+    }
+  }
+
+  Future<void> _handleConfirmWork(dynamic booking) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Confirm Work Completion', style: GoogleFonts.inter(fontWeight: FontWeight.bold)),
+        content: Text('Are you sure the worker has completed the job? This will release the payout to the worker.', style: GoogleFonts.inter()),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text('Cancel', style: GoogleFonts.inter(color: Colors.grey)),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+            child: Text('Yes, Confirm', style: GoogleFonts.inter(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      try {
+        final success = await ApiService.confirmWork(booking['_id']);
+        if (success) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Work confirmed successfully!"), backgroundColor: Colors.green),
+          );
+          _refreshBookings();
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Failed to confirm work"), backgroundColor: Colors.red),
+          );
+        }
+      } catch (e) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(ErrorHandler.getErrorMessage(e, action: 'Confirmation failed'))),
+          );
+        }
+      }
     }
   }
 
@@ -644,7 +696,36 @@ class _BookingsScreenState extends State<BookingsScreen> {
                                 ),
                               ),
                             if (status == 'confirmed' &&
-                                booking['paymentStatus'] == 'paid')
+                                booking['paymentStatus'] == 'paid' && 
+                                booking['isWorkConfirmed'] != true)
+                              Padding(
+                                padding: const EdgeInsets.only(right: 8.0),
+                                child: SizedBox(
+                                  height: 32,
+                                  child: ElevatedButton(
+                                    onPressed: () => _handleConfirmWork(booking),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Colors.blueAccent,
+                                      elevation: 0,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(20),
+                                      ),
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 16,
+                                      ),
+                                    ),
+                                    child: Text(
+                                      'Confirm Work',
+                                      style: GoogleFonts.inter(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            if (status == 'completed' || booking['isWorkConfirmed'] == true)
                               Padding(
                                 padding: const EdgeInsets.only(right: 8.0),
                                 child: Container(
@@ -653,34 +734,35 @@ class _BookingsScreenState extends State<BookingsScreen> {
                                     vertical: 6,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: Colors.green.withOpacity(0.1),
+                                    color: Colors.blue.withOpacity(0.1),
                                     borderRadius: BorderRadius.circular(20),
                                     border: Border.all(
-                                      color: Colors.green.withOpacity(0.5),
+                                      color: Colors.blue.withOpacity(0.5),
                                     ),
                                   ),
                                   child: Row(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
                                       const Icon(
-                                        Icons.check_circle,
+                                        Icons.verified,
                                         size: 14,
-                                        color: Colors.green,
+                                        color: Colors.blue,
                                       ),
                                       const SizedBox(width: 4),
                                       Text(
-                                        'Paid',
+                                        'Work Confirmed',
                                         style: GoogleFonts.inter(
                                           fontSize: 12,
                                           fontWeight: FontWeight.bold,
-                                          color: Colors.green,
+                                          color: Colors.blue,
                                         ),
                                       ),
                                     ],
                                   ),
                                 ),
                               ),
-                            SizedBox(
+                            if (status != 'completed' && booking['isWorkConfirmed'] != true)
+                              SizedBox(
                               height: 32,
                               child: OutlinedButton(
                                 onPressed: () => _handleCancelWithdraw(booking),
