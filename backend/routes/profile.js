@@ -66,7 +66,8 @@ router.post('/worker', verifyToken, async (req, res) => {
         latitude,
         longitude,
         skills,
-        experienceYears
+        experienceYears,
+        upiId
     } = req.body;
 
     // specialized build object
@@ -97,6 +98,7 @@ router.post('/worker', verifyToken, async (req, res) => {
             : skills.split(',').map(skill => skill.trim());
     }
     if (experienceYears) profileFields.experienceYears = experienceYears;
+    if (upiId) profileFields.upiId = upiId;
 
     // Set defaults for required fields if missing (for safety, though frontend should handle validation)
     // Actually our model requires them, so simple validation here:

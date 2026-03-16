@@ -80,6 +80,12 @@ class _WorkerHomeScreenState extends State<WorkerHomeScreen> {
     final labourer = appState.profileData?['labourer'];
     final currentUpi = labourer?['upiId']?.toString() ?? '';
 
+    // Skip dialog if UPI ID already exists
+    if (currentUpi.isNotEmpty) {
+      _updateStatus(bookingId, status);
+      return;
+    }
+
     final upiController = TextEditingController(text: currentUpi);
     bool isSaving = false;
 
