@@ -1,62 +1,75 @@
 import React from 'react';
-import './PrivacyPolicy.css'; // Reuse existing styles for consistency
 
 const DataDeletion = () => {
-    return (
-        <div className="policy-container">
-            <div className="policy-content">
-                <h1>Data Deletion Request</h1>
-                <p className="last-updated">Last Updated: March 25, 2026</p>
+  return (
+    <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-3xl mx-auto bg-white shadow-xl rounded-2xl overflow-hidden">
+        <div className="px-8 py-10">
+          <h1 className="text-4xl font-extrabold text-gray-900 mb-8 border-b pb-4">Data Deletion Request</h1>
+          <div className="prose prose-blue max-w-none text-gray-600 space-y-6">
+            <p className="text-sm text-gray-400 italic">Last Updated: March 25, 2026</p>
 
-                <p>
-                    At <strong>Will</strong>, we value your privacy and give you full control over your data.
-                    You can request the deletion of your account and all associated data at any time.
-                </p>
+            <section>
+              <p>
+                At <strong>Will</strong>, we value your privacy and give you full control over your data.
+                You can request the deletion of your account and all associated data at any time.
+              </p>
+            </section>
 
-                <h2>How to Request Data Deletion</h2>
-                <p>You can request to delete your data through the following methods:</p>
-
-                <div className="steps-container">
-                    <h3>Method 1: In-App Deletion (Recommended)</h3>
-                    <ol>
-                        <li>Open the <strong>Will</strong> app on your device.</li>
-                        <li>Log in to your account.</li>
-                        <li>Go to the <strong>Profile</strong> screen.</li>
-                        <li>Scroll to the bottom and tap on <strong>Delete Account</strong>.</li>
-                        <li>Confirm the deletion. Your account and all associated data will be removed instantly from our production servers.</li>
-                    </ol>
-
-                    <h3>Method 2: Email Request</h3>
-                    <p>
-                        If you are unable to access the app, you can send an email to our support team at:
-                        <br />
-                        <strong>support@justlavish.tech</strong>
-                    </p>
-                    <p>Please include "Data Deletion Request" in the subject line and provide the email address associated with your account.</p>
+            <section>
+              <h2 className="text-2xl font-bold text-gray-800 mb-4">How to Request Data Deletion</h2>
+              <div className="space-y-4">
+                <div>
+                  <h3 className="text-xl font-semibold text-gray-800 mb-2">Method 1: In-App Deletion (Recommended)</h3>
+                  <ol className="list-decimal pl-6 space-y-2">
+                    <li>Open the <strong>Will</strong> app on your device.</li>
+                    <li>Log in to your account.</li>
+                    <li>Go to the <strong>Profile</strong> screen.</li>
+                    <li>Scroll to the bottom and tap on <strong>Delete Account</strong>.</li>
+                    <li>Confirm the deletion. Your account and all associated data will be removed instantly from our production servers.</li>
+                  </ol>
                 </div>
+                
+                <div>
+                  <h3 className="text-xl font-semibold text-gray-800 mb-2">Method 2: Email Request</h3>
+                  <p>
+                    If you are unable to access the app, you can send an email to our support team at:
+                    <br />
+                    <strong className="text-blue-600">templavish9@gmail.com</strong>
+                  </p>
+                  <p className="mt-2 text-sm">Please include "Data Deletion Request" in the subject line and provide the email address associated with your account.</p>
+                </div>
+              </div>
+            </section>
 
-                <h2>What Data is Deleted?</h2>
-                <p>Upon a successful deletion request, the following data is permanently removed from our active databases:</p>
-                <ul>
-                    <li>Your Profile Information (Name, Email, Profile Picture).</li>
-                    <li>Your saved Addresses and Locations.</li>
-                    <li>Any Worker/Labourer profile associated with your account.</li>
-                    <li>Your booking history (though we may retain anonymized transaction records for financial compliance as required by law).</li>
-                </ul>
+            <section>
+              <h2 className="text-2xl font-bold text-gray-800 mb-4">What Data is Deleted?</h2>
+              <p>Upon a successful deletion request, the following data is permanently removed from our active databases:</p>
+              <ul className="list-disc pl-6 space-y-2">
+                <li>Your Profile Information (Name, Email, Profile Picture).</li>
+                <li>Your saved Addresses and Locations.</li>
+                <li>Any Worker/Labourer profile associated with your account.</li>
+                <li>Your booking history (though we may retain anonymized transaction records for financial compliance as required by law).</li>
+              </ul>
+            </section>
 
-                <h2>Data Retention Period</h2>
-                <p>
-                    Once a deletion request is confirmed, your account is deactivated immediately.
-                    Data is permanently purged from our central systems within 30 days.
-                    Backups may retain data for up to 90 days before they are overwritten.
-                </p>
+            <section>
+              <h2 className="text-2xl font-bold text-gray-800 mb-4">Data Retention Period</h2>
+              <p>
+                Once a deletion request is confirmed, your account is deactivated immediately.
+                Data is permanently purged from our central systems within 30 days.
+                Backups may retain data for up to 90 days before they are overwritten.
+              </p>
+            </section>
 
-                <p className="contact-info">
-                    If you have any questions regarding your data, please contact us at support@justlavish.tech
-                </p>
-            </div>
+            <p className="pt-8 border-t text-sm text-gray-500">
+              If you have any questions regarding your data, please contact us at <span className="text-blue-600">templavish9@gmail.com</span>
+            </p>
+          </div>
         </div>
-    );
+      </div>
+    </div>
+  );
 };
 
 export default DataDeletion;
