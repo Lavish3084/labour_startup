@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../utils/app_theme.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../models/labourer.dart';
 import '../services/api_service.dart';
@@ -126,7 +127,7 @@ class _LabourerDetailScreenState extends State<LabourerDetailScreen> {
                                           });
                                         }
                                       },
-                                      selectedColor: Colors.blueAccent,
+                                      selectedColor: AppTheme.primary,
                                       backgroundColor: Colors.grey[200],
                                     ),
                                   );
@@ -299,7 +300,7 @@ class _LabourerDetailScreenState extends State<LabourerDetailScreen> {
               SliverAppBar(
                 expandedHeight: 300,
                 pinned: true,
-                backgroundColor: Colors.blueAccent,
+                backgroundColor: AppTheme.primary,
                 flexibleSpace: FlexibleSpaceBar(
                   background: Image.network(
                     widget.labourer.imageUrl,
@@ -397,7 +398,7 @@ class _LabourerDetailScreenState extends State<LabourerDetailScreen> {
                                   widget.labourer.category,
                                   style: GoogleFonts.inter(
                                     fontSize: 16,
-                                    color: Colors.blueAccent,
+                                    color: AppTheme.primary,
                                     fontWeight: FontWeight.w600,
                                   ),
                                 ),
@@ -485,7 +486,7 @@ class _LabourerDetailScreenState extends State<LabourerDetailScreen> {
                           children: [
                             const Icon(
                               Icons.location_on,
-                              color: Colors.blueAccent,
+                              color: AppTheme.primary,
                             ),
                             const SizedBox(width: 8),
                             Text(

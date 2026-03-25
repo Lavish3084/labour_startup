@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../models/service_category.dart';
 import '../services/api_service.dart';
 import '../services/error_handler.dart';
+import '../utils/app_theme.dart';
 import 'location_search_screen.dart';
 import 'package:provider/provider.dart';
 import '../providers/location_provider.dart';
@@ -203,13 +204,13 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
                                         decoration: BoxDecoration(
                                           color:
                                               isSelected
-                                                  ? Colors.blueAccent
-                                                      .withOpacity(0.1)
+                                                  ? AppTheme.primary
+                                                      .withValues(alpha: 0.1)
                                                   : Colors.white,
                                           border: Border.all(
                                             color:
                                                 isSelected
-                                                    ? Colors.blueAccent
+                                                    ? AppTheme.primary
                                                     : Colors.grey.shade300,
                                           ),
                                           borderRadius: BorderRadius.circular(
@@ -229,7 +230,7 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
                                                   size: 16,
                                                   color:
                                                       isSelected
-                                                          ? Colors.blueAccent
+                                                          ? AppTheme.primary
                                                           : Colors.grey,
                                                 ),
                                                 const SizedBox(width: 4),
@@ -242,9 +243,8 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
                                                       fontSize: 14,
                                                       color:
                                                           isSelected
-                                                              ? Colors
-                                                                  .blueAccent
-                                                              : Colors.black,
+                                                              ? AppTheme.primary
+                                                              : AppTheme.textPrimary,
                                                     ),
                                                     maxLines: 1,
                                                     overflow:
@@ -258,7 +258,7 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
                                               loc.address,
                                               style: GoogleFonts.inter(
                                                 fontSize: 12,
-                                                color: Colors.grey[600],
+                                                color: AppTheme.textLight,
                                               ),
                                               maxLines: 2,
                                               overflow: TextOverflow.ellipsis,
@@ -299,8 +299,8 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
                             border: Border.all(
                               color:
                                   _selectedAddress == null
-                                      ? Colors.red.shade300
-                                      : Colors.grey.shade300,
+                                      ? AppTheme.error
+                                      : AppTheme.border,
                             ),
                             borderRadius: BorderRadius.circular(12),
                           ),
@@ -309,7 +309,7 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
                               const Icon(
                                 Icons.location_on_outlined,
                                 size: 20,
-                                color: Colors.grey,
+                                color: AppTheme.textMuted,
                               ),
                               const SizedBox(width: 12),
                               Expanded(
@@ -319,8 +319,8 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
                                     fontSize: 16,
                                     color:
                                         _selectedAddress == null
-                                            ? Colors.grey
-                                            : Colors.black,
+                                            ? AppTheme.textMuted
+                                            : AppTheme.textPrimary,
                                   ),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
@@ -336,7 +336,7 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
                           child: Text(
                             'Please select an address',
                             style: TextStyle(
-                              color: Colors.red.shade700,
+                              color: AppTheme.error,
                               fontSize: 12,
                             ),
                           ),
@@ -358,11 +358,11 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
                           hintText: 'e.g., Flat 402, 4th Floor',
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide(color: Colors.grey.shade300),
+                            borderSide: BorderSide(color: AppTheme.border),
                           ),
                           enabledBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide(color: Colors.grey.shade300),
+                            borderSide: BorderSide(color: AppTheme.border),
                           ),
                         ),
                       ),
@@ -383,11 +383,11 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
                           hintText: 'e.g., Near the main gate',
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide(color: Colors.grey.shade300),
+                            borderSide: BorderSide(color: AppTheme.border),
                           ),
                           enabledBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide(color: Colors.grey.shade300),
+                            borderSide: BorderSide(color: AppTheme.border),
                           ),
                         ),
                       ),
@@ -403,13 +403,13 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
                                 _saveAddress = val ?? false;
                               });
                             },
-                            activeColor: Colors.blueAccent,
+                            activeColor: AppTheme.primary,
                           ),
                           Text(
                             'Save this address for future use',
                             style: GoogleFonts.inter(
                               fontSize: 14,
-                              color: Colors.grey[700],
+                              color: AppTheme.textSecondary,
                             ),
                           ),
                         ],
@@ -420,9 +420,9 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
                       Container(
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: Colors.grey[50],
+                          color: AppTheme.primaryLight,
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: Colors.grey.shade200),
+                          border: Border.all(color: AppTheme.divider),
                         ),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -431,7 +431,7 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
                               'Estimated Total',
                               style: GoogleFonts.inter(
                                 fontSize: 14,
-                                color: Colors.grey[600],
+                                color: AppTheme.textLight,
                               ),
                             ),
                             Text(
@@ -441,7 +441,7 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
                               style: GoogleFonts.inter(
                                 fontSize: 20,
                                 fontWeight: FontWeight.bold,
-                                color: Colors.blueAccent,
+                                color: AppTheme.primary,
                               ),
                             ),
                           ],
@@ -459,7 +459,7 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
                                   ? null
                                   : () => _submitRequest(setSheetState),
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.black,
+                            backgroundColor: AppTheme.primary,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
@@ -472,7 +472,7 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
                                   : Text(
                                     _selectedBookingMode == 'Hourly'
                                         ? 'Confirm & Request (Range: ₹${(widget.category.minHourlyRate * _numberOfHours).toStringAsFixed(0)} - ₹${(widget.category.maxHourlyRate * _numberOfHours).toStringAsFixed(0)})'
-                                        : 'Confirm & Pay ₹${_calculateTotalPrice().toStringAsFixed(0)}',
+                                        : 'Confirm Request (Estimated: ₹${_calculateTotalPrice().toStringAsFixed(0)})',
                                     style: GoogleFonts.inter(
                                       fontSize:
                                           14, // Slightly smaller to fit range
@@ -596,7 +596,7 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('Service request sent to all nearby workers!'),
-              backgroundColor: Colors.green,
+              backgroundColor: AppTheme.success,
             ),
           );
           Navigator.pop(context); // Close bottom sheet
@@ -605,7 +605,7 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('Failed to submit request'),
-              backgroundColor: Colors.red,
+              backgroundColor: AppTheme.error,
             ),
           );
         }
@@ -613,7 +613,7 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(ErrorHandler.getErrorMessage(e, action: 'Booking failed')), backgroundColor: Colors.red),
+          SnackBar(content: Text(ErrorHandler.getErrorMessage(e, action: 'Booking failed')), backgroundColor: AppTheme.error),
         );
       }
     } finally {
@@ -633,12 +633,12 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: AppTheme.scaffoldBg,
       appBar: AppBar(
-        backgroundColor: const Color(0xFFF8FAFC),
+        backgroundColor: AppTheme.scaffoldBg,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black87),
+          icon: const Icon(Icons.arrow_back, color: AppTheme.textPrimary),
           onPressed: () => Navigator.pop(context),
         ),
         title: Column(
@@ -646,7 +646,7 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
             Text(
               'Request Service',
               style: GoogleFonts.inter(
-                color: const Color(0xFF1E293B),
+                color: AppTheme.textPrimary,
                 fontWeight: FontWeight.bold,
                 fontSize: 18,
               ),
@@ -654,7 +654,7 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
             Text(
               'Estimated Range: ₹${widget.category.minHourlyRate.toInt()} - ₹${widget.category.maxHourlyRate.toInt()}/hr',
               style: GoogleFonts.inter(
-                color: const Color(0xFF64748B),
+                color: AppTheme.textLight,
                 fontSize: 12,
                 fontWeight: FontWeight.w500,
               ),
@@ -694,7 +694,7 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
                   borderRadius: BorderRadius.circular(16),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.03),
+                      color: Colors.black.withValues(alpha: 0.03),
                       blurRadius: 10,
                       offset: const Offset(0, 4),
                     ),
@@ -706,7 +706,7 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
                   decoration: InputDecoration(
                     hintText: 'Any special instructions or details...',
                     hintStyle: GoogleFonts.inter(
-                      color: const Color(0xFF94A3B8),
+                      color: AppTheme.textMuted,
                       fontSize: 14,
                     ),
                     contentPadding: const EdgeInsets.all(16),
@@ -730,7 +730,7 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
       style: GoogleFonts.inter(
         fontSize: 13,
         fontWeight: FontWeight.bold,
-        color: const Color(0xFF64748B),
+        color: AppTheme.textLight,
         letterSpacing: 0.5,
       ),
     );
@@ -760,13 +760,13 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
                     border: Border.all(
                       color:
                           isSelected
-                              ? const Color(0xFFFF6B2C)
+                              ? AppTheme.primary
                               : Colors.transparent,
                       width: 2,
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.03),
+                        color: Colors.black.withValues(alpha: 0.03),
                         blurRadius: 10,
                         offset: const Offset(0, 4),
                       ),
@@ -782,8 +782,8 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
                             decoration: BoxDecoration(
                               color:
                                   isSelected
-                                      ? const Color(0xFFFF6B2C).withOpacity(0.1)
-                                      : const Color(0xFFF1F5F9),
+                                      ? AppTheme.primary.withValues(alpha: 0.1)
+                                      : AppTheme.primaryLight,
                               shape: BoxShape.circle,
                             ),
                             child: Icon(
@@ -794,8 +794,8 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
                                   : Icons.task_outlined,
                               color:
                                   isSelected
-                                      ? const Color(0xFFFF6B2C)
-                                      : const Color(0xFF64748B),
+                                      ? AppTheme.primary
+                                      : AppTheme.textLight,
                               size: 20,
                             ),
                           ),
@@ -805,7 +805,7 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
                             style: GoogleFonts.inter(
                               fontWeight: FontWeight.bold,
                               fontSize: 16,
-                              color: const Color(0xFF1E293B),
+                              color: AppTheme.textPrimary,
                             ),
                           ),
                           const SizedBox(height: 2),
@@ -817,7 +817,7 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
                                 : 'Fixed scope job',
                             style: GoogleFonts.inter(
                               fontSize: 11,
-                              color: const Color(0xFF94A3B8),
+                              color: AppTheme.textMuted,
                             ),
                           ),
                         ],
@@ -828,7 +828,7 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
                           right: 0,
                           child: Icon(
                             Icons.check_circle,
-                            color: Color(0xFFFF6B2C),
+                            color: AppTheme.primary,
                             size: 18,
                           ),
                         ),
@@ -855,14 +855,14 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
                 style: GoogleFonts.inter(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
-                  color: const Color(0xFFFF6B2C),
+                  color: AppTheme.primary,
                 ),
               ),
               TextSpan(
                 text: 'hours',
                 style: GoogleFonts.inter(
                   fontSize: 14,
-                  color: const Color(0xFF64748B),
+                  color: AppTheme.textLight,
                 ),
               ),
             ],
@@ -880,7 +880,7 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.03),
+            color: Colors.black.withValues(alpha: 0.03),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -890,10 +890,10 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
         children: [
           SliderTheme(
             data: SliderTheme.of(context).copyWith(
-              activeTrackColor: const Color(0xFFFF6B2C),
-              inactiveTrackColor: const Color(0xFFF1F5F9),
+              activeTrackColor: AppTheme.primary,
+              inactiveTrackColor: AppTheme.primaryLight,
               thumbColor: Colors.white,
-              overlayColor: const Color(0xFFFF6B2C).withOpacity(0.12),
+              overlayColor: AppTheme.primary.withValues(alpha: 0.12),
               thumbShape: const RoundSliderThumbShape(
                 enabledThumbRadius: 12,
                 elevation: 4,
@@ -932,8 +932,8 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
                             isSelected ? FontWeight.bold : FontWeight.normal,
                         color:
                             isSelected
-                                ? const Color(0xFFFF6B2C)
-                                : const Color(0xFFCBD5E1),
+                                ? AppTheme.primary
+                                : AppTheme.border,
                       ),
                     );
                   }).toList(),
@@ -964,12 +964,12 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
               width: 70,
               margin: const EdgeInsets.only(right: 12),
               decoration: BoxDecoration(
-                color: isSelected ? const Color(0xFFFF6B2C) : Colors.white,
+                color: isSelected ? AppTheme.primary : Colors.white,
                 borderRadius: BorderRadius.circular(16),
                 boxShadow: [
                   if (!isSelected)
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.03),
+                      color: Colors.black.withValues(alpha: 0.03),
                       blurRadius: 10,
                       offset: const Offset(0, 4),
                     ),
@@ -985,8 +985,8 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
                       fontWeight: FontWeight.bold,
                       color:
                           isSelected
-                              ? Colors.white.withOpacity(0.8)
-                              : const Color(0xFF94A3B8),
+                              ? Colors.white.withValues(alpha: 0.8)
+                              : AppTheme.textMuted,
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -996,7 +996,7 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
                       color:
-                          isSelected ? Colors.white : const Color(0xFF1E293B),
+                          isSelected ? Colors.white : AppTheme.textPrimary,
                     ),
                   ),
                 ],
@@ -1023,7 +1023,7 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.03),
+              color: Colors.black.withValues(alpha: 0.03),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
@@ -1034,12 +1034,12 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: const Color(0xFFF1F5F9),
+                color: AppTheme.primaryLight,
                 borderRadius: BorderRadius.circular(10),
               ),
               child: const Icon(
                 Icons.access_time_filled,
-                color: Color(0xFF94A3B8),
+                color: AppTheme.textMuted,
                 size: 20,
               ),
             ),
@@ -1049,11 +1049,11 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
               style: GoogleFonts.inter(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
-                color: const Color(0xFF1E293B),
+                color: AppTheme.textPrimary,
               ),
             ),
             const Spacer(),
-            Icon(Icons.unfold_more, color: Colors.grey[400], size: 20),
+            Icon(Icons.unfold_more, color: AppTheme.textMuted, size: 20),
           ],
         ),
       ),
@@ -1067,7 +1067,7 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
       child: ElevatedButton(
         onPressed: _showLocationBottomSheet,
         style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFFFF6B2C),
+          backgroundColor: AppTheme.primary,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),

@@ -44,7 +44,7 @@ const Layout = ({ children }) => {
                 transform: isSidebarOpen ? 'translateX(0)' : 'translateX(-100%)',
             }}>
                 <div style={styles.logoContainer}>
-                    <h2 style={styles.logoText}>Labour Admin</h2>
+                    <h2 style={styles.logoText}>Will Admin</h2>
                 </div>
 
                 <nav style={styles.nav}>

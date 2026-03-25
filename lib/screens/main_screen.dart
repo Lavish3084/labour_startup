@@ -5,11 +5,10 @@ import 'bookings_screen.dart';
 import 'profile_screen.dart';
 import 'package:provider/provider.dart';
 import '../providers/app_state_provider.dart';
-import '../services/api_service.dart';
-import 'worker_home_screen.dart';
+import '../utils/app_theme.dart';
 
 class MainScreen extends StatefulWidget {
-  const MainScreen({Key? key}) : super(key: key);
+  const MainScreen({super.key});
 
   @override
   State<MainScreen> createState() => _MainScreenState();
@@ -17,89 +16,74 @@ class MainScreen extends StatefulWidget {
 
 class _MainScreenState extends State<MainScreen> {
   int _selectedIndex = 0;
-  String? _userRole;
-  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _loadUserRole();
-  }
-
-  Future<void> _loadUserRole() async {
-    final role = await ApiService.getRole();
-    if (mounted) {
-      setState(() {
-        _userRole = role;
-        _isLoading = false;
-      });
-
-      if (role != 'worker') {
-        // Fetch initial data for user
-        final appState = Provider.of<AppStateProvider>(context, listen: false);
-        appState.fetchProfile();
-        appState.fetchBookings();
-      }
-    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final appState = Provider.of<AppStateProvider>(context, listen: false);
+      appState.fetchProfile();
+      appState.fetchBookings();
+    });
   }
 
   static const List<Widget> _pages = <Widget>[
     HomeScreen(),
     BookingsScreen(),
-    ProfileScreen(), // Profile
+    ProfileScreen(),
   ];
-
-  void _onItemTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
-  }
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
-    }
-
-    if (_userRole == 'worker') {
-      return const WorkerHomeScreen();
-    }
-
     return Scaffold(
       body: _pages[_selectedIndex],
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           color: Colors.white,
-          border: Border(top: BorderSide(color: Colors.grey.withOpacity(0.1))),
+          border: Border(top: BorderSide(color: AppTheme.divider, width: 1)),
         ),
-        child: BottomNavigationBar(
-          items: const <BottomNavigationBarItem>[
-            BottomNavigationBarItem(
-              icon: Icon(Icons.home_filled),
-              label: 'Home',
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                _buildNavItem(0, Icons.home_rounded, Icons.home_outlined, 'Home'),
+                _buildNavItem(1, Icons.receipt_long_rounded, Icons.receipt_long_outlined, 'Bookings'),
+                _buildNavItem(2, Icons.person_rounded, Icons.person_outline_rounded, 'Account'),
+              ],
             ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.calendar_today),
-              label: 'Bookings',
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNavItem(int index, IconData activeIcon, IconData inactiveIcon, String label) {
+    final isActive = _selectedIndex == index;
+    return GestureDetector(
+      onTap: () => setState(() => _selectedIndex = index),
+      behavior: HitTestBehavior.opaque,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              isActive ? activeIcon : inactiveIcon,
+              color: isActive ? AppTheme.primary : AppTheme.textMuted,
+              size: 22,
             ),
-            BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: GoogleFonts.inter(
+                color: isActive ? AppTheme.primary : AppTheme.textMuted,
+                fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
+                fontSize: 11,
+              ),
+            ),
           ],
-          currentIndex: _selectedIndex,
-          selectedItemColor: Colors.black,
-          unselectedItemColor: Colors.grey[400],
-          showUnselectedLabels: true,
-          type: BottomNavigationBarType.fixed,
-          backgroundColor: Colors.white,
-          elevation: 0,
-          selectedLabelStyle: GoogleFonts.inter(
-            fontWeight: FontWeight.w500,
-            fontSize: 10,
-          ),
-          unselectedLabelStyle: GoogleFonts.inter(
-            fontWeight: FontWeight.w500,
-            fontSize: 10,
-          ),
-          onTap: _onItemTapped,
         ),
       ),
     );

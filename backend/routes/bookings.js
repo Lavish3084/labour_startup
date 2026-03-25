@@ -320,39 +320,11 @@ router.put('/:id/confirm-work', verifyToken, async (req, res) => {
             return res.status(400).json({ msg: 'Work is already confirmed' });
         }
 
-        // Fetch global commission setting
-        let adminCommissionPercentage = 0; // Default if not found
-        const commissionSetting = await Setting.findOne({ key: 'adminCommissionPercentage' });
-        if (commissionSetting && commissionSetting.value) {
-            adminCommissionPercentage = Number(commissionSetting.value);
-        }
-
-        const totalAmount = booking.amount || 0;
-        const commission = (totalAmount * adminCommissionPercentage) / 100;
-        const payout = totalAmount - commission;
-
         booking.isWorkConfirmed = true;
-        booking.commissionAmount = commission;
-        booking.workerPayoutAmount = payout;
+        booking.commissionAmount = 20; // Entire amount is platform fee
+        booking.workerPayoutAmount = 0; // Settled directly via cash
         booking.status = 'completed'; // Also mark as completed
-        
-        // Automated Razorpay Route Payout Release
-        if (razorpay && booking.paymentId) {
-            try {
-                const transfersRes = await razorpay.transfers.all({ payment_id: booking.paymentId });
-                if (transfersRes && transfersRes.items && transfersRes.items.length > 0) {
-                    const transfer = transfersRes.items[0]; // The worker's split transfer
-                    if (transfer.on_hold) {
-                        await razorpay.transfers.edit(transfer.id, { on_hold: false });
-                        booking.paymentStatus = 'released'; // Automatically mark as released
-                        console.log(`Successfully released hold on transfer ${transfer.id} for booking ${booking._id}`);
-                    }
-                }
-            } catch (rzpErr) {
-                console.error('Razorpay Error releasing transfer:', rzpErr);
-                // Keep moving, the admin can intervene if the API call fails
-            }
-        }
+        booking.paymentStatus = 'released'; // Automatically mark as released since there's no hold
 
         await booking.save();
 
@@ -382,22 +354,7 @@ router.put('/:id/payout', verifyToken, async (req, res) => {
             return res.status(400).json({ msg: 'Work has not been confirmed by user yet' });
         }
 
-        // Automated Razorpay Route Payout Release (Manual Retry by Admin)
-        if (razorpay && booking.paymentId) {
-            try {
-                const transfersRes = await razorpay.transfers.all({ payment_id: booking.paymentId });
-                if (transfersRes && transfersRes.items && transfersRes.items.length > 0) {
-                    const transfer = transfersRes.items[0]; 
-                    if (transfer.on_hold) {
-                        await razorpay.transfers.edit(transfer.id, { on_hold: false });
-                        console.log(`Successfully manual-released hold on transfer ${transfer.id} for booking ${booking._id}`);
-                    }
-                }
-            } catch (rzpErr) {
-                console.error('Razorpay Error on manual retry:', rzpErr);
-                return res.status(500).json({ msg: 'Failed to release payout via Razorpay. Check API logs.' });
-            }
-        }
+
 
         booking.paymentStatus = 'released';
         await booking.save();

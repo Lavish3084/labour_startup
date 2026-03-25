@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import '../utils/app_theme.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import 'package:geolocator/geolocator.dart';
@@ -450,7 +451,7 @@ class _LocationSearchScreenState extends State<LocationSearchScreen> {
                     ),
                     child: const Icon(
                       Icons.my_location,
-                      color: Colors.blueAccent,
+                      color: AppTheme.primary,
                       size: 20,
                     ),
                   ),

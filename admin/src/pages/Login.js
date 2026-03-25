@@ -29,7 +29,7 @@ const Login = () => {
         <div style={styles.container}>
             <div style={styles.glassCard}>
                 <div style={styles.header}>
-                    <h1 style={styles.title}>Labour Market</h1>
+                    <h1 style={styles.title}>Will</h1>
                     <p style={styles.subtitle}>Admin Dashboard</p>
                 </div>
 

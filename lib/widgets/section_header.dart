@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../utils/app_theme.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class SectionHeader extends StatelessWidget {
@@ -31,7 +32,7 @@ class SectionHeader extends StatelessWidget {
                 style: GoogleFonts.inter(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
-                  color: Colors.blueAccent,
+                  color: AppTheme.primary,
                 ),
               ),
             ),

@@ -54,12 +54,6 @@ router.post('/create-order', verifyToken, async (req, res) => {
             return res.status(404).json({ msg: "Booking not found" });
         }
 
-        const settings = await Setting.findOne();
-        const commissionPercentage = settings ? settings.adminCommissionPercentage : 0;
-        
-        const commissionAmount = (amount * commissionPercentage) / 100;
-        const workerPayoutAmount = amount - commissionAmount;
-
         const options = {
             amount: amount * 100, // amount in the smallest currency unit (paise)
             currency: "INR",
@@ -70,30 +64,12 @@ router.post('/create-order', verifyToken, async (req, res) => {
             }
         };
 
-        // If worker has a linked Razorpay account, set up the split in escrow
-        if (booking.labourer && booking.labourer.razorpayAccountId) {
-            options.transfers = [
-                {
-                    account: booking.labourer.razorpayAccountId,
-                    amount: Math.round(workerPayoutAmount * 100), // Transfer amount must be in paise
-                    currency: "INR",
-                    notes: {
-                        booking: bookingId,
-                        rollout: "automated"
-                    },
-                    linked_account_notes: ["rollout"],
-                    on_hold: true, // Crucial: holds the money until the job is confirmed
-                    on_hold_until: undefined // Holds indefinitely until we explicitly release it
-                }
-            ];
-        }
-
         const order = await razorpay.orders.create(options);
 
         // Update booking with orderId
         await Booking.findByIdAndUpdate(bookingId, {
-            orderId: order.id,
-            amount: amount
+            orderId: order.id
+            // Removed amount: amount so that the original service cost isn't overwritten by the 20rs fee
         });
 
         res.json(order);

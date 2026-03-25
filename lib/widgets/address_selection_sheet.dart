@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../utils/app_theme.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../providers/location_provider.dart';
@@ -268,12 +269,12 @@ class _AddressSelectionSheetState extends State<AddressSelectionSheet> {
                       height: 24,
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
-                    : const Icon(Icons.my_location, color: Colors.blueAccent),
+                    : const Icon(Icons.my_location, color: AppTheme.primary),
             title: Text(
               'Use Current Location',
               style: GoogleFonts.inter(
                 fontWeight: FontWeight.w600,
-                color: Colors.blueAccent,
+                color: AppTheme.primary,
               ),
             ),
             subtitle: Text(

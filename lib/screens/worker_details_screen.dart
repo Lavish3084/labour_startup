@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../utils/app_theme.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../services/api_service.dart';
@@ -228,7 +229,7 @@ class _WorkerDetailsScreenState extends State<WorkerDetailsScreen> {
                           'Allowed range: ₹${category.minHourlyRate.toInt()} - ₹${category.maxHourlyRate.toInt()}',
                           style: GoogleFonts.inter(
                             fontSize: 12,
-                            color: Colors.blueAccent,
+                            color: AppTheme.primary,
                             fontWeight: FontWeight.w500,
                           ),
                         ),

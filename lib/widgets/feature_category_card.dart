@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../models/service_category.dart';
+import '../utils/app_theme.dart';
 
 class FeatureCategoryCard extends StatelessWidget {
   final ServiceCategory category;
@@ -22,45 +23,52 @@ class FeatureCategoryCard extends StatelessWidget {
         child: Container(
           height: 140,
           decoration: BoxDecoration(
-            color: backgroundColor,
-            borderRadius: BorderRadius.circular(24),
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                backgroundColor,
+                backgroundColor.withValues(alpha: 0.8),
+              ],
+            ),
+            borderRadius: BorderRadius.circular(AppTheme.radiusXl),
             boxShadow: [
               BoxShadow(
-                color: backgroundColor.withOpacity(0.3),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
+                color: backgroundColor.withValues(alpha: 0.3),
+                blurRadius: 16,
+                offset: const Offset(0, 6),
               ),
             ],
           ),
           child: ClipRRect(
-            borderRadius: BorderRadius.circular(24),
+            borderRadius: BorderRadius.circular(AppTheme.radiusXl),
             child: Stack(
               children: [
-                // Decorative large icon in background
+                // Decorative background icon
                 Positioned(
-                  right: -20,
-                  bottom: -20,
+                  right: -15,
+                  bottom: -15,
                   child: Icon(
                     category.icon,
-                    size: 100,
-                    color: Colors.white.withOpacity(0.1),
+                    size: 90,
+                    color: Colors.white.withValues(alpha: 0.1),
                   ),
                 ),
                 Padding(
-                  padding: const EdgeInsets.all(20.0),
+                  padding: const EdgeInsets.all(18),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.2),
+                          color: Colors.white.withValues(alpha: 0.2),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Icon(
                           category.icon,
                           color: Colors.white,
-                          size: 24,
+                          size: 22,
                         ),
                       ),
                       const Spacer(),
@@ -68,17 +76,17 @@ class FeatureCategoryCard extends StatelessWidget {
                         category.name.toUpperCase(),
                         style: GoogleFonts.inter(
                           color: Colors.white,
-                          fontSize: 16,
+                          fontSize: 14,
                           fontWeight: FontWeight.bold,
-                          letterSpacing: 1.2,
+                          letterSpacing: 1.0,
                         ),
                       ),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: 3),
                       Text(
                         '₹${category.minHourlyRate.toInt()} - ₹${category.maxHourlyRate.toInt()}/hr',
                         style: GoogleFonts.inter(
-                          color: Colors.white.withOpacity(0.9),
-                          fontSize: 12,
+                          color: Colors.white.withValues(alpha: 0.85),
+                          fontSize: 11,
                           fontWeight: FontWeight.w500,
                         ),
                       ),

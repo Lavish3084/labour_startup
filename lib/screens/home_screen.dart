@@ -10,6 +10,7 @@ import '../widgets/feature_category_card.dart';
 import '../widgets/address_selection_sheet.dart';
 import '../providers/app_state_provider.dart';
 import '../services/error_handler.dart';
+import '../utils/app_theme.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -99,10 +100,10 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: AppTheme.scaffoldBg,
       body: SafeArea(
         child: RefreshIndicator(
-          color: const Color(0xFFFF6B2C),
+          color: AppTheme.primary,
           onRefresh: () async {
             await Provider.of<AppStateProvider>(
               context,
@@ -114,7 +115,7 @@ class _HomeScreenState extends State<HomeScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // New Header
+                // Header
                 Padding(
                   padding: const EdgeInsets.all(20.0),
                   child: Row(
@@ -122,12 +123,12 @@ class _HomeScreenState extends State<HomeScreen> {
                       Container(
                         padding: const EdgeInsets.all(10),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFFF6B2C).withOpacity(0.1),
+                          color: AppTheme.primary.withValues(alpha: 0.1),
                           shape: BoxShape.circle,
                         ),
                         child: const Icon(
                           Icons.location_on,
-                          color: Color(0xFFFF6B2C),
+                          color: AppTheme.primary,
                           size: 20,
                         ),
                       ),
@@ -143,7 +144,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 style: GoogleFonts.inter(
                                   fontSize: 11,
                                   fontWeight: FontWeight.bold,
-                                  color: const Color(0xFF94A3B8),
+                                  color: AppTheme.textMuted,
                                   letterSpacing: 0.5,
                                 ),
                               ),
@@ -155,7 +156,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                       style: GoogleFonts.inter(
                                         fontSize: 15,
                                         fontWeight: FontWeight.bold,
-                                        color: const Color(0xFF1E293B),
+                                        color: AppTheme.textPrimary,
                                       ),
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
@@ -163,7 +164,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                   ),
                                   const Icon(
                                     Icons.keyboard_arrow_down,
-                                    color: Color(0xFF64748B),
+                                    color: AppTheme.textLight,
                                     size: 18,
                                   ),
                                 ],
@@ -176,7 +177,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
 
-                // Redesigned Banner
+                // Banner
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 20),
                   child: Container(
@@ -187,7 +188,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       image: const DecorationImage(
                         image: AssetImage(
                           'assets/images/construction_worker_banner.png',
-                        ), // I'll assume this local asset for now, or use a placeholder
+                        ),
                         fit: BoxFit.cover,
                       ),
                     ),
@@ -198,7 +199,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           begin: Alignment.centerLeft,
                           end: Alignment.centerRight,
                           colors: [
-                            Colors.black.withOpacity(0.7),
+                            Colors.black.withValues(alpha: 0.7),
                             Colors.transparent,
                           ],
                         ),
@@ -213,7 +214,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               vertical: 4,
                             ),
                             decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.2),
+                              color: Colors.white.withValues(alpha: 0.2),
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Text(
@@ -239,7 +240,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           Text(
                             'Access vetted skilled labor with\nfixed, predictable daily rates.',
                             style: GoogleFonts.inter(
-                              color: Colors.white.withOpacity(0.8),
+                              color: Colors.white.withValues(alpha: 0.8),
                               fontSize: 13,
                             ),
                           ),
@@ -260,7 +261,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               ),
                             ),
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFFFF6B2C),
+                              backgroundColor: AppTheme.accent,
                               foregroundColor: Colors.white,
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(12),
@@ -289,7 +290,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         child: Padding(
                           padding: EdgeInsets.all(40.0),
                           child: CircularProgressIndicator(
-                            color: Color(0xFFFF6B2C),
+                            color: AppTheme.primary,
                           ),
                         ),
                       );
@@ -304,7 +305,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             children: [
                                 Text(
                                   ErrorHandler.getErrorMessage(appState.categoriesError, action: 'Category load failed'),
-                                  style: GoogleFonts.inter(color: Colors.red),
+                                  style: GoogleFonts.inter(color: AppTheme.error),
                                 ),
                               TextButton(
                                 onPressed: () => appState.fetchCategories(),
@@ -322,7 +323,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           padding: const EdgeInsets.all(20.0),
                           child: Text(
                             'No categories available',
-                            style: GoogleFonts.inter(color: Colors.grey),
+                            style: GoogleFonts.inter(color: AppTheme.textMuted),
                           ),
                         ),
                       );
@@ -343,7 +344,6 @@ class _HomeScreenState extends State<HomeScreen> {
                             )
                             .toList();
 
-                    // Fallback if featured categories are not found in the dynamic list
                     final List<ServiceCategory> displayFeatured =
                         featuredCategories.length >= 2
                             ? featuredCategories
@@ -366,14 +366,14 @@ class _HomeScreenState extends State<HomeScreen> {
                                     style: GoogleFonts.inter(
                                       fontSize: 20,
                                       fontWeight: FontWeight.bold,
-                                      color: const Color(0xFF1E293B),
+                                      color: AppTheme.textPrimary,
                                     ),
                                   ),
                                   Text(
                                     'Find the right expertise for your project',
                                     style: GoogleFonts.inter(
                                       fontSize: 13,
-                                      color: const Color(0xFF64748B),
+                                      color: AppTheme.textLight,
                                     ),
                                   ),
                                 ],
@@ -392,7 +392,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               if (displayFeatured.isNotEmpty)
                                 FeatureCategoryCard(
                                   category: displayFeatured[0],
-                                  backgroundColor: const Color(0xFFFF6B2C),
+                                  backgroundColor: AppTheme.primary,
                                   onTap:
                                       () => _navigateToRequest(
                                         displayFeatured[0],
@@ -402,7 +402,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 const SizedBox(width: 16),
                                 FeatureCategoryCard(
                                   category: displayFeatured[1],
-                                  backgroundColor: const Color(0xFF3B82F6),
+                                  backgroundColor: AppTheme.accent,
                                   onTap:
                                       () => _navigateToRequest(
                                         displayFeatured[1],
@@ -430,6 +430,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           itemCount: otherCategories.length,
                           itemBuilder: (context, index) {
                             final category = otherCategories[index];
+                            final color = AppTheme.categoryColor(index);
                             return GestureDetector(
                               onTap: () => _navigateToRequest(category),
                               child: Column(
@@ -439,17 +440,12 @@ class _HomeScreenState extends State<HomeScreen> {
                                     decoration: BoxDecoration(
                                       color: Colors.white,
                                       borderRadius: BorderRadius.circular(16),
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: Colors.black.withOpacity(0.03),
-                                          blurRadius: 10,
-                                          offset: const Offset(0, 4),
-                                        ),
-                                      ],
+                                      border: Border.all(color: AppTheme.divider),
+                                      boxShadow: AppTheme.shadowSm,
                                     ),
                                     child: Icon(
                                       category.icon,
-                                      color: const Color(0xFF475569),
+                                      color: color,
                                       size: 24,
                                     ),
                                   ),
@@ -459,7 +455,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                     style: GoogleFonts.inter(
                                       fontSize: 10,
                                       fontWeight: FontWeight.bold,
-                                      color: const Color(0xFF64748B),
+                                      color: AppTheme.textLight,
                                     ),
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../utils/app_theme.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../models/labourer.dart';
 import '../screens/labourer_detail_screen.dart';
@@ -106,7 +107,7 @@ class LabourerCard extends StatelessWidget {
                     labourer.category,
                     style: GoogleFonts.inter(
                       fontSize: 12,
-                      color: Colors.blueAccent,
+                      color: AppTheme.primary,
                       fontWeight: FontWeight.w600,
                     ),
                   ),

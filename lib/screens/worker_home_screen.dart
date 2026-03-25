@@ -5,6 +5,7 @@ import '../services/api_service.dart';
 import '../services/error_handler.dart';
 import '../providers/app_state_provider.dart';
 import 'package:provider/provider.dart';
+import '../utils/app_theme.dart';
 import 'login_screen.dart';
 import 'profile_screen.dart';
 
@@ -179,20 +180,14 @@ class _WorkerHomeScreenState extends State<WorkerHomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppTheme.scaffoldBg,
       appBar: AppBar(
-        title: Text(
-          'Worker Dashboard',
-          style: GoogleFonts.inter(
-            color: Colors.black,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        backgroundColor: Colors.white,
+        title: Text('Worker Dashboard', style: AppTheme.heading3),
+        backgroundColor: AppTheme.scaffoldBg,
         elevation: 0,
         actions: [
           IconButton(
-            icon: const Icon(Icons.person, color: Colors.black),
+            icon: const Icon(Icons.person_rounded, color: AppTheme.textPrimary),
             onPressed: () {
               Navigator.push(
                 context,
@@ -201,7 +196,7 @@ class _WorkerHomeScreenState extends State<WorkerHomeScreen> {
             },
           ),
           IconButton(
-            icon: const Icon(Icons.logout, color: Colors.black),
+            icon: const Icon(Icons.logout_rounded, color: AppTheme.textPrimary),
             onPressed: () async {
               await ApiService.logout();
               if (context.mounted) {
@@ -224,7 +219,7 @@ class _WorkerHomeScreenState extends State<WorkerHomeScreen> {
           future: _bookingsFuture,
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(child: CircularProgressIndicator());
+              return const Center(child: CircularProgressIndicator(color: AppTheme.primary));
             }
             if (snapshot.hasError) {
               return Center(child: Text(ErrorHandler.getErrorMessage(snapshot.error)));
@@ -235,21 +230,27 @@ class _WorkerHomeScreenState extends State<WorkerHomeScreen> {
                 physics: const AlwaysScrollableScrollPhysics(),
                 children: [
                   SizedBox(height: MediaQuery.of(context).size.height * 0.2),
-                  const Center(
+                  Center(
                     child: Column(
                       children: [
-                        Icon(
-                          Icons.engineering,
-                          size: 64,
-                          color: Colors.blueAccent,
+                        Container(
+                          padding: const EdgeInsets.all(28),
+                          decoration: const BoxDecoration(
+                            color: AppTheme.primaryLight,
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.engineering_rounded,
+                            size: 48,
+                            color: AppTheme.primary,
+                          ),
                         ),
-                        SizedBox(height: 16),
+                        const SizedBox(height: 20),
+                        Text('No New Jobs', style: AppTheme.heading3),
+                        const SizedBox(height: 8),
                         Text(
                           'No new job requests available',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
+                          style: AppTheme.body.copyWith(color: AppTheme.textMuted),
                         ),
                       ],
                     ),
@@ -277,18 +278,13 @@ class _WorkerHomeScreenState extends State<WorkerHomeScreen> {
     final date = DateTime.parse(booking['date']);
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 16),
+      margin: const EdgeInsets.only(bottom: 14),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+        border: Border.all(color: AppTheme.divider),
+        boxShadow: AppTheme.shadowSm,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -309,25 +305,16 @@ class _WorkerHomeScreenState extends State<WorkerHomeScreen> {
                   vertical: 4,
                 ),
                 decoration: BoxDecoration(
-                  color:
-                      status == 'pending'
-                          ? Colors.orange.withOpacity(0.2)
-                          : status == 'confirmed'
-                          ? Colors.green.withOpacity(0.2)
-                          : Colors.grey.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(8),
+                  color: AppTheme.statusBgColor(status),
+                  borderRadius: BorderRadius.circular(AppTheme.radiusFull),
                 ),
                 child: Text(
                   status.toUpperCase(),
                   style: GoogleFonts.inter(
-                    color:
-                        status == 'pending'
-                            ? Colors.orange[800]
-                            : status == 'confirmed'
-                            ? Colors.green[800]
-                            : Colors.grey[800],
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
+                    color: AppTheme.statusColor(status),
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.5,
                   ),
                 ),
               ),
@@ -404,10 +391,10 @@ class _WorkerHomeScreenState extends State<WorkerHomeScreen> {
                         booking['latitude']?.toDouble(),
                         booking['longitude']?.toDouble(),
                       ),
-                  child: const Text(
+                  child: Text(
                     'View on Maps',
-                    style: TextStyle(
-                      color: Colors.blueAccent,
+                    style: GoogleFonts.inter(
+                      color: AppTheme.accent,
                       fontSize: 12,
                       fontWeight: FontWeight.bold,
                       decoration: TextDecoration.underline,
@@ -424,11 +411,8 @@ class _WorkerHomeScreenState extends State<WorkerHomeScreen> {
                   width: double.infinity,
                   child: ElevatedButton(
                     onPressed: () => _showUpiDialogAndAccept(booking['_id'], 'claim'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blueAccent,
-                      foregroundColor: Colors.white,
-                    ),
-                    child: const Text('Claim Job'),
+                    style: AppTheme.primaryButton,
+                    child: Text('Claim Job', style: AppTheme.button),
                   ),
                 )
                 : Row(
@@ -445,11 +429,8 @@ class _WorkerHomeScreenState extends State<WorkerHomeScreen> {
                       child: ElevatedButton(
                         onPressed:
                             () => _showUpiDialogAndAccept(booking['_id'], 'confirmed'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.black,
-                          foregroundColor: Colors.white,
-                        ),
-                        child: const Text('Accept'),
+                        style: AppTheme.secondaryButton,
+                        child: Text('Accept', style: AppTheme.button),
                       ),
                     ),
                   ],

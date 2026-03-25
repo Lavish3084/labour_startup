@@ -10,6 +10,7 @@ import '../providers/location_provider.dart';
 import 'package:url_launcher/url_launcher.dart' as url_launcher;
 import '../services/api_service.dart';
 import '../services/error_handler.dart';
+import '../utils/app_theme.dart';
 import 'login_screen.dart';
 import 'saved_addresses_screen.dart';
 import 'splash_screen.dart';
@@ -210,7 +211,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   }
                   if (context.mounted) Navigator.pop(context);
                 },
-                style: ElevatedButton.styleFrom(backgroundColor: Colors.blueAccent),
+                style: ElevatedButton.styleFrom(backgroundColor: AppTheme.primary),
                 child: isSaving 
                   ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)) 
                   : Text('Save', style: GoogleFonts.inter(color: Colors.white)),
@@ -229,10 +230,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final isLoading = appState.isProfileLoading;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF9F9F9),
+      backgroundColor: AppTheme.scaffoldBg,
       body:
           isLoading && profileData == null
-              ? const Center(child: CircularProgressIndicator())
+              ? const Center(child: CircularProgressIndicator(color: AppTheme.primary))
               : SafeArea(
                 child: RefreshIndicator(
                   onRefresh: _handleRefresh,
@@ -258,8 +259,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                       decoration: BoxDecoration(
                                         shape: BoxShape.circle,
                                         border: Border.all(
-                                          color: Colors.white,
-                                          width: 4,
+                                          color: AppTheme.primary.withValues(alpha: 0.3),
+                                          width: 3,
                                         ),
                                         image:
                                             profileData?['user'] != null &&
@@ -320,14 +321,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                       right: 0,
                                       child: Container(
                                         padding: const EdgeInsets.all(8),
-                                        decoration: const BoxDecoration(
-                                          color: Colors.blueAccent,
+                                        decoration: BoxDecoration(
+                                          gradient: AppTheme.primaryGradient,
                                           shape: BoxShape.circle,
+                                          border: Border.all(color: Colors.white, width: 2),
                                         ),
                                         child: const Icon(
-                                          Icons.camera_alt,
+                                          Icons.camera_alt_rounded,
                                           color: Colors.white,
-                                          size: 20,
+                                          size: 16,
                                         ),
                                       ),
                                     ),
@@ -443,14 +445,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 onPressed: () async {
                                   final stateProvider =
                                       Provider.of<AppStateProvider>(
-                                        context,
-                                        listen: false,
-                                      );
+                                    context,
+                                    listen: false,
+                                  );
                                   final locationProvider =
                                       Provider.of<LocationProvider>(
-                                        context,
-                                        listen: false,
-                                      );
+                                    context,
+                                    listen: false,
+                                  );
 
                                   stateProvider.clearData();
                                   locationProvider.clearData();
@@ -460,24 +462,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                     Navigator.pushAndRemoveUntil(
                                       context,
                                       MaterialPageRoute(
-                                        builder:
-                                            (context) => const LoginScreen(),
+                                        builder: (context) => const LoginScreen(),
                                       ),
                                       (route) => false,
                                     );
                                   }
                                 },
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.red[50],
-                                  foregroundColor: Colors.red,
-                                  elevation: 0,
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 16,
-                                  ),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                ),
+                                style: AppTheme.dangerButton,
                                 child: Text(
                                   'Log Out',
                                   style: GoogleFonts.inter(
@@ -544,14 +535,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
-          ),
-        ],
+        borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+        boxShadow: AppTheme.shadowSm,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -577,7 +562,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       vertical: 4,
                     ),
                     decoration: BoxDecoration(
-                      color: Colors.blueAccent.withOpacity(0.1),
+                      color: AppTheme.primary.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
@@ -585,7 +570,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       style: GoogleFonts.inter(
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
-                        color: Colors.blueAccent,
+                        color: AppTheme.primary,
                       ),
                     ),
                   ),
@@ -725,7 +710,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     VoidCallback? onTap,
     bool isDestructive = false,
   }) {
-    final color = isDestructive ? Colors.redAccent : Colors.blueAccent;
+    final color = isDestructive ? AppTheme.error : AppTheme.primary;
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(

@@ -8,6 +8,7 @@ import 'package:provider/provider.dart';
 import '../providers/app_state_provider.dart';
 import 'package:razorpay_flutter/razorpay_flutter.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import '../utils/app_theme.dart';
 
 class BookingsScreen extends StatefulWidget {
   const BookingsScreen({Key? key}) : super(key: key);
@@ -91,14 +92,8 @@ class _BookingsScreenState extends State<BookingsScreen> {
         fallback: 'rzp_test_YourKeyIDHere',
       );
 
-      // Calculate amount (labourer hourly rate * 8 hours usually, or custom)
-      // For MVP we assume standard rate for now or 500 fixed.
-      // Using labourer rate if available.
-      int amount = 500;
-      if (booking['labourer'] != null &&
-          booking['labourer']['hourlyRate'] != null) {
-        amount = booking['labourer']['hourlyRate'];
-      }
+      // Fixed booking fee of 20rs for the platform
+      int amount = 20;
 
       final order = await ApiService.createPaymentOrder(booking['_id'], amount);
 
@@ -109,8 +104,8 @@ class _BookingsScreenState extends State<BookingsScreen> {
       _paymentService.openCheckout(
         keyId: razorpayKeyId,
         orderId: order['id'],
-        name: "Labour Application",
-        description: "Payment for ${booking['category']}",
+        name: "Will",
+        description: "Booking Fee for ${booking['category']}",
         email: "user@example.com", // Should get from user profile
         contact: "9876543210", // Should get from user profile
         amount: order['amount'],
@@ -172,7 +167,7 @@ class _BookingsScreenState extends State<BookingsScreen> {
                   child: Text(
                     'Withdraw',
                     style: GoogleFonts.inter(
-                      color: Colors.red,
+                      color: AppTheme.error,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -247,7 +242,7 @@ class _BookingsScreenState extends State<BookingsScreen> {
                   _performStatusUpdate(booking['_id'], 'cancelled');
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.red,
+                  backgroundColor: AppTheme.error,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
@@ -321,7 +316,7 @@ class _BookingsScreenState extends State<BookingsScreen> {
           _refreshBookings();
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("Failed to confirm work"), backgroundColor: Colors.red),
+            const SnackBar(content: Text("Failed to confirm work"), backgroundColor: AppTheme.error),
           );
         }
       } catch (e) {
@@ -341,24 +336,17 @@ class _BookingsScreenState extends State<BookingsScreen> {
     final isLoading = appState.isBookingsLoading;
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppTheme.scaffoldBg,
       appBar: AppBar(
-        title: Text(
-          'My Bookings',
-          style: GoogleFonts.inter(
-            fontWeight: FontWeight.bold,
-            color: Colors.black87,
-            fontSize: 18,
-          ),
-        ),
-        backgroundColor: Colors.white,
+        title: Text('My Bookings', style: AppTheme.heading3),
+        backgroundColor: AppTheme.scaffoldBg,
         elevation: 0,
         centerTitle: true,
         automaticallyImplyLeading: false,
       ),
       body:
           isLoading && bookings.isEmpty
-              ? const Center(child: CircularProgressIndicator())
+              ? const Center(child: CircularProgressIndicator(color: AppTheme.primary))
               : (bookings.isEmpty
                   ? _buildEmptyState()
                   : _buildbookingsList(bookings)),
@@ -371,30 +359,23 @@ class _BookingsScreenState extends State<BookingsScreen> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Container(
-            padding: const EdgeInsets.all(24),
+            padding: const EdgeInsets.all(28),
             decoration: BoxDecoration(
-              color: Colors.grey[100],
+              color: AppTheme.primaryLight,
               shape: BoxShape.circle,
             ),
-            child: Icon(
-              Icons.calendar_today_outlined,
+            child: const Icon(
+              Icons.calendar_month_rounded,
               size: 48,
-              color: Colors.grey[400],
+              color: AppTheme.primary,
             ),
           ),
-          const SizedBox(height: 16),
-          Text(
-            'No Bookings Yet',
-            style: GoogleFonts.inter(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: Colors.black87,
-            ),
-          ),
+          const SizedBox(height: 20),
+          Text('No Bookings Yet', style: AppTheme.heading3),
           const SizedBox(height: 8),
           Text(
             'Your bookings will appear here.',
-            style: GoogleFonts.inter(fontSize: 14, color: Colors.grey[500]),
+            style: AppTheme.body.copyWith(color: AppTheme.textMuted),
           ),
         ],
       ),
@@ -406,7 +387,7 @@ class _BookingsScreenState extends State<BookingsScreen> {
       return Center(
         child: Text(
           'No bookings in this category',
-          style: GoogleFonts.inter(color: Colors.grey[500]),
+          style: GoogleFonts.inter(color: AppTheme.textMuted),
         ),
       );
     }
@@ -447,7 +428,7 @@ class _BookingsScreenState extends State<BookingsScreen> {
                     style: GoogleFonts.inter(
                       fontSize: 12,
                       fontWeight: FontWeight.w700,
-                      color: Colors.grey[400],
+                      color: AppTheme.textMuted,
                       letterSpacing: 1.2,
                     ),
                   ),
@@ -503,19 +484,13 @@ class _BookingsScreenState extends State<BookingsScreen> {
       child: Stack(
         children: [
           Container(
-            margin: const EdgeInsets.only(bottom: 16),
+            margin: const EdgeInsets.only(bottom: 14),
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: Colors.grey[200]!),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.02),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
-                ),
-              ],
+              borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+              border: Border.all(color: AppTheme.divider),
+              boxShadow: AppTheme.shadowSm,
             ),
             child: Column(
               children: [
@@ -543,14 +518,14 @@ class _BookingsScreenState extends State<BookingsScreen> {
                             style: GoogleFonts.inter(
                               fontWeight: FontWeight.bold,
                               fontSize: 16,
-                              color: const Color(0xFF1E293B),
+                              color: AppTheme.textPrimary,
                             ),
                           ),
                           const SizedBox(height: 2),
                           Text(
                             category,
                             style: GoogleFonts.inter(
-                              color: const Color(0xFF64748B),
+                              color: AppTheme.textLight,
                               fontSize: 13,
                               fontWeight: FontWeight.w500,
                             ),
@@ -575,7 +550,7 @@ class _BookingsScreenState extends State<BookingsScreen> {
                               ? '${booking['numberOfHours']} ${booking['numberOfHours'] == 1 ? 'hr' : 'hrs'}'
                               : booking['bookingMode'],
                           style: GoogleFonts.inter(
-                            color: Colors.black87,
+                            color: AppTheme.textPrimary,
                             fontSize: 10,
                             fontWeight: FontWeight.w600,
                           ),
@@ -591,7 +566,7 @@ class _BookingsScreenState extends State<BookingsScreen> {
                     margin: const EdgeInsets.only(top: 12),
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFF8FAFC), // Slate 50
+                      color: AppTheme.scaffoldBg, // Slate 50
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
                         color: const Color(0xFFE2E8F0),
@@ -605,7 +580,7 @@ class _BookingsScreenState extends State<BookingsScreen> {
                             const Icon(
                               Icons.info_outline,
                               size: 14,
-                              color: Color(0xFF64748B),
+                              color: AppTheme.textLight,
                             ),
                             const SizedBox(width: 4),
                             Text(
@@ -613,7 +588,7 @@ class _BookingsScreenState extends State<BookingsScreen> {
                               style: GoogleFonts.inter(
                                 fontSize: 11,
                                 fontWeight: FontWeight.w600,
-                                color: const Color(0xFF64748B),
+                                color: AppTheme.textLight,
                                 letterSpacing: 0.5,
                               ),
                             ),
@@ -625,13 +600,13 @@ class _BookingsScreenState extends State<BookingsScreen> {
                             const Icon(
                               Icons.access_time,
                               size: 16,
-                              color: Color(0xFF64748B),
+                              color: AppTheme.textLight,
                             ),
                             const SizedBox(width: 6),
                             Text(
                               timeString,
                               style: GoogleFonts.inter(
-                                color: const Color(0xFF1E293B),
+                                color: AppTheme.textPrimary,
                                 fontSize: 13,
                                 fontWeight: FontWeight.w600,
                               ),
@@ -644,7 +619,7 @@ class _BookingsScreenState extends State<BookingsScreen> {
                                   'Total Rate',
                                   style: GoogleFonts.inter(
                                     fontSize: 10,
-                                    color: const Color(0xFF94A3B8),
+                                    color: AppTheme.textMuted,
                                     fontWeight: FontWeight.w500,
                                   ),
                                 ),
@@ -653,7 +628,7 @@ class _BookingsScreenState extends State<BookingsScreen> {
                                   style: GoogleFonts.inter(
                                     fontSize: 16,
                                     fontWeight: FontWeight.bold,
-                                    color: const Color(0xFF0F172A),
+                                    color: AppTheme.primary,
                                   ),
                                 ),
                               ],
@@ -685,7 +660,7 @@ class _BookingsScreenState extends State<BookingsScreen> {
                                       ),
                                     ),
                                     child: Text(
-                                      'Pay Now',
+                                      'Pay ₹20 Fee',
                                       style: GoogleFonts.inter(
                                         fontSize: 12,
                                         fontWeight: FontWeight.bold,
@@ -705,7 +680,7 @@ class _BookingsScreenState extends State<BookingsScreen> {
                                   child: ElevatedButton(
                                     onPressed: () => _handleConfirmWork(booking),
                                     style: ElevatedButton.styleFrom(
-                                      backgroundColor: Colors.blueAccent,
+                                      backgroundColor: AppTheme.primary,
                                       elevation: 0,
                                       shape: RoundedRectangleBorder(
                                         borderRadius: BorderRadius.circular(20),
@@ -734,10 +709,10 @@ class _BookingsScreenState extends State<BookingsScreen> {
                                     vertical: 6,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: Colors.blue.withOpacity(0.1),
+                                    color: Colors.blue.withValues(alpha: 0.1),
                                     borderRadius: BorderRadius.circular(20),
                                     border: Border.all(
-                                      color: Colors.blue.withOpacity(0.5),
+                                      color: Colors.blue.withValues(alpha: 0.5),
                                     ),
                                   ),
                                   child: Row(
@@ -767,9 +742,9 @@ class _BookingsScreenState extends State<BookingsScreen> {
                               child: OutlinedButton(
                                 onPressed: () => _handleCancelWithdraw(booking),
                                 style: OutlinedButton.styleFrom(
-                                  foregroundColor: Colors.red,
+                                  foregroundColor: AppTheme.error,
                                   side: BorderSide(
-                                    color: Colors.red.withOpacity(0.5),
+                                    color: AppTheme.error.withValues(alpha: 0.5),
                                   ),
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(20),
@@ -803,30 +778,25 @@ class _BookingsScreenState extends State<BookingsScreen> {
               ],
             ),
           ),
-          // Status Dot
+          // Status Badge
           if (status == 'pending' || status == 'confirmed')
             Positioned(
-              top: 24,
-              right: 8,
+              top: 12,
+              right: 12,
               child: Container(
-                width: 10,
-                height: 10,
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color:
-                      status == 'confirmed'
-                          ? const Color(0xFF22C55E)
-                          : const Color(0xFFF97316),
-                  boxShadow: [
-                    BoxShadow(
-                      color: (status == 'confirmed'
-                              ? const Color(0xFF22C55E)
-                              : const Color(0xFFF97316))
-                          .withOpacity(0.4),
-                      blurRadius: 4,
-                      spreadRadius: 1,
-                    ),
-                  ],
+                  color: AppTheme.statusBgColor(status),
+                  borderRadius: BorderRadius.circular(AppTheme.radiusFull),
+                ),
+                child: Text(
+                  status.toUpperCase(),
+                  style: GoogleFonts.inter(
+                    fontSize: 9,
+                    fontWeight: FontWeight.w700,
+                    color: AppTheme.statusColor(status),
+                    letterSpacing: 0.5,
+                  ),
                 ),
               ),
             ),
