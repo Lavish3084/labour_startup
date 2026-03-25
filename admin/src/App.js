@@ -10,6 +10,7 @@ import Settings from './pages/Settings';
 import Payouts from './pages/Payouts';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import Terms from './pages/Terms';
+import DataDeletion from './pages/DataDeletion';
 import Layout from './components/Layout/Layout';
 import './App.css';
 
@@ -28,6 +29,7 @@ function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/privacy-policy" element={<PrivacyPolicy />} />
           <Route path="/terms" element={<Terms />} />
+          <Route path="/delete-data" element={<DataDeletion />} />
           <Route
             path="/*"
             element={
