@@ -61,6 +61,32 @@ class ApiService {
     }
   }
 
+  static Future<Map<String, dynamic>> googleLogin(
+    String idToken,
+    String role, {
+    String action = 'login',
+  }) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/auth/google'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'idToken': idToken, 'role': role, 'action': action}),
+    );
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      await _saveAuthData(data['token'], data['role'], data['name'], ''); // email is usually in token
+      await updateFcmToken();
+      return {'success': true, 'data': data};
+    } else {
+      final error = jsonDecode(response.body);
+      return {
+        'success': false,
+        'message': error['msg'] ?? 'Google Login failed',
+        'code': error['code'],
+      };
+    }
+  }
+
   static Future<void> logout() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('token');

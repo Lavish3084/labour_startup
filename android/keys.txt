@@ -1,0 +1,208 @@
+﻿> Task :gradle:checkKotlinGradlePluginConfigurationErrors
+> Task :gradle:compileKotlin UP-TO-DATE
+> Task :gradle:compileJava NO-SOURCE
+> Task :gradle:compileGroovy UP-TO-DATE
+> Task :gradle:pluginDescriptors UP-TO-DATE
+> Task :gradle:processResources UP-TO-DATE
+> Task :gradle:classes UP-TO-DATE
+> Task :gradle:jar UP-TO-DATE
+
+> Configure project :app
+w: History based incremental compilation approach for JVM platform is deprecated and will be removed soon in favor of approach based on ABI snapshots.
+Please remove 'kotlin.incremental.useClasspathSnapshot=false' from 'gradle.properties' file.
+
+
+> Task :package_info_plus:signingReport
+Variant: debugAndroidTest
+Config: debug
+Store: C:\Users\Asus\.android\debug.keystore
+Alias: AndroidDebugKey
+MD5: CA:DC:EB:45:C5:70:7C:33:EC:BB:B2:9C:4F:2B:B4:C1
+SHA1: F6:0A:7B:9A:6D:FC:A7:0D:01:35:86:30:4F:9A:15:E2:6E:95:3E:EF
+SHA-256: 65:98:10:D6:27:CC:7C:89:62:99:5D:F2:59:5A:3A:D0:3F:BB:27:94:F1:82:CE:BB:56:93:E4:79:A4:B1:D1:1C
+Valid until: Thursday, March 11, 2055
+----------
+
+> Task :google_sign_in_android:signingReport
+Variant: debugAndroidTest
+Config: debug
+Store: C:\Users\Asus\.android\debug.keystore
+Alias: AndroidDebugKey
+MD5: CA:DC:EB:45:C5:70:7C:33:EC:BB:B2:9C:4F:2B:B4:C1
+SHA1: F6:0A:7B:9A:6D:FC:A7:0D:01:35:86:30:4F:9A:15:E2:6E:95:3E:EF
+SHA-256: 65:98:10:D6:27:CC:7C:89:62:99:5D:F2:59:5A:3A:D0:3F:BB:27:94:F1:82:CE:BB:56:93:E4:79:A4:B1:D1:1C
+Valid until: Thursday, March 11, 2055
+----------
+
+> Task :firebase_messaging:signingReport
+Variant: debugAndroidTest
+Config: debug
+Store: C:\Users\Asus\.android\debug.keystore
+Alias: AndroidDebugKey
+MD5: CA:DC:EB:45:C5:70:7C:33:EC:BB:B2:9C:4F:2B:B4:C1
+SHA1: F6:0A:7B:9A:6D:FC:A7:0D:01:35:86:30:4F:9A:15:E2:6E:95:3E:EF
+SHA-256: 65:98:10:D6:27:CC:7C:89:62:99:5D:F2:59:5A:3A:D0:3F:BB:27:94:F1:82:CE:BB:56:93:E4:79:A4:B1:D1:1C
+Valid until: Thursday, March 11, 2055
+----------
+
+> Task :geocoding_android:signingReport
+Variant: debugAndroidTest
+Config: debug
+Store: C:\Users\Asus\.android\debug.keystore
+Alias: AndroidDebugKey
+MD5: CA:DC:EB:45:C5:70:7C:33:EC:BB:B2:9C:4F:2B:B4:C1
+SHA1: F6:0A:7B:9A:6D:FC:A7:0D:01:35:86:30:4F:9A:15:E2:6E:95:3E:EF
+SHA-256: 65:98:10:D6:27:CC:7C:89:62:99:5D:F2:59:5A:3A:D0:3F:BB:27:94:F1:82:CE:BB:56:93:E4:79:A4:B1:D1:1C
+Valid until: Thursday, March 11, 2055
+----------
+
+> Task :flutter_plugin_android_lifecycle:signingReport
+Variant: debugAndroidTest
+Config: debug
+Store: C:\Users\Asus\.android\debug.keystore
+Alias: AndroidDebugKey
+MD5: CA:DC:EB:45:C5:70:7C:33:EC:BB:B2:9C:4F:2B:B4:C1
+SHA1: F6:0A:7B:9A:6D:FC:A7:0D:01:35:86:30:4F:9A:15:E2:6E:95:3E:EF
+SHA-256: 65:98:10:D6:27:CC:7C:89:62:99:5D:F2:59:5A:3A:D0:3F:BB:27:94:F1:82:CE:BB:56:93:E4:79:A4:B1:D1:1C
+Valid until: Thursday, March 11, 2055
+----------
+
+> Task :geolocator_android:signingReport
+Variant: debugAndroidTest
+Config: debug
+Store: C:\Users\Asus\.android\debug.keystore
+Alias: AndroidDebugKey
+MD5: CA:DC:EB:45:C5:70:7C:33:EC:BB:B2:9C:4F:2B:B4:C1
+SHA1: F6:0A:7B:9A:6D:FC:A7:0D:01:35:86:30:4F:9A:15:E2:6E:95:3E:EF
+SHA-256: 65:98:10:D6:27:CC:7C:89:62:99:5D:F2:59:5A:3A:D0:3F:BB:27:94:F1:82:CE:BB:56:93:E4:79:A4:B1:D1:1C
+Valid until: Thursday, March 11, 2055
+----------
+
+> Task :flutter_native_splash:signingReport
+Variant: debugAndroidTest
+Config: debug
+Store: C:\Users\Asus\.android\debug.keystore
+Alias: AndroidDebugKey
+MD5: CA:DC:EB:45:C5:70:7C:33:EC:BB:B2:9C:4F:2B:B4:C1
+SHA1: F6:0A:7B:9A:6D:FC:A7:0D:01:35:86:30:4F:9A:15:E2:6E:95:3E:EF
+SHA-256: 65:98:10:D6:27:CC:7C:89:62:99:5D:F2:59:5A:3A:D0:3F:BB:27:94:F1:82:CE:BB:56:93:E4:79:A4:B1:D1:1C
+Valid until: Thursday, March 11, 2055
+----------
+
+> Task :firebase_core:signingReport
+Variant: debugAndroidTest
+Config: debug
+Store: C:\Users\Asus\.android\debug.keystore
+Alias: AndroidDebugKey
+MD5: CA:DC:EB:45:C5:70:7C:33:EC:BB:B2:9C:4F:2B:B4:C1
+SHA1: F6:0A:7B:9A:6D:FC:A7:0D:01:35:86:30:4F:9A:15:E2:6E:95:3E:EF
+SHA-256: 65:98:10:D6:27:CC:7C:89:62:99:5D:F2:59:5A:3A:D0:3F:BB:27:94:F1:82:CE:BB:56:93:E4:79:A4:B1:D1:1C
+Valid until: Thursday, March 11, 2055
+----------
+
+> Task :razorpay_flutter:signingReport
+Variant: debugAndroidTest
+Config: debug
+Store: C:\Users\Asus\.android\debug.keystore
+Alias: AndroidDebugKey
+MD5: CA:DC:EB:45:C5:70:7C:33:EC:BB:B2:9C:4F:2B:B4:C1
+SHA1: F6:0A:7B:9A:6D:FC:A7:0D:01:35:86:30:4F:9A:15:E2:6E:95:3E:EF
+SHA-256: 65:98:10:D6:27:CC:7C:89:62:99:5D:F2:59:5A:3A:D0:3F:BB:27:94:F1:82:CE:BB:56:93:E4:79:A4:B1:D1:1C
+Valid until: Thursday, March 11, 2055
+----------
+
+> Task :image_picker_android:signingReport
+Variant: debugAndroidTest
+Config: debug
+Store: C:\Users\Asus\.android\debug.keystore
+Alias: AndroidDebugKey
+MD5: CA:DC:EB:45:C5:70:7C:33:EC:BB:B2:9C:4F:2B:B4:C1
+SHA1: F6:0A:7B:9A:6D:FC:A7:0D:01:35:86:30:4F:9A:15:E2:6E:95:3E:EF
+SHA-256: 65:98:10:D6:27:CC:7C:89:62:99:5D:F2:59:5A:3A:D0:3F:BB:27:94:F1:82:CE:BB:56:93:E4:79:A4:B1:D1:1C
+Valid until: Thursday, March 11, 2055
+----------
+
+> Task :url_launcher_android:signingReport
+Variant: debugAndroidTest
+Config: debug
+Store: C:\Users\Asus\.android\debug.keystore
+Alias: AndroidDebugKey
+MD5: CA:DC:EB:45:C5:70:7C:33:EC:BB:B2:9C:4F:2B:B4:C1
+SHA1: F6:0A:7B:9A:6D:FC:A7:0D:01:35:86:30:4F:9A:15:E2:6E:95:3E:EF
+SHA-256: 65:98:10:D6:27:CC:7C:89:62:99:5D:F2:59:5A:3A:D0:3F:BB:27:94:F1:82:CE:BB:56:93:E4:79:A4:B1:D1:1C
+Valid until: Thursday, March 11, 2055
+----------
+
+> Task :flutter_local_notifications:signingReport
+Variant: debugAndroidTest
+Config: debug
+Store: C:\Users\Asus\.android\debug.keystore
+Alias: AndroidDebugKey
+MD5: CA:DC:EB:45:C5:70:7C:33:EC:BB:B2:9C:4F:2B:B4:C1
+SHA1: F6:0A:7B:9A:6D:FC:A7:0D:01:35:86:30:4F:9A:15:E2:6E:95:3E:EF
+SHA-256: 65:98:10:D6:27:CC:7C:89:62:99:5D:F2:59:5A:3A:D0:3F:BB:27:94:F1:82:CE:BB:56:93:E4:79:A4:B1:D1:1C
+Valid until: Thursday, March 11, 2055
+----------
+
+> Task :shared_preferences_android:signingReport
+Variant: debugAndroidTest
+Config: debug
+Store: C:\Users\Asus\.android\debug.keystore
+Alias: AndroidDebugKey
+MD5: CA:DC:EB:45:C5:70:7C:33:EC:BB:B2:9C:4F:2B:B4:C1
+SHA1: F6:0A:7B:9A:6D:FC:A7:0D:01:35:86:30:4F:9A:15:E2:6E:95:3E:EF
+SHA-256: 65:98:10:D6:27:CC:7C:89:62:99:5D:F2:59:5A:3A:D0:3F:BB:27:94:F1:82:CE:BB:56:93:E4:79:A4:B1:D1:1C
+Valid until: Thursday, March 11, 2055
+----------
+
+> Task :path_provider_android:signingReport
+Variant: debugAndroidTest
+Config: debug
+Store: C:\Users\Asus\.android\debug.keystore
+Alias: AndroidDebugKey
+MD5: CA:DC:EB:45:C5:70:7C:33:EC:BB:B2:9C:4F:2B:B4:C1
+SHA1: F6:0A:7B:9A:6D:FC:A7:0D:01:35:86:30:4F:9A:15:E2:6E:95:3E:EF
+SHA-256: 65:98:10:D6:27:CC:7C:89:62:99:5D:F2:59:5A:3A:D0:3F:BB:27:94:F1:82:CE:BB:56:93:E4:79:A4:B1:D1:1C
+Valid until: Thursday, March 11, 2055
+----------
+
+> Task :app:signingReport
+Variant: debug
+Config: debug
+Store: C:\Users\Asus\.android\debug.keystore
+Alias: AndroidDebugKey
+MD5: CA:DC:EB:45:C5:70:7C:33:EC:BB:B2:9C:4F:2B:B4:C1
+SHA1: F6:0A:7B:9A:6D:FC:A7:0D:01:35:86:30:4F:9A:15:E2:6E:95:3E:EF
+SHA-256: 65:98:10:D6:27:CC:7C:89:62:99:5D:F2:59:5A:3A:D0:3F:BB:27:94:F1:82:CE:BB:56:93:E4:79:A4:B1:D1:1C
+Valid until: Thursday, March 11, 2055
+----------
+Variant: release
+Config: release
+Store: D:\Flutter Files\labour\android\upload-keystore.jks
+Alias: upload
+MD5: CB:39:88:37:4C:9D:2F:DB:E8:E6:7F:7A:29:02:71:DC
+SHA1: 75:13:AE:48:F3:65:20:70:D6:4E:29:F4:06:DE:13:1A:46:D6:68:6C
+SHA-256: D5:A5:AC:AE:99:7C:6B:F0:E5:E9:EA:B5:2F:5F:D5:E9:AB:C1:F0:9A:86:4A:5B:FF:F4:3A:B3:F4:33:BD:AC:E1
+Valid until: Tuesday, July 29, 2053
+----------
+Variant: profile
+Config: debug
+Store: C:\Users\Asus\.android\debug.keystore
+Alias: AndroidDebugKey
+MD5: CA:DC:EB:45:C5:70:7C:33:EC:BB:B2:9C:4F:2B:B4:C1
+SHA1: F6:0A:7B:9A:6D:FC:A7:0D:01:35:86:30:4F:9A:15:E2:6E:95:3E:EF
+SHA-256: 65:98:10:D6:27:CC:7C:89:62:99:5D:F2:59:5A:3A:D0:3F:BB:27:94:F1:82:CE:BB:56:93:E4:79:A4:B1:D1:1C
+Valid until: Thursday, March 11, 2055
+----------
+Variant: debugAndroidTest
+Config: debug
+Store: C:\Users\Asus\.android\debug.keystore
+Alias: AndroidDebugKey
+MD5: CA:DC:EB:45:C5:70:7C:33:EC:BB:B2:9C:4F:2B:B4:C1
+SHA1: F6:0A:7B:9A:6D:FC:A7:0D:01:35:86:30:4F:9A:15:E2:6E:95:3E:EF
+SHA-256: 65:98:10:D6:27:CC:7C:89:62:99:5D:F2:59:5A:3A:D0:3F:BB:27:94:F1:82:CE:BB:56:93:E4:79:A4:B1:D1:1C
+Valid until: Thursday, March 11, 2055
+----------
+
+BUILD SUCCESSFUL in 2s
+21 actionable tasks: 16 executed, 5 up-to-date
