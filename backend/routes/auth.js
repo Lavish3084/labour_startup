@@ -35,11 +35,13 @@ router.post('/google', async (req, res) => {
                 return res.status(404).json({ msg: 'Account does not exist. Please sign up first.', code: 'USER_NOT_FOUND' });
             }
 
-            // Create user
+            // Create user with a secure random unguessable password so the DB schema validation passes
+            const randomDummyPassword = await bcrypt.hash(Math.random().toString(36).slice(-10), 10);
+            
             user = new User({
                 name: name,
                 email: email,
-                password: '', // OAuth users don't have passwords
+                password: randomDummyPassword,
                 role: role || 'user',
                 profilePicture: picture || ''
             });

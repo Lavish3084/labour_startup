@@ -12,7 +12,12 @@
           "package_name": "com.example.labour"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "53949256120-aju1v4sbfep1i689snfr2r4miokio7i1.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyAMhEzXNcbXSqLmKqSYRWhfD1uvM1HBIKM"
@@ -20,7 +25,19 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "53949256120-aju1v4sbfep1i689snfr2r4miokio7i1.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "53949256120-rsls54ae288bj4ohfa8vlua6vsro3icq.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.labour"
+              }
+            }
+          ]
         }
       }
     },
@@ -31,7 +48,28 @@
           "package_name": "com.lavish3084.labour"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "53949256120-21ph8k47evln2cpnbjtntijci29oj95e.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.lavish3084.labour",
+            "certificate_hash": "7513ae48f3652070d64e29f406de131a46d6686c"
+          }
+        },
+        {
+          "client_id": "53949256120-nnblasuo4r0bru9h6n29ditiis27rcd8.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.lavish3084.labour",
+            "certificate_hash": "f60a7b9a6dfca70d013586304f9a15e26e953eef"
+          }
+        },
+        {
+          "client_id": "53949256120-aju1v4sbfep1i689snfr2r4miokio7i1.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyAMhEzXNcbXSqLmKqSYRWhfD1uvM1HBIKM"
@@ -39,7 +77,19 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "53949256120-aju1v4sbfep1i689snfr2r4miokio7i1.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "53949256120-rsls54ae288bj4ohfa8vlua6vsro3icq.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.labour"
+              }
+            }
+          ]
         }
       }
     }

@@ -292,16 +292,26 @@ class _SignupScreenState extends State<SignupScreen> {
             const SizedBox(height: 24),
             SizedBox(
               width: double.infinity,
-              height: 50,
+              height: 52,
               child: OutlinedButton.icon(
                 onPressed: _isLoading ? null : _handleGoogleLogin,
                 icon: Image.network(
-                  'https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg',
-                  height: 20,
+                  'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/Google_%22G%22_logo.svg/1200px-Google_%22G%22_logo.svg.png',
+                  height: 24,
                 ),
-                label: Text('Continue with Google', style: AppTheme.subtitle),
+                label: Text(
+                  'Continue with Google',
+                  style: GoogleFonts.inter(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    color: AppTheme.textPrimary,
+                  ),
+                ),
                 style: OutlinedButton.styleFrom(
-                  side: BorderSide(color: AppTheme.border),
+                  backgroundColor: Colors.white,
+                  elevation: 1,
+                  shadowColor: Colors.black12,
+                  side: BorderSide(color: Colors.grey.shade300, width: 1),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
               ),

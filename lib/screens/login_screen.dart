@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import '../services/api_service.dart';
 import '../services/error_handler.dart';
 import '../utils/app_theme.dart';
 import 'main_screen.dart';
 import 'signup_screen.dart';
+import 'worker_details_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -23,18 +25,24 @@ class _LoginScreenState extends State<LoginScreen> {
   Future<void> _handleGoogleLogin() async {
     setState(() => _isLoading = true);
     try {
+      print('Initiating Google Sign In...');
       final googleSignIn = GoogleSignIn();
       final googleUser = await googleSignIn.signIn();
       if (googleUser == null) {
+        print('Google Sign In cancelled by user');
         setState(() => _isLoading = false);
         return; // User canceled
       }
 
+      print('Google Sign In successful for: ${googleUser.email}');
       final googleAuth = await googleUser.authentication;
       final idToken = googleAuth.idToken;
+      print('ID Token generated: ${idToken != null ? "YES" : "NO (null)"}');
 
       if (idToken != null) {
+        print('Sending Token to backend to action=login...');
         final result = await ApiService.googleLogin(idToken, 'user', action: 'login');
+        print('Backend Response: $result');
         
         if (result['success']) {
           if (context.mounted) {
@@ -49,13 +57,7 @@ class _LoginScreenState extends State<LoginScreen> {
         } else {
           if (context.mounted) {
             if (result['code'] == 'USER_NOT_FOUND') {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Account not found. Please sign up first.')),
-              );
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const SignupScreen()),
-              );
+              _showRoleSelectionBottomSheet(idToken);
             } else {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(content: Text(result['message'] ?? 'Google Login failed')),
@@ -63,13 +65,131 @@ class _LoginScreenState extends State<LoginScreen> {
             }
           }
         }
+      } else {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Failed to retrieve Google Identity Token.')),
+          );
+        }
       }
     } catch (e) {
+      print('Google Auth Exception Caught: $e');
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(ErrorHandler.getErrorMessage(e, action: 'Google Login failed')),
+            content: Text(ErrorHandler.getErrorMessage(e, action: 'Google Login failed: $e')),
           ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  void _showRoleSelectionBottomSheet(String idToken) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) => Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Complete Sign Up', style: AppTheme.heading2),
+            const SizedBox(height: 8),
+            Text(
+              'Your Google account is ready. How would you like to use the app?',
+              style: AppTheme.body.copyWith(color: AppTheme.textLight),
+            ),
+            const SizedBox(height: 24),
+            Row(
+              children: [
+                Expanded(
+                  child: _buildRoleButton(
+                    'user', 'Hire workers', Icons.search_rounded, idToken,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _buildRoleButton(
+                    'worker', 'Find work', Icons.construction_rounded, idToken,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRoleButton(String role, String label, IconData icon, String idToken) {
+    return GestureDetector(
+      onTap: () {
+        Navigator.pop(context); // Close the bottom sheet
+        _completeGoogleSignup(idToken, role);
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        decoration: BoxDecoration(
+          color: AppTheme.primaryLight,
+          borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+          border: Border.all(color: AppTheme.primary, width: 1.5),
+        ),
+        child: Column(
+          children: [
+            Icon(icon, size: 28, color: AppTheme.primary),
+            const SizedBox(height: 8),
+            Text(
+              label,
+              style: GoogleFonts.inter(
+                fontWeight: FontWeight.w600,
+                fontSize: 14,
+                color: AppTheme.primary,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _completeGoogleSignup(String idToken, String role) async {
+    setState(() => _isLoading = true);
+    try {
+      final result = await ApiService.googleLogin(idToken, role, action: 'signup');
+      if (result['success']) {
+        if (mounted) {
+          await Geolocator.requestPermission();
+          if (mounted) {
+            if (role == 'worker') {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (context) => const WorkerDetailsScreen()),
+              );
+            } else {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (context) => const MainScreen()),
+              );
+            }
+          }
+        }
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(result['message'] ?? 'Signup failed')),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(ErrorHandler.getErrorMessage(e, action: 'Signup failed'))),
         );
       }
     } finally {
@@ -194,22 +314,32 @@ class _LoginScreenState extends State<LoginScreen> {
               
               SizedBox(
                 width: double.infinity,
-                height: 50,
+                height: 52,
                 child: OutlinedButton.icon(
                   onPressed: _isLoading ? null : _handleGoogleLogin,
                   icon: Image.network(
-                    'https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg',
-                    height: 20,
+                    'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/Google_%22G%22_logo.svg/1200px-Google_%22G%22_logo.svg.png',
+                    height: 24,
                   ),
-                  label: Text('Continue with Google', style: AppTheme.subtitle),
+                  label: Text(
+                    'Continue with Google',
+                    style: GoogleFonts.inter(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: AppTheme.textPrimary,
+                    ),
+                  ),
                   style: OutlinedButton.styleFrom(
-                    side: BorderSide(color: AppTheme.border),
+                    backgroundColor: Colors.white,
+                    elevation: 1,
+                    shadowColor: Colors.black12,
+                    side: BorderSide(color: Colors.grey.shade300, width: 1),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
                 ),
               ),
 
-              const SizedBox(height: 24),
+              const SizedBox(height: 32),
 
               // Sign Up link
               Center(

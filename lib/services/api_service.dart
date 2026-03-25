@@ -66,24 +66,32 @@ class ApiService {
     String role, {
     String action = 'login',
   }) async {
-    final response = await http.post(
-      Uri.parse('$baseUrl/auth/google'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({'idToken': idToken, 'role': role, 'action': action}),
-    );
+    try {
+      print('ApiService: Sending POST /auth/google | role=$role, action=$action');
+      final response = await http.post(
+        Uri.parse('$baseUrl/auth/google'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'idToken': idToken, 'role': role, 'action': action}),
+      );
 
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body);
-      await _saveAuthData(data['token'], data['role'], data['name'], ''); // email is usually in token
-      await updateFcmToken();
-      return {'success': true, 'data': data};
-    } else {
-      final error = jsonDecode(response.body);
-      return {
-        'success': false,
-        'message': error['msg'] ?? 'Google Login failed',
-        'code': error['code'],
-      };
+      print('ApiService: Google Response [${response.statusCode}]: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        await _saveAuthData(data['token'], data['role'], data['name'], ''); // email is usually in token
+        await updateFcmToken();
+        return {'success': true, 'data': data};
+      } else {
+        final error = jsonDecode(response.body);
+        return {
+          'success': false,
+          'message': error['msg'] ?? 'Google Login failed',
+          'code': error['code'],
+        };
+      }
+    } catch (e) {
+      print('ApiService: Google Auth Network Error: $e');
+      rethrow;
     }
   }
 
