@@ -5,6 +5,7 @@ import '../config.dart';
 import '../models/labourer.dart';
 import '../models/service_category.dart';
 import 'notification_service.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 
 class ApiService {
   static const String baseUrl = Config.baseUrl;
@@ -134,6 +135,12 @@ class ApiService {
     await prefs.remove('role');
     await prefs.remove('name');
     await prefs.remove('email');
+    
+    try {
+      await GoogleSignIn().disconnect();
+    } catch (e) {
+      print('ApiService: Failed to disconnect from Google: $e');
+    }
   }
 
   static Future<String?> getToken() async {
