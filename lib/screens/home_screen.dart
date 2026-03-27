@@ -112,8 +112,11 @@ class _HomeScreenState extends State<HomeScreen> {
           },
           child: SingleChildScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 800),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Header
                 Padding(
@@ -421,11 +424,11 @@ class _HomeScreenState extends State<HomeScreen> {
                           shrinkWrap: true,
                           physics: const NeverScrollableScrollPhysics(),
                           gridDelegate:
-                              const SliverGridDelegateWithFixedCrossAxisCount(
-                                crossAxisCount: 3,
+                              const SliverGridDelegateWithMaxCrossAxisExtent(
+                                maxCrossAxisExtent: 120,
                                 crossAxisSpacing: 16,
                                 mainAxisSpacing: 20,
-                                childAspectRatio: 1.0,
+                                childAspectRatio: 0.85,
                               ),
                           itemCount: otherCategories.length,
                           itemBuilder: (context, index) {
@@ -475,7 +478,9 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
       ),
-    );
+    ),
+  ),
+);
   }
 
   void _navigateToRequest(ServiceCategory category) {

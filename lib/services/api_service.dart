@@ -31,11 +31,22 @@ class ApiService {
 
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
-      await _saveAuthData(data['token'], data['role'], data['name'], email);
-      return {'success': true, 'data': data};
+      final dataMap = data is Map ? data : {};
+      await _saveAuthData(
+        dataMap['token']?.toString(), 
+        dataMap['role']?.toString(), 
+        dataMap['name']?.toString(), 
+        email
+      );
+      return {'success': true, 'data': dataMap};
     } else {
-      final error = jsonDecode(response.body);
-      return {'success': false, 'message': error['msg'] ?? 'Signup failed'};
+      dynamic error;
+      try {
+        error = jsonDecode(response.body);
+      } catch (_) {
+        error = null;
+      }
+      return {'success': false, 'message': (error is Map && error.containsKey('msg')) ? error['msg'] : 'Signup failed'};
     }
   }
 
@@ -51,13 +62,24 @@ class ApiService {
 
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
-      await _saveAuthData(data['token'], data['role'], data['name'], email);
+      final dataMap = data is Map ? data : {};
+      await _saveAuthData(
+        dataMap['token']?.toString(), 
+        dataMap['role']?.toString(), 
+        dataMap['name']?.toString(), 
+        email
+      );
       // Update FCM Token
       await updateFcmToken();
-      return {'success': true, 'data': data};
+      return {'success': true, 'data': dataMap};
     } else {
-      final error = jsonDecode(response.body);
-      return {'success': false, 'message': error['msg'] ?? 'Login failed'};
+      dynamic error;
+      try {
+        error = jsonDecode(response.body);
+      } catch (_) {
+        error = null;
+      }
+      return {'success': false, 'message': (error is Map && error.containsKey('msg')) ? error['msg'] : 'Login failed'};
     }
   }
 
@@ -78,15 +100,26 @@ class ApiService {
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        await _saveAuthData(data['token'], data['role'], data['name'], ''); // email is usually in token
+        final dataMap = data is Map ? data : {};
+        await _saveAuthData(
+          dataMap['token']?.toString(), 
+          dataMap['role']?.toString(), 
+          dataMap['name']?.toString(), 
+          '' // email is usually in token
+        );
         await updateFcmToken();
-        return {'success': true, 'data': data};
+        return {'success': true, 'data': dataMap};
       } else {
-        final error = jsonDecode(response.body);
+        dynamic error;
+        try {
+          error = jsonDecode(response.body);
+        } catch (_) {
+          error = null;
+        }
         return {
           'success': false,
-          'message': error['msg'] ?? 'Google Login failed',
-          'code': error['code'],
+          'message': (error is Map && error.containsKey('msg')) ? error['msg'] : 'Google Login failed',
+          'code': (error is Map && error.containsKey('code')) ? error['code'] : null,
         };
       }
     } catch (e) {
@@ -124,16 +157,16 @@ class ApiService {
   }
 
   static Future<void> _saveAuthData(
-    String token,
-    String role,
-    String name,
-    String email,
+    String? token,
+    String? role,
+    String? name,
+    String? email,
   ) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('token', token);
-    await prefs.setString('role', role);
-    await prefs.setString('name', name);
-    await prefs.setString('email', email);
+    if (token != null) await prefs.setString('token', token);
+    if (role != null) await prefs.setString('role', role);
+    if (name != null) await prefs.setString('name', name);
+    if (email != null) await prefs.setString('email', email);
   }
 
   // Profile

@@ -8,7 +8,7 @@ import '../utils/app_theme.dart';
 import 'main_screen.dart';
 import 'signup_screen.dart';
 import 'worker_details_screen.dart';
-
+import 'worker_home_screen.dart';
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
@@ -45,13 +45,21 @@ class _LoginScreenState extends State<LoginScreen> {
         print('Backend Response: $result');
         
         if (result['success']) {
+          final returnedRole = result['data']['role'];
           if (context.mounted) {
             await Geolocator.requestPermission();
             if (context.mounted) {
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (context) => const MainScreen()),
-              );
+              if (returnedRole == 'worker') {
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (context) => const WorkerHomeScreen()),
+                );
+              } else {
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (context) => const MainScreen()),
+                );
+              }
             }
           }
         } else {
@@ -394,13 +402,21 @@ class _LoginScreenState extends State<LoginScreen> {
       final result = await ApiService.login(email, password);
 
       if (result['success']) {
+        final returnedRole = result['data']['role'];
         if (context.mounted) {
           await Geolocator.requestPermission();
           if (context.mounted) {
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(builder: (context) => const MainScreen()),
-            );
+            if (returnedRole == 'worker') {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (context) => const WorkerHomeScreen()),
+              );
+            } else {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (context) => const MainScreen()),
+              );
+            }
           }
         }
       } else {

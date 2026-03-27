@@ -6,6 +6,7 @@ import '../utils/app_theme.dart';
 import 'login_screen.dart';
 import 'main_screen.dart';
 import 'worker_home_screen.dart';
+import 'worker_details_screen.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -53,14 +54,28 @@ class _SplashScreenState extends State<SplashScreen>
         ApiService.updateFcmToken();
 
         if (mounted) {
-          Provider.of<AppStateProvider>(context, listen: false).fetchProfile();
+          await Provider.of<AppStateProvider>(context, listen: false).fetchProfile();
         }
 
         if (role == 'worker') {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (context) => const WorkerHomeScreen()),
-          );
+          // Check if profile is complete
+          if (mounted) {
+            final appState = Provider.of<AppStateProvider>(context, listen: false);
+            final labourer = appState.profileData?['labourer'];
+            
+            if (labourer != null && labourer['location'] == 'Not set') {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (context) => const WorkerDetailsScreen()),
+              );
+              return;
+            }
+
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (context) => const WorkerHomeScreen()),
+            );
+          }
         } else {
           Navigator.pushReplacement(
             context,

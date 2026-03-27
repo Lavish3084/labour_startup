@@ -26,6 +26,7 @@ router.post('/google', async (req, res) => {
         });
         const payload = ticket.getPayload();
         const { email, name, picture } = payload;
+        const displayName = name || email.split('@')[0];
 
         let user = await User.findOne({ email });
 
@@ -39,7 +40,7 @@ router.post('/google', async (req, res) => {
             const randomDummyPassword = await bcrypt.hash(Math.random().toString(36).slice(-10), 10);
             
             user = new User({
-                name: name,
+                name: displayName,
                 email: email,
                 password: randomDummyPassword,
                 role: role || 'user',
