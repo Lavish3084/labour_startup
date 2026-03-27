@@ -21,13 +21,6 @@ class ServiceCategoryCard extends StatelessWidget {
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(color: Colors.grey.withOpacity(0.2), width: 1),
-          // boxShadow: [
-          //   BoxShadow(
-          //     color: Colors.black.withOpacity(0.02),
-          //     blurRadius: 5,
-          //     offset: const Offset(0, 2),
-          //   ),
-          // ],
         ),
         padding: const EdgeInsets.all(12),
         child: Column(

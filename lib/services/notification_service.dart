@@ -1,7 +1,12 @@
+import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter/foundation.dart';
+import '../main.dart'; // Import navigatorKey
+import '../screens/main_screen.dart';
+import 'package:provider/provider.dart';
+import '../providers/app_state_provider.dart';
 
 // Background handler must be top-level
 @pragma('vm:entry-point')
@@ -54,6 +59,7 @@ class NotificationService {
       onDidReceiveNotificationResponse: (details) {
         // Handle notification tap
         print("Notification tapped: ${details.payload}");
+        _handleNotificationClick(details.payload);
       },
     );
 
@@ -84,6 +90,36 @@ class NotificationService {
         _showLocalNotification(message);
       }
     });
+
+    // 7. Handle initial message if app was terminated
+    RemoteMessage? initialMessage = await _firebaseMessaging.getInitialMessage();
+    if (initialMessage != null) {
+      print("NotificationService: App started from terminated state via notification");
+      // We need a small delay to ensure navigator is ready
+      Future.delayed(const Duration(seconds: 1), () {
+        _handleNotificationClick(null); // Simple redirect to bookings for now
+      });
+    }
+
+    // 8. Handle click when app is in background but not terminated
+    FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
+      print("NotificationService: App opened from background via notification");
+      _handleNotificationClick(null); // Simple redirect to bookings for now
+    });
+  }
+
+  void _handleNotificationClick(String? payload) {
+    // For now, always navigate to the Bookings tab (index 1)
+    if (navigatorKey.currentState != null) {
+      final context = navigatorKey.currentContext;
+      if (context != null) {
+        Provider.of<AppStateProvider>(context, listen: false).setTab(1);
+        navigatorKey.currentState?.pushAndRemoveUntil(
+          MaterialPageRoute(builder: (context) => const MainScreen()),
+          (route) => false,
+        );
+      }
+    }
   }
 
   Future<void> _requestPermission() async {

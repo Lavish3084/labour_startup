@@ -9,7 +9,6 @@ import '../services/api_service.dart';
 import '../services/error_handler.dart';
 import '../utils/app_theme.dart';
 import 'main_screen.dart';
-import 'worker_details_screen.dart';
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
@@ -23,7 +22,7 @@ class _SignupScreenState extends State<SignupScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
-  String _selectedRole = 'user';
+  // Role is always 'user' in this app
   File? _imageFile;
   final _picker = ImagePicker();
 
@@ -75,24 +74,17 @@ class _SignupScreenState extends State<SignupScreen> {
       }
 
       final result = await ApiService.signup(
-        name, email, password, _selectedRole, profilePicture,
+        name, email, password, 'user', profilePicture,
       );
 
       if (result['success']) {
         if (context.mounted) {
           await Geolocator.requestPermission();
           if (context.mounted) {
-            if (_selectedRole == 'worker') {
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (context) => const WorkerDetailsScreen()),
-              );
-            } else {
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (context) => const MainScreen()),
-              );
-            }
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (context) => const MainScreen()),
+            );
           }
         }
       } else {
@@ -127,23 +119,16 @@ class _SignupScreenState extends State<SignupScreen> {
       final idToken = googleAuth.idToken;
 
       if (idToken != null) {
-        final result = await ApiService.googleLogin(idToken, _selectedRole, action: 'signup');
+        final result = await ApiService.googleLogin(idToken, 'user', action: 'signup');
         
         if (result['success']) {
           if (context.mounted) {
             await Geolocator.requestPermission();
             if (context.mounted) {
-              if (_selectedRole == 'worker') {
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(builder: (context) => const WorkerDetailsScreen()),
-                );
-              } else {
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(builder: (context) => const MainScreen()),
-                );
-              }
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (context) => const MainScreen()),
+              );
             }
           }
         } else {
@@ -234,20 +219,7 @@ class _SignupScreenState extends State<SignupScreen> {
               ),
             ),
 
-            const SizedBox(height: 24),
-
-            // Role Selection
-            Text('I want to', style: AppTheme.subtitle),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                _buildRoleOption('user', 'Hire workers', Icons.search_rounded),
-                const SizedBox(width: 12),
-                _buildRoleOption('worker', 'Find work', Icons.construction_rounded),
-              ],
-            ),
-
-            const SizedBox(height: 20),
+            const SizedBox(height: 28),
 
             // Form fields
             _buildField('Full name', _nameController, Icons.person_outline_rounded, 'John Doe'),
@@ -368,41 +340,6 @@ class _SignupScreenState extends State<SignupScreen> {
           ),
         ),
       ],
-    );
-  }
-
-  Widget _buildRoleOption(String role, String label, IconData icon) {
-    final isSelected = _selectedRole == role;
-    return Expanded(
-      child: GestureDetector(
-        onTap: _isLoading ? null : () => setState(() => _selectedRole = role),
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 14),
-          decoration: BoxDecoration(
-            color: isSelected ? AppTheme.primaryLight : Colors.white,
-            borderRadius: BorderRadius.circular(AppTheme.radiusSm),
-            border: Border.all(
-              color: isSelected ? AppTheme.primary : AppTheme.border,
-              width: isSelected ? 1.5 : 1,
-            ),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(icon, size: 18, color: isSelected ? AppTheme.primary : AppTheme.textMuted),
-              const SizedBox(width: 8),
-              Text(
-                label,
-                style: GoogleFonts.inter(
-                  fontWeight: FontWeight.w600,
-                  fontSize: 13,
-                  color: isSelected ? AppTheme.primary : AppTheme.textSecondary,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
     );
   }
 }

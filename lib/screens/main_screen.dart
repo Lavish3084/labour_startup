@@ -1,5 +1,6 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'package:flutter/services.dart';
 import 'home_screen.dart';
 import 'bookings_screen.dart';
 import 'profile_screen.dart';
@@ -15,7 +16,6 @@ class MainScreen extends StatefulWidget {
 }
 
 class _MainScreenState extends State<MainScreen> {
-  int _selectedIndex = 0;
 
   @override
   void initState() {
@@ -36,22 +36,39 @@ class _MainScreenState extends State<MainScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: _pages[_selectedIndex],
+      extendBody: true,
+      body: _pages[Provider.of<AppStateProvider>(context).selectedTab],
       bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          border: Border(top: BorderSide(color: AppTheme.divider, width: 1)),
-        ),
-        child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                _buildNavItem(0, Icons.home_rounded, Icons.home_outlined, 'Home'),
-                _buildNavItem(1, Icons.receipt_long_rounded, Icons.receipt_long_outlined, 'Bookings'),
-                _buildNavItem(2, Icons.person_rounded, Icons.person_outline_rounded, 'Account'),
-              ],
+        height: 94,
+        padding: const EdgeInsets.fromLTRB(24, 0, 24, 28),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(32),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(32),
+                border: Border.all(
+                  color: Colors.white.withValues(alpha: 0.2),
+                  width: 1.5,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.1),
+                    blurRadius: 30,
+                    offset: const Offset(0, 10),
+                  ),
+                ],
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  _buildNavItem(0, Icons.home_rounded, Icons.home_outlined, 'Home'),
+                  _buildNavItem(1, Icons.calendar_month_rounded, Icons.calendar_month_outlined, 'Booking'),
+                  _buildNavItem(2, Icons.person_rounded, Icons.person_outlined, 'Profile'),
+                ],
+              ),
             ),
           ),
         ),
@@ -60,27 +77,43 @@ class _MainScreenState extends State<MainScreen> {
   }
 
   Widget _buildNavItem(int index, IconData activeIcon, IconData inactiveIcon, String label) {
-    final isActive = _selectedIndex == index;
+    final isActive = Provider.of<AppStateProvider>(context, listen: false).selectedTab == index;
     return GestureDetector(
-      onTap: () => setState(() => _selectedIndex = index),
+      onTap: () {
+        HapticFeedback.lightImpact();
+        Provider.of<AppStateProvider>(context, listen: false).setTab(index);
+      },
       behavior: HitTestBehavior.opaque,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOutCubic,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: isActive ? AppTheme.saffron.withValues(alpha: 0.5) : Colors.transparent,
+          borderRadius: BorderRadius.circular(30),
+        ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              isActive ? activeIcon : inactiveIcon,
-              color: isActive ? AppTheme.primary : AppTheme.textMuted,
-              size: 22,
+            AnimatedScale(
+              duration: const Duration(milliseconds: 300),
+              scale: isActive ? 1.08 : 1.0,
+              curve: Curves.easeOutCubic,
+              child: Icon(
+                isActive ? activeIcon : inactiveIcon,
+                color: isActive ? AppTheme.saffron : AppTheme.textMuted.withValues(alpha: 0.5),
+                size: 24,
+              ),
             ),
             const SizedBox(height: 4),
-            Text(
-              label,
-              style: GoogleFonts.inter(
-                color: isActive ? AppTheme.primary : AppTheme.textMuted,
-                fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
-                fontSize: 11,
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeOutCubic,
+              width: isActive ? 5 : 0.01,
+              height: 4,
+              decoration: BoxDecoration(
+                color: AppTheme.saffron,
+                borderRadius: BorderRadius.circular(2),
               ),
             ),
           ],

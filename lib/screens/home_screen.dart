@@ -6,14 +6,14 @@ import '../models/service_category.dart';
 import 'service_request_screen.dart';
 import '../providers/location_provider.dart';
 import 'package:provider/provider.dart';
-import '../widgets/feature_category_card.dart';
 import '../widgets/address_selection_sheet.dart';
 import '../providers/app_state_provider.dart';
 import '../services/error_handler.dart';
+import '../widgets/glass_card.dart';
 import '../utils/app_theme.dart';
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({Key? key}) : super(key: key);
+  const HomeScreen({super.key});
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -24,9 +24,10 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      Provider.of<AppStateProvider>(context, listen: false).loadCategories();
+      final appState = Provider.of<AppStateProvider>(context, listen: false);
+      appState.loadCategories();
+      _initLocation();
     });
-    _initLocation();
   }
 
   Future<void> _initLocation() async {
@@ -91,396 +92,464 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final locationProvider = Provider.of<LocationProvider>(context);
-    final String displayAddress;
-    if (locationProvider.currentAddress == null) {
-      displayAddress = 'Select Location';
-    } else {
-      displayAddress = locationProvider.currentAddress!;
-    }
-
     return Scaffold(
       backgroundColor: AppTheme.scaffoldBg,
-      body: SafeArea(
-        child: RefreshIndicator(
-          color: AppTheme.primary,
-          onRefresh: () async {
-            await Provider.of<AppStateProvider>(
-              context,
-              listen: false,
-            ).fetchCategories();
-          },
-          child: SingleChildScrollView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            child: Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 800),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Header
-                Padding(
-                  padding: const EdgeInsets.all(20.0),
-                  child: Row(
+      body: RefreshIndicator(
+        onRefresh: () async {
+          final appState = Provider.of<AppStateProvider>(context, listen: false);
+          await appState.fetchCategories();
+        },
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildModernHero(),
+              _buildSearchSection(),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(24, 4, 24, 0),
+                child: Text(
+                  'Services we offer',
+                  style: GoogleFonts.baloo2(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w800,
+                    color: AppTheme.textPrimary,
+                    letterSpacing: -0.5,
+                  ),
+                ),
+              ),
+              _buildAllServicesGrid(),
+              const SizedBox(height: 100),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildModernHero() {
+    final locationProvider = Provider.of<LocationProvider>(context);
+    final String displayAddress = locationProvider.currentAddress ?? 'Choose your location...';
+
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top + 16, bottom: 40),
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            AppTheme.saffron,
+            AppTheme.primaryDark,
+          ],
+        ),
+        borderRadius: BorderRadius.vertical(bottom: Radius.circular(32)),
+      ),
+      child: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: GestureDetector(
+              onTap: _showAddressSelectionBottomSheet,
+              child: Row(
+                children: [
+                const Icon(Icons.location_on_rounded, color: Colors.white, size: 24),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Container(
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          color: AppTheme.primary.withValues(alpha: 0.1),
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.location_on,
-                          color: AppTheme.primary,
-                          size: 20,
+                      Row(
+                        children: [
+                          Flexible(
+                            child: Text(
+                              displayAddress.contains(',') ? displayAddress.split(',')[0] : displayAddress,
+                              style: GoogleFonts.baloo2(
+                                fontSize: 20,
+                                fontWeight: FontWeight.w900,
+                                color: Colors.white,
+                                height: 1.1,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          const Icon(Icons.keyboard_arrow_down_rounded, color: Colors.white, size: 20),
+                        ],
+                      ),
+                      Text(
+                        displayAddress,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.inter(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.white.withValues(alpha: 0.8),
                         ),
                       ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: GestureDetector(
-                          onTap: _showAddressSelectionBottomSheet,
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'LOCATION',
-                                style: GoogleFonts.inter(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.bold,
-                                  color: AppTheme.textMuted,
-                                  letterSpacing: 0.5,
-                                ),
-                              ),
-                              Row(
-                                children: [
-                                  Flexible(
-                                    child: Text(
-                                      displayAddress,
-                                      style: GoogleFonts.inter(
-                                        fontSize: 15,
-                                        fontWeight: FontWeight.bold,
-                                        color: AppTheme.textPrimary,
-                                      ),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ),
-                                  const Icon(
-                                    Icons.keyboard_arrow_down,
-                                    color: AppTheme.textLight,
-                                    size: 18,
-                                  ),
-                                ],
-                              ),
-                            ],
+                    ],
+                  ),
+                ),
+                _buildCircularAction(Icons.account_balance_wallet_outlined),
+                const SizedBox(width: 12),
+                _buildCircularAction(Icons.person_outline_rounded),
+              ],
+            ),
+          ),
+        ),
+          const SizedBox(height: 32),
+          // "Hire a Service Man" Content
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'HIRE A\nSERVICE MAN',
+                        style: GoogleFonts.baloo2(
+                          fontSize: 36,
+                          fontWeight: FontWeight.w900,
+                          color: Colors.white,
+                          height: 1.0,
+                          letterSpacing: -1.0,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                        decoration: BoxDecoration(
+                          color: Colors.black,
+                          borderRadius: BorderRadius.circular(100),
+                        ),
+                        child: Text(
+                          'BOOK NOW >',
+                          style: GoogleFonts.inter(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w900,
+                            color: Colors.white,
+                            letterSpacing: 0.5,
                           ),
                         ),
                       ),
                     ],
                   ),
                 ),
+                SizedBox(
+                  width: 120,
+                  height: 120,
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      Positioned(
+                        right: 0,
+                        child: Image.asset(
+                          'assets/icons/services.png', // Fallback to icon sheet if no specific asset
+                          width: 100,
+                          height: 100,
+                          fit: BoxFit.contain,
+                          errorBuilder: (c, e, s) => const Icon(Icons.engineering_rounded, size: 80, color: Colors.white30),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
-                // Banner
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: Container(
-                    height: 240,
-                    width: double.infinity,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(24),
-                      image: const DecorationImage(
-                        image: AssetImage(
-                          'assets/images/construction_worker_banner.png',
-                        ),
-                        fit: BoxFit.cover,
-                      ),
+  Widget _buildCircularAction(IconData icon) {
+    return Container(
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.2),
+        shape: BoxShape.circle,
+      ),
+      child: Icon(icon, color: Colors.white, size: 20),
+    );
+  }
+
+  Widget _buildSearchSection() {
+    return Transform.translate(
+      offset: const Offset(0, -28),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        child: GlassCard(
+          radius: 16,
+          blur: 15,
+          opacity: 0.7,
+          borderColor: Colors.white.withValues(alpha: 0.5),
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: SizedBox(
+            height: 56,
+            child: Row(
+              children: [
+                const Icon(Icons.search, color: AppTheme.saffron, size: 24),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: TextField(
+                    onChanged: (value) => Provider.of<AppStateProvider>(context, listen: false).setSearchQuery(value),
+                    style: GoogleFonts.inter(
+                      fontSize: 15,
+                      color: AppTheme.textPrimary,
+                      fontWeight: FontWeight.w500,
                     ),
-                    child: Container(
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(24),
-                        gradient: LinearGradient(
-                          begin: Alignment.centerLeft,
-                          end: Alignment.centerRight,
-                          colors: [
-                            Colors.black.withValues(alpha: 0.7),
-                            Colors.transparent,
-                          ],
-                        ),
+                    decoration: InputDecoration(
+                      hintText: 'Search "Electrician"',
+                      hintStyle: GoogleFonts.inter(
+                        fontSize: 15,
+                        color: AppTheme.textMuted,
+                        fontWeight: FontWeight.w500,
                       ),
-                      padding: const EdgeInsets.all(24),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 10,
-                              vertical: 4,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.2),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Text(
-                              'TRANSPARENT PRICING',
-                              style: GoogleFonts.inter(
-                                color: Colors.white,
-                                fontSize: 10,
-                                fontWeight: FontWeight.bold,
-                                letterSpacing: 0.5,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          Text(
-                            'Daily Wage Model',
-                            style: GoogleFonts.inter(
-                              color: Colors.white,
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'Access vetted skilled labor with\nfixed, predictable daily rates.',
-                            style: GoogleFonts.inter(
-                              color: Colors.white.withValues(alpha: 0.8),
-                              fontSize: 13,
-                            ),
-                          ),
-                          const Spacer(),
-                          ElevatedButton.icon(
-                            onPressed: () {},
-                            icon: const Icon(
-                              Icons.arrow_forward,
-                              size: 16,
-                              color: Colors.white,
-                            ),
-                            label: Text(
-                              'Learn How It Works',
-                              style: GoogleFonts.inter(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 13,
-                                color: Colors.white,
-                              ),
-                            ),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppTheme.accent,
-                              foregroundColor: Colors.white,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              elevation: 0,
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                                vertical: 12,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
+                      border: InputBorder.none,
+                      isDense: true,
+                      contentPadding: EdgeInsets.zero,
                     ),
                   ),
                 ),
-
-                const SizedBox(height: 25),
-
-                Consumer<AppStateProvider>(
-                  builder: (context, appState, child) {
-                    final allCategories = appState.categories;
-
-                    if (appState.isCategoriesLoading && allCategories.isEmpty) {
-                      return const Center(
-                        child: Padding(
-                          padding: EdgeInsets.all(40.0),
-                          child: CircularProgressIndicator(
-                            color: AppTheme.primary,
-                          ),
-                        ),
-                      );
-                    }
-
-                    if (appState.categoriesError != null &&
-                        allCategories.isEmpty) {
-                      return Center(
-                        child: Padding(
-                          padding: const EdgeInsets.all(20.0),
-                          child: Column(
-                            children: [
-                                Text(
-                                  ErrorHandler.getErrorMessage(appState.categoriesError, action: 'Category load failed'),
-                                  style: GoogleFonts.inter(color: AppTheme.error),
-                                ),
-                              TextButton(
-                                onPressed: () => appState.fetchCategories(),
-                                child: const Text('Retry'),
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
-                    }
-
-                    if (allCategories.isEmpty) {
-                      return Center(
-                        child: Padding(
-                          padding: const EdgeInsets.all(20.0),
-                          child: Text(
-                            'No categories available',
-                            style: GoogleFonts.inter(color: AppTheme.textMuted),
-                          ),
-                        ),
-                      );
-                    }
-
-                    final featuredCategories =
-                        allCategories
-                            .where(
-                              (c) =>
-                                  c.name == 'Masonry' || c.name == 'Plumbing',
-                            )
-                            .toList();
-                    final otherCategories =
-                        allCategories
-                            .where(
-                              (c) =>
-                                  c.name != 'Masonry' && c.name != 'Plumbing',
-                            )
-                            .toList();
-
-                    final List<ServiceCategory> displayFeatured =
-                        featuredCategories.length >= 2
-                            ? featuredCategories
-                            : allCategories.take(2).toList();
-
-                    return Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Categories Header
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 20),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'Labor Categories',
-                                    style: GoogleFonts.inter(
-                                      fontSize: 20,
-                                      fontWeight: FontWeight.bold,
-                                      color: AppTheme.textPrimary,
-                                    ),
-                                  ),
-                                  Text(
-                                    'Find the right expertise for your project',
-                                    style: GoogleFonts.inter(
-                                      fontSize: 13,
-                                      color: AppTheme.textLight,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-
-                        const SizedBox(height: 16),
-
-                        // Feature Categories Row
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 20),
-                          child: Row(
-                            children: [
-                              if (displayFeatured.isNotEmpty)
-                                FeatureCategoryCard(
-                                  category: displayFeatured[0],
-                                  backgroundColor: AppTheme.primary,
-                                  onTap:
-                                      () => _navigateToRequest(
-                                        displayFeatured[0],
-                                      ),
-                                ),
-                              if (displayFeatured.length > 1) ...[
-                                const SizedBox(width: 16),
-                                FeatureCategoryCard(
-                                  category: displayFeatured[1],
-                                  backgroundColor: AppTheme.accent,
-                                  onTap:
-                                      () => _navigateToRequest(
-                                        displayFeatured[1],
-                                      ),
-                                ),
-                              ],
-                            ],
-                          ),
-                        ),
-
-                        const SizedBox(height: 24),
-
-                        // Other Categories Grid
-                        GridView.builder(
-                          padding: const EdgeInsets.symmetric(horizontal: 20),
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          gridDelegate:
-                              const SliverGridDelegateWithMaxCrossAxisExtent(
-                                maxCrossAxisExtent: 120,
-                                crossAxisSpacing: 16,
-                                mainAxisSpacing: 20,
-                                childAspectRatio: 0.85,
-                              ),
-                          itemCount: otherCategories.length,
-                          itemBuilder: (context, index) {
-                            final category = otherCategories[index];
-                            final color = AppTheme.categoryColor(index);
-                            return GestureDetector(
-                              onTap: () => _navigateToRequest(category),
-                              child: Column(
-                                children: [
-                                  Container(
-                                    padding: const EdgeInsets.all(30),
-                                    decoration: BoxDecoration(
-                                      color: Colors.white,
-                                      borderRadius: BorderRadius.circular(16),
-                                      border: Border.all(color: AppTheme.divider),
-                                      boxShadow: AppTheme.shadowSm,
-                                    ),
-                                    child: Icon(
-                                      category.icon,
-                                      color: color,
-                                      size: 24,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    category.name.toUpperCase(),
-                                    style: GoogleFonts.inter(
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.bold,
-                                      color: AppTheme.textLight,
-                                    ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ],
-                              ),
-                            );
-                          },
-                        ),
-                      ],
-                    );
-                  },
-                ),
-                const SizedBox(height: 40),
+                const VerticalDivider(width: 1, indent: 18, endIndent: 18, color: Color(0xFFEEEEEE)),
+                const SizedBox(width: 12),
+                const Icon(Icons.mic_none_rounded, color: AppTheme.saffron, size: 24),
               ],
             ),
           ),
         ),
       ),
-    ),
-  ),
-);
+    );
+  }
+
+
+  Widget _buildServiceCard(ServiceCategory category) {
+    // Mapping generated icons from services.png
+    Offset iconOffset = const Offset(0, 0);
+    String catName = category.name.toLowerCase();
+
+    if (catName.contains('clean')) {
+      iconOffset = const Offset(0, 0);
+    } else if (catName.contains('repair')) {
+      iconOffset = const Offset(1, 0);
+    } else if (catName.contains('paint')) {
+      iconOffset = const Offset(2, 0);
+    } else if (catName.contains('plumb')) {
+      iconOffset = const Offset(0, 1);
+    } else if (catName.contains('mov')) {
+      iconOffset = const Offset(1, 1);
+    } else if (catName.contains('elect') || catName.contains('wir')) {
+      iconOffset = const Offset(2, 1);
+    } else {
+      iconOffset = const Offset(0, 0);
+    }
+
+    return GestureDetector(
+      onTap: () => _navigateToRequest(category),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Top Image Area
+              Container(
+                height: 100,
+                width: double.infinity,
+                color: AppTheme.paleSaffron.withValues(alpha: 0.6),
+                child: Stack(
+                  children: [
+                    Center(
+                      child: SizedBox(
+                        width: 70,
+                        height: 70,
+                        child: ClipRRect(
+                          child: FractionallySizedBox(
+                            widthFactor: 3.0,
+                            heightFactor: 2.0,
+                            alignment: Alignment(
+                              -1.0 + (iconOffset.dx * 1.0),
+                              -1.0 + (iconOffset.dy * 2.0),
+                            ),
+                            child: Image.asset(
+                              'assets/icons/services.png',
+                              fit: BoxFit.cover,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      top: 8,
+                      right: 8,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.95),
+                          borderRadius: BorderRadius.circular(6),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.05),
+                              blurRadius: 4,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.star_rounded, color: Color(0xFFFFB300), size: 10),
+                            const SizedBox(width: 2),
+                            Text(
+                              '4.9',
+                              style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w800, color: AppTheme.textPrimary),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              // Bottom Info Area
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.all(10.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        category.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.inter(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: AppTheme.textPrimary,
+                          height: 1.1,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          Text(
+                            '₹${category.minHourlyRate.toInt() > 0 ? category.minHourlyRate.toInt() : 49}',
+                            style: GoogleFonts.inter(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w800,
+                              color: AppTheme.textPrimary,
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            '₹${(category.maxHourlyRate.toInt() > 0 ? category.maxHourlyRate.toInt() : 150)}',
+                            style: GoogleFonts.inter(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w500,
+                              color: AppTheme.textMuted,
+                              decoration: TextDecoration.lineThrough,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAllServicesGrid() {
+    return Consumer<AppStateProvider>(
+      builder: (context, appState, _) {
+        final categories = appState.categories;
+        
+        if (appState.isCategoriesLoading && categories.isEmpty) {
+          return const Center(
+            child: Padding(
+              padding: EdgeInsets.all(40.0),
+              child: CircularProgressIndicator(color: AppTheme.saffron),
+            ),
+          );
+        }
+
+        if (categories.isEmpty) {
+          return Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 60),
+            child: Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.search_off_rounded,
+                    size: 64,
+                    color: AppTheme.textMuted.withValues(alpha: 0.3),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    appState.searchQuery.isEmpty
+                        ? 'No services available'
+                        : 'No services found for "${appState.searchQuery}"',
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.inter(
+                      fontSize: 16,
+                      color: AppTheme.textMuted,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  if (appState.searchQuery.isNotEmpty) ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      'Try searching for something else',
+                      style: GoogleFonts.inter(
+                        fontSize: 14,
+                        color: AppTheme.textMuted.withValues(alpha: 0.7),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          );
+        }
+
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: GridView.builder(
+            padding: const EdgeInsets.only(top: 10, bottom: 40),
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 3,
+              mainAxisSpacing: 12,
+              crossAxisSpacing: 12,
+              mainAxisExtent: 160,
+            ),
+            itemCount: categories.length,
+            itemBuilder: (context, index) {
+              return _buildServiceCard(categories[index]);
+            },
+          ),
+        );
+      },
+    );
   }
 
   void _navigateToRequest(ServiceCategory category) {

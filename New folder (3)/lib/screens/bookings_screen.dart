@@ -1,0 +1,773 @@
+import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+
+import '../services/api_service.dart';
+import '../services/error_handler.dart';
+import '../services/payment_service.dart';
+import 'package:provider/provider.dart';
+import '../providers/app_state_provider.dart';
+import 'package:razorpay_flutter/razorpay_flutter.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import '../utils/app_theme.dart';
+import '../widgets/glass_card.dart';
+import 'dart:ui';
+
+class BookingsScreen extends StatefulWidget {
+  const BookingsScreen({super.key});
+
+  @override
+  State<BookingsScreen> createState() => _BookingsScreenState();
+}
+
+class _BookingsScreenState extends State<BookingsScreen> {
+  final PaymentService _paymentService = PaymentService();
+  String? _pendingBookingId;
+
+  @override
+  void initState() {
+    super.initState();
+    // Data is fetched in MainScreen or via RefreshIndicator
+    _paymentService.initialize(
+      onSuccess: _handlePaymentSuccess,
+      onFailure: _handlePaymentFailure,
+      onExternalWallet: _handleExternalWallet,
+    );
+  }
+
+  @override
+  void dispose() {
+    _paymentService.dispose();
+    super.dispose();
+  }
+
+  void _handlePaymentSuccess(PaymentSuccessResponse response) async {
+    if (_pendingBookingId != null) {
+      try {
+        final success = await ApiService.verifyPayment(
+          response.orderId!,
+          response.paymentId!,
+          response.signature!,
+          _pendingBookingId!,
+        );
+
+        if (success) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text("Payment Successful!")));
+          _refreshBookings();
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Payment Verification Failed")),
+          );
+        }
+      } catch (e) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(ErrorHandler.getErrorMessage(e, action: 'Payment verification failed'))),
+          );
+        }
+      }
+    }
+  }
+
+  void _handlePaymentFailure(PaymentFailureResponse response) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text("Payment Failed: ${response.message}")),
+    );
+  }
+
+  void _handleExternalWallet(ExternalWalletResponse response) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text("External Wallet Selected: ${response.walletName}"),
+      ),
+    );
+  }
+
+  Future<void> _initiatePayment(dynamic booking) async {
+    try {
+      // Need a key from env or config. Ideally fetched from backend or stored in config.
+      // For now we will use a placeholder or ask user to provide it.
+      // NOTE: User must provide their Razorpay Key ID here or in a Config file.
+      final String razorpayKeyId = dotenv.get(
+        'RAZORPAY_KEY_ID',
+        fallback: 'rzp_test_YourKeyIDHere',
+      );
+
+      // Fixed booking fee of 20rs for the platform
+      int amount = 20;
+
+      final order = await ApiService.createPaymentOrder(booking['_id'], amount);
+
+      setState(() {
+        _pendingBookingId = booking['_id'];
+      });
+
+      _paymentService.openCheckout(
+        keyId: razorpayKeyId,
+        orderId: order['id'],
+        name: "Will",
+        description: "Booking Fee for ${booking['category']}",
+        email: "user@example.com", // Should get from user profile
+        contact: "9876543210", // Should get from user profile
+        amount: order['amount'],
+      );
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(ErrorHandler.getErrorMessage(e, action: 'Payment initiation failed'))),
+        );
+      }
+    }
+  }
+
+  final Set<String> _expandedBookingIds = {};
+
+  Future<void> _refreshBookings() async {
+    await Provider.of<AppStateProvider>(context, listen: false).fetchBookings();
+  }
+
+  String _getDateHeader(DateTime date) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final yesterday = today.subtract(const Duration(days: 1));
+    final dateToCheck = DateTime(date.year, date.month, date.day);
+
+    if (dateToCheck == today) return 'Today';
+    if (dateToCheck == yesterday) return 'Yesterday';
+    return "${_getMonthName(date.month)} ${date.day}, ${date.year}";
+  }
+
+  Future<void> _handleCancelWithdraw(dynamic booking) async {
+    // ... (rest of the existing _handleCancelWithdraw code)
+    final status = (booking['status'] as String).toLowerCase();
+
+    if (status == 'pending') {
+      // Direct withdrawal for pending requests
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder:
+            (context) => AlertDialog(
+              title: Text(
+                'Withdraw Request?',
+                style: GoogleFonts.inter(fontWeight: FontWeight.bold),
+              ),
+              content: Text(
+                'Are you sure you want to withdraw this job request?',
+                style: GoogleFonts.inter(),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context, false),
+                  child: Text(
+                    'Keep Request',
+                    style: GoogleFonts.inter(color: Colors.grey),
+                  ),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.pop(context, true),
+                  child: Text(
+                    'Withdraw',
+                    style: GoogleFonts.inter(
+                      color: AppTheme.error,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+      );
+
+      if (confirmed == true) {
+        await _performStatusUpdate(booking['_id'], 'cancelled');
+      }
+    } else if (status == 'confirmed') {
+      // Show fee warning for confirmed/accepted bookings
+      _showCancellationFeeDialog(booking);
+    }
+  }
+
+  void _showCancellationFeeDialog(dynamic booking) {
+    showDialog(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+            ),
+            title: Row(
+              children: [
+                const Icon(
+                  Icons.warning_amber_rounded,
+                  color: Colors.orange,
+                  size: 28,
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  'Cancellation Fee',
+                  style: GoogleFonts.inter(fontWeight: FontWeight.bold),
+                ),
+              ],
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'A cancellation fee may apply since a worker has already accepted this booking.',
+                  style: GoogleFonts.inter(fontWeight: FontWeight.w500),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  '• Standard fee: ₹50\n• Notice: This fee compensates the worker for their time and travel commitment.',
+                  style: GoogleFonts.inter(
+                    fontSize: 13,
+                    color: Colors.grey[600],
+                  ),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text(
+                  'Keep Booking',
+                  style: GoogleFonts.inter(
+                    color: Colors.grey,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  _performStatusUpdate(booking['_id'], 'cancelled');
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.error,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: Text(
+                  'Confirm Cancel',
+                  style: GoogleFonts.inter(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ),
+    );
+  }
+
+  Future<void> _performStatusUpdate(String bookingId, String status) async {
+    try {
+      final success = await ApiService.updateBookingStatus(bookingId, status);
+      if (success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              "Booking ${status == 'cancelled' ? 'cancelled' : 'updated'} successfuly",
+            ),
+          ),
+        );
+        _refreshBookings();
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Failed to update booking status")),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(ErrorHandler.getErrorMessage(e, action: 'Update failed'))),
+        );
+      }
+    }
+  }
+
+  Future<void> _handleConfirmWork(dynamic booking) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Confirm Work Completion', style: GoogleFonts.inter(fontWeight: FontWeight.bold)),
+        content: Text('Are you sure the worker has completed the job? This will release the payout to the worker.', style: GoogleFonts.inter()),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text('Cancel', style: GoogleFonts.inter(color: Colors.grey)),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+            child: Text('Yes, Confirm', style: GoogleFonts.inter(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      if (!mounted) return;
+      try {
+        final success = await ApiService.confirmWork(booking['_id']);
+        if (success) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Work confirmed successfully!"), backgroundColor: Colors.green),
+          );
+          _refreshBookings();
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Failed to confirm work"), backgroundColor: AppTheme.error),
+          );
+        }
+      } catch (e) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(ErrorHandler.getErrorMessage(e, action: 'Confirmation failed'))),
+          );
+        }
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final appState = Provider.of<AppStateProvider>(context);
+    final bookings = appState.bookings;
+    final isLoading = appState.isBookingsLoading;
+
+    return Scaffold(
+      backgroundColor: AppTheme.scaffoldBg,
+      appBar: AppBar(
+        title: Text('My Bookings', style: GoogleFonts.baloo2(fontSize: 24, fontWeight: FontWeight.w800, color: AppTheme.textPrimary)),
+        backgroundColor: Colors.white,
+        elevation: 0,
+        scrolledUnderElevation: 1,
+        centerTitle: true,
+        automaticallyImplyLeading: false,
+        actions: [
+          IconButton(
+            onPressed: _refreshBookings,
+            icon: const Icon(Icons.tune_rounded, color: AppTheme.textPrimary),
+          ),
+          const SizedBox(width: 8),
+        ],
+      ),
+      body:
+          isLoading && bookings.isEmpty
+              ? const Center(child: CircularProgressIndicator(color: AppTheme.primary))
+              : (bookings.isEmpty
+                  ? _buildEmptyState()
+                  : _buildbookingsList(bookings)),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 40),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(32),
+              decoration: BoxDecoration(
+                color: AppTheme.saffron.withValues(alpha: 0.1),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.calendar_month_outlined,
+                size: 72,
+                color: AppTheme.saffron,
+              ),
+            ),
+            const SizedBox(height: 32),
+            Text(
+              'No Bookings Yet',
+              style: GoogleFonts.baloo2(
+                fontSize: 26,
+                fontWeight: FontWeight.w800,
+                color: AppTheme.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              "Looks like you haven't made any bookings yet. Find the right service and get things done today!",
+              textAlign: TextAlign.center,
+              style: GoogleFonts.inter(
+                color: AppTheme.textMuted,
+                fontSize: 15,
+                height: 1.5,
+              ),
+            ),
+            const SizedBox(height: 40),
+            SizedBox(
+              width: 180,
+              height: 52,
+              child: ElevatedButton(
+                onPressed: () => Navigator.pop(context),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.textPrimary,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                ),
+                child: Text(
+                  'Explore Services',
+                  style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w700, color: Colors.white),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildbookingsList(List<dynamic> bookings) {
+    // Sort bookings by date descending
+    final sortedBookings = List.from(bookings);
+    sortedBookings.sort((a, b) => b['date'].compareTo(a['date']));
+
+    return RefreshIndicator(
+      onRefresh: _refreshBookings,
+      displacement: 20,
+      color: AppTheme.saffron,
+      child: ListView.builder(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+        itemCount: sortedBookings.length,
+        itemBuilder: (context, index) {
+          final booking = sortedBookings[index];
+          final date = DateTime.parse(booking['date']);
+          final dateHeader = _getDateHeader(date);
+
+          bool showHeader = false;
+          if (index == 0) {
+            showHeader = true;
+          } else {
+            final prevBooking = sortedBookings[index - 1];
+            final prevDate = DateTime.parse(prevBooking['date']);
+            if (_getDateHeader(prevDate) != dateHeader) {
+              showHeader = true;
+            }
+          }
+
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (showHeader)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(4, 16, 0, 16),
+                  child: Row(
+                    children: [
+                      Text(
+                        dateHeader.toUpperCase(),
+                        style: GoogleFonts.inter(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w800,
+                          color: AppTheme.textMuted,
+                          letterSpacing: 1.2,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Container(
+                          height: 1,
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [AppTheme.divider, AppTheme.divider.withValues(alpha: 0)],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              _buildBookingCard(booking, index == sortedBookings.length - 1),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildBookingCard(dynamic booking, bool isLast) {
+    final labourer = booking['labourer'];
+    final bookingId = booking['_id'];
+    final isExpanded = _expandedBookingIds.contains(bookingId);
+    final status = (booking['status'] as String).toLowerCase();
+    final date = DateTime.parse(booking['date']);
+    final timeString = "${date.hour % 12 == 0 ? 12 : date.hour % 12}:${date.minute.toString().padLeft(2, '0')} ${date.hour >= 12 ? 'PM' : 'AM'}";
+
+    String imageUrl;
+    String name;
+    String category;
+
+    if (labourer != null) {
+      imageUrl = labourer['imageUrl'] ?? 'https://randomuser.me/api/portraits/lego/1.jpg';
+      name = labourer['name'] ?? 'Worker';
+      category = labourer['category'] ?? 'Service';
+    } else {
+      imageUrl = 'https://ui-avatars.com/api/?name=${booking['category'] ?? 'S'}&background=FF6B00&color=fff';
+      name = booking['category'] ?? 'Service Request';
+      category = 'Broadcast Request';
+    }
+
+    Color statusColor;
+    IconData statusIcon;
+    switch (status) {
+      case 'pending':
+        statusColor = Colors.orange;
+        statusIcon = Icons.schedule_rounded;
+        break;
+      case 'confirmed':
+        statusColor = Colors.blue;
+        statusIcon = Icons.check_circle_rounded;
+        break;
+      case 'completed':
+        statusColor = AppTheme.success;
+        statusIcon = Icons.stars_rounded;
+        break;
+      case 'cancelled':
+        statusColor = AppTheme.error;
+        statusIcon = Icons.cancel_rounded;
+        break;
+      default:
+        statusColor = Colors.grey;
+        statusIcon = Icons.help_outline_rounded;
+    }
+
+    return GestureDetector(
+      onTap: () => setState(() => isExpanded ? _expandedBookingIds.remove(bookingId) : _expandedBookingIds.add(bookingId)),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 20),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 16,
+              offset: const Offset(0, 8),
+            ),
+          ],
+          border: Border.all(color: AppTheme.divider.withValues(alpha: 0.5)),
+        ),
+        child: Column(
+          children: [
+            // Internal Header with Image & Status
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  Container(
+                    width: 56,
+                    height: 56,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(16),
+                      image: DecorationImage(
+                        image: NetworkImage(imageUrl),
+                        fit: BoxFit.cover,
+                      ),
+                      border: Border.all(color: AppTheme.divider, width: 0.5),
+                    ),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          name,
+                          style: GoogleFonts.baloo2(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w800,
+                            color: AppTheme.textPrimary,
+                            height: 1.2,
+                          ),
+                        ),
+                        Text(
+                          category,
+                          style: GoogleFonts.inter(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: AppTheme.textMuted,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: statusColor.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(statusIcon, size: 12, color: statusColor),
+                        const SizedBox(width: 4),
+                        Text(
+                          status.toUpperCase(),
+                          style: GoogleFonts.inter(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w900,
+                            color: statusColor,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            
+            // Middle section: Time & Address Mini
+            Container(
+              margin: const EdgeInsets.symmetric(horizontal: 16),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: BoxDecoration(
+                color: AppTheme.scaffoldBg.withValues(alpha: 0.5),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.access_time_filled_rounded, size: 14, color: AppTheme.textMuted),
+                  const SizedBox(width: 6),
+                  Text(
+                    timeString,
+                    style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w700, color: AppTheme.textPrimary),
+                  ),
+                  const SizedBox(width: 16),
+                  const Icon(Icons.location_on_rounded, size: 14, color: AppTheme.textMuted),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      booking['address'] ?? 'Check details',
+                      style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.textSecondary),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            
+            // Expanded Content
+            if (isExpanded)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Divider(),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Expanded(child: _buildDetailRow('DATE', '${_getMonthName(date.month)} ${date.day}, ${date.year}')),
+                        Expanded(child: _buildDetailRow('BOOKING ID', '#${(bookingId as String).substring(bookingId.length - 6).toUpperCase()}')),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    if (booking['notes'] != null && booking['notes'].toString().isNotEmpty) ...[
+                      _buildDetailRow('NOTES', '${booking['notes']}'),
+                      const SizedBox(height: 16),
+                    ],
+                    
+                    // Action Buttons Area
+                    Row(
+                      children: [
+                        if (status == 'confirmed' && (booking['paymentStatus'] != 'paid'))
+                          Expanded(
+                            child: _buildActionButton('PAY FEE ₹20', Colors.green, () => _initiatePayment(booking)),
+                          ),
+                        if (status == 'confirmed' && booking['paymentStatus'] == 'paid' && booking['isWorkConfirmed'] != true)
+                          Expanded(
+                            child: _buildActionButton('CONFIRM WORK', AppTheme.saffron, () => _handleConfirmWork(booking)),
+                          ),
+                        if (status != 'completed' && booking['isWorkConfirmed'] != true) ...[
+                           const SizedBox(width: 8),
+                           Expanded(
+                            child: _buildActionButton('CANCEL', AppTheme.error, () => _handleCancelWithdraw(booking), isOutlined: true),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            
+            // Footer Indicator
+            const SizedBox(height: 16),
+            Container(
+              width: 32,
+              height: 4,
+              margin: const EdgeInsets.only(bottom: 8),
+              decoration: BoxDecoration(
+                color: AppTheme.divider.withValues(alpha: 0.5),
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDetailRow(String label, String value) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label, 
+          style: GoogleFonts.inter(
+            fontSize: 9, 
+            fontWeight: FontWeight.w800, 
+            color: AppTheme.textMuted, 
+            letterSpacing: 1
+          )
+        ),
+        const SizedBox(height: 4),
+        Text(
+          value, 
+          style: GoogleFonts.inter(
+            fontSize: 13, 
+            fontWeight: FontWeight.w600, 
+            color: AppTheme.textPrimary
+          )
+        ),
+      ],
+    );
+  }
+
+  Widget _buildActionButton(String label, Color color, VoidCallback onTap, {bool isOutlined = false}) {
+    return SizedBox(
+      height: 48,
+      child: ElevatedButton(
+        onPressed: onTap,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: isOutlined ? Colors.white : color,
+          foregroundColor: isOutlined ? color : Colors.white,
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+            side: isOutlined ? BorderSide(color: color, width: 1.5) : BorderSide.none,
+          ),
+          padding: EdgeInsets.zero,
+        ),
+        child: Text(
+          label, 
+          style: GoogleFonts.inter(
+            fontSize: 13, 
+            fontWeight: FontWeight.w900,
+            letterSpacing: 0.5,
+          )
+        ),
+      ),
+    );
+  }
+
+  String _getMonthName(int month) => ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][month - 1];
+}

@@ -1,11 +1,13 @@
 const express = require('express');
 const router = express.Router();
+const jwt = require('jsonwebtoken');
 const Razorpay = require('razorpay');
 const crypto = require('crypto');
 const Booking = require('../models/Booking');
 const Setting = require('../models/Setting');
 const Labourer = require('../models/Labourer');
-const jwt = require('jsonwebtoken');
+const User = require('../models/User');
+const { sendNotification } = require('../utils/notification');
 
 // Middleware
 const verifyToken = (req, res, next) => {
@@ -54,8 +56,19 @@ router.post('/create-order', verifyToken, async (req, res) => {
             return res.status(404).json({ msg: "Booking not found" });
         }
 
+        // Fetch the platform fee from settings
+        let feeAmount = 20; // Default fallback
+        try {
+            const commissionSetting = await Setting.findOne({ key: 'adminCommissionPercentage' });
+            if (commissionSetting) {
+                feeAmount = parseFloat(commissionSetting.value);
+            }
+        } catch (err) {
+            console.error("Error fetching fee setting:", err);
+        }
+
         const options = {
-            amount: amount * 100, // amount in the smallest currency unit (paise)
+            amount: feeAmount * 100, // amount in the smallest currency unit (paise)
             currency: "INR",
             receipt: `receipt_booking_${bookingId}`,
             notes: {
@@ -100,6 +113,28 @@ router.post('/verify-payment', verifyToken, async (req, res) => {
             paymentStatus: 'paid',
             paymentId: razorpay_payment_id
         });
+
+        // Notify the worker about payment
+        try {
+            const booking = await Booking.findById(bookingId).populate('labourer');
+            if (booking && booking.labourer) {
+                const labourer = await Labourer.findById(booking.labourer).populate('user');
+                if (labourer && labourer.user && labourer.user.fcmToken) {
+                    await sendNotification(
+                        labourer.user.fcmToken,
+                        'Payment Received',
+                        'The platform fee for your current job has been paid.',
+                        { 
+                            type: 'booking',
+                            bookingId: bookingId.toString(),
+                            status: booking.status
+                        }
+                    );
+                }
+            }
+        } catch (notifyErr) {
+            console.error("Failed to send payment notification:", notifyErr);
+        }
 
         res.json({
             success: true,

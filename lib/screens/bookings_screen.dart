@@ -9,9 +9,11 @@ import '../providers/app_state_provider.dart';
 import 'package:razorpay_flutter/razorpay_flutter.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import '../utils/app_theme.dart';
+import '../widgets/glass_card.dart';
+import 'dart:ui';
 
 class BookingsScreen extends StatefulWidget {
-  const BookingsScreen({Key? key}) : super(key: key);
+  const BookingsScreen({super.key});
 
   @override
   State<BookingsScreen> createState() => _BookingsScreenState();
@@ -20,6 +22,7 @@ class BookingsScreen extends StatefulWidget {
 class _BookingsScreenState extends State<BookingsScreen> {
   final PaymentService _paymentService = PaymentService();
   String? _pendingBookingId;
+  double _platformFee = 20.0;
 
   @override
   void initState() {
@@ -30,6 +33,20 @@ class _BookingsScreenState extends State<BookingsScreen> {
       onFailure: _handlePaymentFailure,
       onExternalWallet: _handleExternalWallet,
     );
+    _fetchPlatformFee();
+  }
+
+  Future<void> _fetchPlatformFee() async {
+    try {
+      final settings = await ApiService.getSettings();
+      if (settings.containsKey('adminCommissionPercentage')) {
+        setState(() {
+          _platformFee = double.tryParse(settings['adminCommissionPercentage'].toString()) ?? 20.0;
+        });
+      }
+    } catch (e) {
+      print("Error fetching platform fee: $e");
+    }
   }
 
   @override
@@ -92,8 +109,8 @@ class _BookingsScreenState extends State<BookingsScreen> {
         fallback: 'rzp_test_YourKeyIDHere',
       );
 
-      // Fixed booking fee of 20rs for the platform
-      int amount = 20;
+      // Fixed booking fee for the platform (now dynamic)
+      int amount = _platformFee.toInt();
 
       final order = await ApiService.createPaymentOrder(booking['_id'], amount);
 
@@ -307,6 +324,7 @@ class _BookingsScreenState extends State<BookingsScreen> {
     );
 
     if (confirmed == true) {
+      if (!mounted) return;
       try {
         final success = await ApiService.confirmWork(booking['_id']);
         if (success) {
@@ -338,11 +356,19 @@ class _BookingsScreenState extends State<BookingsScreen> {
     return Scaffold(
       backgroundColor: AppTheme.scaffoldBg,
       appBar: AppBar(
-        title: Text('My Bookings', style: AppTheme.heading3),
-        backgroundColor: AppTheme.scaffoldBg,
+        title: Text('My Bookings', style: GoogleFonts.baloo2(fontSize: 24, fontWeight: FontWeight.w800, color: AppTheme.textPrimary)),
+        backgroundColor: Colors.white,
         elevation: 0,
+        scrolledUnderElevation: 1,
         centerTitle: true,
         automaticallyImplyLeading: false,
+        actions: [
+          IconButton(
+            onPressed: _refreshBookings,
+            icon: const Icon(Icons.tune_rounded, color: AppTheme.textPrimary),
+          ),
+          const SizedBox(width: 8),
+        ],
       ),
       body:
           isLoading && bookings.isEmpty
@@ -355,51 +381,75 @@ class _BookingsScreenState extends State<BookingsScreen> {
 
   Widget _buildEmptyState() {
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(28),
-            decoration: BoxDecoration(
-              color: AppTheme.primaryLight,
-              shape: BoxShape.circle,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 40),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(32),
+              decoration: BoxDecoration(
+                color: AppTheme.saffron.withValues(alpha: 0.1),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.calendar_month_outlined,
+                size: 72,
+                color: AppTheme.saffron,
+              ),
             ),
-            child: const Icon(
-              Icons.calendar_month_rounded,
-              size: 48,
-              color: AppTheme.primary,
+            const SizedBox(height: 32),
+            Text(
+              'No Bookings Yet',
+              style: GoogleFonts.baloo2(
+                fontSize: 26,
+                fontWeight: FontWeight.w800,
+                color: AppTheme.textPrimary,
+              ),
             ),
-          ),
-          const SizedBox(height: 20),
-          Text('No Bookings Yet', style: AppTheme.heading3),
-          const SizedBox(height: 8),
-          Text(
-            'Your bookings will appear here.',
-            style: AppTheme.body.copyWith(color: AppTheme.textMuted),
-          ),
-        ],
+            const SizedBox(height: 12),
+            Text(
+              "Looks like you haven't made any bookings yet. Find the right service and get things done today!",
+              textAlign: TextAlign.center,
+              style: GoogleFonts.inter(
+                color: AppTheme.textMuted,
+                fontSize: 15,
+                height: 1.5,
+              ),
+            ),
+            const SizedBox(height: 40),
+            SizedBox(
+              width: 180,
+              height: 52,
+              child: ElevatedButton(
+                onPressed: () => Provider.of<AppStateProvider>(context, listen: false).setTab(0),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.textPrimary,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                ),
+                child: Text(
+                  'Explore Services',
+                  style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w700, color: Colors.white),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildbookingsList(List<dynamic> bookings) {
-    if (bookings.isEmpty) {
-      return Center(
-        child: Text(
-          'No bookings in this category',
-          style: GoogleFonts.inter(color: AppTheme.textMuted),
-        ),
-      );
-    }
-
     // Sort bookings by date descending
     final sortedBookings = List.from(bookings);
     sortedBookings.sort((a, b) => b['date'].compareTo(a['date']));
 
     return RefreshIndicator(
       onRefresh: _refreshBookings,
+      displacement: 20,
+      color: AppTheme.saffron,
       child: ListView.builder(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
         itemCount: sortedBookings.length,
         itemBuilder: (context, index) {
           final booking = sortedBookings[index];
@@ -422,18 +472,33 @@ class _BookingsScreenState extends State<BookingsScreen> {
             children: [
               if (showHeader)
                 Padding(
-                  padding: const EdgeInsets.only(top: 8, bottom: 12, left: 4),
-                  child: Text(
-                    dateHeader.toUpperCase(),
-                    style: GoogleFonts.inter(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                      color: AppTheme.textMuted,
-                      letterSpacing: 1.2,
-                    ),
+                  padding: const EdgeInsets.fromLTRB(4, 16, 0, 16),
+                  child: Row(
+                    children: [
+                      Text(
+                        dateHeader.toUpperCase(),
+                        style: GoogleFonts.inter(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w800,
+                          color: AppTheme.textMuted,
+                          letterSpacing: 1.2,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Container(
+                          height: 1,
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [AppTheme.divider, AppTheme.divider.withValues(alpha: 0)],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-              _buildBookingCard(booking),
+              _buildBookingCard(booking, index == sortedBookings.length - 1),
             ],
           );
         },
@@ -441,385 +506,283 @@ class _BookingsScreenState extends State<BookingsScreen> {
     );
   }
 
-  Widget _buildBookingCard(dynamic booking) {
+  Widget _buildBookingCard(dynamic booking, bool isLast) {
     final labourer = booking['labourer'];
     final bookingId = booking['_id'];
     final isExpanded = _expandedBookingIds.contains(bookingId);
     final status = (booking['status'] as String).toLowerCase();
-    final date = DateTime.parse(booking['date']); // Assuming ISO format
-    final h = date.hour;
-    final hour = h == 0 ? 12 : (h > 12 ? h - 12 : h);
-    final timeString =
-        "$hour:${date.minute.toString().padLeft(2, '0')} ${h >= 12 ? 'PM' : 'AM'}";
+    final date = DateTime.parse(booking['date']);
+    final timeString = "${date.hour % 12 == 0 ? 12 : date.hour % 12}:${date.minute.toString().padLeft(2, '0')} ${date.hour >= 12 ? 'PM' : 'AM'}";
 
     String imageUrl;
     String name;
     String category;
-    String rate;
 
     if (labourer != null) {
-      imageUrl =
-          labourer['imageUrl'] ??
-          'https://randomuser.me/api/portraits/lego/1.jpg';
-      name = labourer['name'] ?? 'Unknown';
+      imageUrl = labourer['imageUrl'] ?? 'https://randomuser.me/api/portraits/lego/1.jpg';
+      name = labourer['name'] ?? 'Worker';
       category = labourer['category'] ?? 'Service';
-      rate = '₹${labourer['hourlyRate']}.00'; // Formatting to match UI
     } else {
-      imageUrl = 'https://ui-avatars.com/api/?name=Request&background=random';
+      imageUrl = 'https://ui-avatars.com/api/?name=${booking['category'] ?? 'S'}&background=FF6B00&color=fff';
       name = booking['category'] ?? 'Service Request';
       category = 'Broadcast Request';
-      rate = 'Pending';
+    }
+
+    Color statusColor;
+    IconData statusIcon;
+    switch (status) {
+      case 'pending':
+        statusColor = Colors.orange;
+        statusIcon = Icons.schedule_rounded;
+        break;
+      case 'confirmed':
+        statusColor = Colors.blue;
+        statusIcon = Icons.check_circle_rounded;
+        break;
+      case 'completed':
+        statusColor = AppTheme.success;
+        statusIcon = Icons.stars_rounded;
+        break;
+      case 'cancelled':
+        statusColor = AppTheme.error;
+        statusIcon = Icons.cancel_rounded;
+        break;
+      default:
+        statusColor = Colors.grey;
+        statusIcon = Icons.help_outline_rounded;
     }
 
     return GestureDetector(
-      onTap: () {
-        setState(() {
-          if (_expandedBookingIds.contains(bookingId)) {
-            _expandedBookingIds.remove(bookingId);
-          } else {
-            _expandedBookingIds.add(bookingId);
-          }
-        });
-      },
-      child: Stack(
-        children: [
-          Container(
-            margin: const EdgeInsets.only(bottom: 14),
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-              border: Border.all(color: AppTheme.divider),
-              boxShadow: AppTheme.shadowSm,
+      onTap: () => setState(() => isExpanded ? _expandedBookingIds.remove(bookingId) : _expandedBookingIds.add(bookingId)),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 20),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 16,
+              offset: const Offset(0, 8),
             ),
-            child: Column(
-              children: [
-                // Header Row (Always visible)
-                Row(
-                  children: [
-                    Container(
-                      width: 48,
-                      height: 48,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        image: DecorationImage(
-                          image: NetworkImage(imageUrl),
-                          fit: BoxFit.cover,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            name,
-                            style: GoogleFonts.inter(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
-                              color: AppTheme.textPrimary,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            category,
-                            style: GoogleFonts.inter(
-                              color: AppTheme.textLight,
-                              fontSize: 13,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    // Small Duration Badge
-                    if (booking['bookingMode'] != null)
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.grey[100],
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Text(
-                          booking['bookingMode'] == 'Hourly' &&
-                                  booking['numberOfHours'] != null
-                              ? '${booking['numberOfHours']} ${booking['numberOfHours'] == 1 ? 'hr' : 'hrs'}'
-                              : booking['bookingMode'],
-                          style: GoogleFonts.inter(
-                            color: AppTheme.textPrimary,
-                            fontSize: 10,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
-                // Animated Details Section
-                // Animated Details Section
-                AnimatedCrossFade(
-                  firstChild: const SizedBox(width: double.infinity, height: 0),
-                  secondChild: Container(
-                    margin: const EdgeInsets.only(top: 12),
-                    padding: const EdgeInsets.all(12),
+          ],
+          border: Border.all(color: AppTheme.divider.withValues(alpha: 0.5)),
+        ),
+        child: Column(
+          children: [
+            // Internal Header with Image & Status
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  Container(
+                    width: 56,
+                    height: 56,
                     decoration: BoxDecoration(
-                      color: AppTheme.scaffoldBg, // Slate 50
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: const Color(0xFFE2E8F0),
-                      ), // Slate 200
+                      borderRadius: BorderRadius.circular(16),
+                      image: DecorationImage(
+                        image: NetworkImage(imageUrl),
+                        fit: BoxFit.cover,
+                      ),
+                      border: Border.all(color: AppTheme.divider, width: 0.5),
                     ),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Row(
-                          children: [
-                            const Icon(
-                              Icons.info_outline,
-                              size: 14,
-                              color: AppTheme.textLight,
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              'Booking Details',
-                              style: GoogleFonts.inter(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w600,
-                                color: AppTheme.textLight,
-                                letterSpacing: 0.5,
-                              ),
-                            ),
-                          ],
+                        Text(
+                          name,
+                          style: GoogleFonts.baloo2(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w800,
+                            color: AppTheme.textPrimary,
+                            height: 1.2,
+                          ),
                         ),
-                        const SizedBox(height: 12),
-                        Row(
-                          children: [
-                            const Icon(
-                              Icons.access_time,
-                              size: 16,
-                              color: AppTheme.textLight,
-                            ),
-                            const SizedBox(width: 6),
-                            Text(
-                              timeString,
-                              style: GoogleFonts.inter(
-                                color: AppTheme.textPrimary,
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            const Spacer(),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.end,
-                              children: [
-                                Text(
-                                  'Total Rate',
-                                  style: GoogleFonts.inter(
-                                    fontSize: 10,
-                                    color: AppTheme.textMuted,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                                Text(
-                                  rate,
-                                  style: GoogleFonts.inter(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                    color: AppTheme.primary,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 16),
-                        // Actions Row
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.end,
-                          children: [
-                            if (status == 'confirmed' &&
-                                (booking['paymentStatus'] == 'pending' ||
-                                    booking['paymentStatus'] == null))
-                              Padding(
-                                padding: const EdgeInsets.only(right: 8.0),
-                                child: SizedBox(
-                                  height: 32,
-                                  child: ElevatedButton(
-                                    onPressed: () => _initiatePayment(booking),
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: Colors.green,
-                                      elevation: 0,
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(20),
-                                      ),
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 16,
-                                      ),
-                                    ),
-                                    child: Text(
-                                      'Pay ₹20 Fee',
-                                      style: GoogleFonts.inter(
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.white,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            if (status == 'confirmed' &&
-                                booking['paymentStatus'] == 'paid' && 
-                                booking['isWorkConfirmed'] != true)
-                              Padding(
-                                padding: const EdgeInsets.only(right: 8.0),
-                                child: SizedBox(
-                                  height: 32,
-                                  child: ElevatedButton(
-                                    onPressed: () => _handleConfirmWork(booking),
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: AppTheme.primary,
-                                      elevation: 0,
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(20),
-                                      ),
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 16,
-                                      ),
-                                    ),
-                                    child: Text(
-                                      'Confirm Work',
-                                      style: GoogleFonts.inter(
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.white,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            if (status == 'completed' || booking['isWorkConfirmed'] == true)
-                              Padding(
-                                padding: const EdgeInsets.only(right: 8.0),
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 12,
-                                    vertical: 6,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: Colors.blue.withValues(alpha: 0.1),
-                                    borderRadius: BorderRadius.circular(20),
-                                    border: Border.all(
-                                      color: Colors.blue.withValues(alpha: 0.5),
-                                    ),
-                                  ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      const Icon(
-                                        Icons.verified,
-                                        size: 14,
-                                        color: Colors.blue,
-                                      ),
-                                      const SizedBox(width: 4),
-                                      Text(
-                                        'Work Confirmed',
-                                        style: GoogleFonts.inter(
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.bold,
-                                          color: Colors.blue,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            if (status != 'completed' && booking['isWorkConfirmed'] != true)
-                              SizedBox(
-                              height: 32,
-                              child: OutlinedButton(
-                                onPressed: () => _handleCancelWithdraw(booking),
-                                style: OutlinedButton.styleFrom(
-                                  foregroundColor: AppTheme.error,
-                                  side: BorderSide(
-                                    color: AppTheme.error.withValues(alpha: 0.5),
-                                  ),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(20),
-                                  ),
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 16,
-                                    vertical: 0,
-                                  ),
-                                ),
-                                child: Text(
-                                  'Cancel',
-                                  style: GoogleFonts.inter(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
+                        Text(
+                          category,
+                          style: GoogleFonts.inter(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: AppTheme.textMuted,
+                          ),
                         ),
                       ],
                     ),
                   ),
-                  crossFadeState:
-                      isExpanded
-                          ? CrossFadeState.showSecond
-                          : CrossFadeState.showFirst,
-                  duration: const Duration(milliseconds: 300),
-                  sizeCurve: Curves.easeInOut,
-                ),
-              ],
-            ),
-          ),
-          // Status Badge
-          if (status == 'pending' || status == 'confirmed')
-            Positioned(
-              top: 12,
-              right: 12,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: AppTheme.statusBgColor(status),
-                  borderRadius: BorderRadius.circular(AppTheme.radiusFull),
-                ),
-                child: Text(
-                  status.toUpperCase(),
-                  style: GoogleFonts.inter(
-                    fontSize: 9,
-                    fontWeight: FontWeight.w700,
-                    color: AppTheme.statusColor(status),
-                    letterSpacing: 0.5,
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: statusColor.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(statusIcon, size: 12, color: statusColor),
+                        const SizedBox(width: 4),
+                        Text(
+                          status.toUpperCase(),
+                          style: GoogleFonts.inter(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w900,
+                            color: statusColor,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
+                ],
               ),
             ),
-        ],
+            
+            // Middle section: Time & Address Mini
+            Container(
+              margin: const EdgeInsets.symmetric(horizontal: 16),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: BoxDecoration(
+                color: AppTheme.scaffoldBg.withValues(alpha: 0.5),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.access_time_filled_rounded, size: 14, color: AppTheme.textMuted),
+                  const SizedBox(width: 6),
+                  Text(
+                    timeString,
+                    style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w700, color: AppTheme.textPrimary),
+                  ),
+                  const SizedBox(width: 16),
+                  const Icon(Icons.location_on_rounded, size: 14, color: AppTheme.textMuted),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      booking['address'] ?? 'Check details',
+                      style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.textSecondary),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            
+            // Expanded Content
+            if (isExpanded)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Divider(),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Expanded(child: _buildDetailRow('DATE', '${_getMonthName(date.month)} ${date.day}, ${date.year}')),
+                        Expanded(child: _buildDetailRow('BOOKING ID', '#${(bookingId as String).substring(bookingId.length - 6).toUpperCase()}')),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    if (booking['notes'] != null && booking['notes'].toString().isNotEmpty) ...[
+                      _buildDetailRow('NOTES', '${booking['notes']}'),
+                      const SizedBox(height: 16),
+                    ],
+                    
+                    // Action Buttons Area
+                    Row(
+                      children: [
+                        if (status == 'confirmed' && (booking['paymentStatus'] != 'paid'))
+                          Expanded(
+                            child: _buildActionButton('PAY FEE ₹${_platformFee.toInt()}', Colors.green, () => _initiatePayment(booking)),
+                          ),
+                        if (status == 'confirmed' && booking['paymentStatus'] == 'paid' && booking['isWorkConfirmed'] != true)
+                          Expanded(
+                            child: _buildActionButton('CONFIRM WORK', AppTheme.saffron, () => _handleConfirmWork(booking)),
+                          ),
+                        if (status != 'completed' && booking['isWorkConfirmed'] != true) ...[
+                           const SizedBox(width: 8),
+                           Expanded(
+                            child: _buildActionButton('CANCEL', AppTheme.error, () => _handleCancelWithdraw(booking), isOutlined: true),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            
+            // Footer Indicator
+            const SizedBox(height: 16),
+            Container(
+              width: 32,
+              height: 4,
+              margin: const EdgeInsets.only(bottom: 8),
+              decoration: BoxDecoration(
+                color: AppTheme.divider.withValues(alpha: 0.5),
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  String _getMonthName(int month) {
-    const months = [
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'May',
-      'Jun',
-      'Jul',
-      'Aug',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Dec',
-    ];
-    return months[month - 1];
+  Widget _buildDetailRow(String label, String value) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label, 
+          style: GoogleFonts.inter(
+            fontSize: 9, 
+            fontWeight: FontWeight.w800, 
+            color: AppTheme.textMuted, 
+            letterSpacing: 1
+          )
+        ),
+        const SizedBox(height: 4),
+        Text(
+          value, 
+          style: GoogleFonts.inter(
+            fontSize: 13, 
+            fontWeight: FontWeight.w600, 
+            color: AppTheme.textPrimary
+          )
+        ),
+      ],
+    );
   }
+
+  Widget _buildActionButton(String label, Color color, VoidCallback onTap, {bool isOutlined = false}) {
+    return SizedBox(
+      height: 48,
+      child: ElevatedButton(
+        onPressed: onTap,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: isOutlined ? Colors.white : color,
+          foregroundColor: isOutlined ? color : Colors.white,
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+            side: isOutlined ? BorderSide(color: color, width: 1.5) : BorderSide.none,
+          ),
+          padding: EdgeInsets.zero,
+        ),
+        child: Text(
+          label, 
+          style: GoogleFonts.inter(
+            fontSize: 13, 
+            fontWeight: FontWeight.w900,
+            letterSpacing: 0.5,
+          )
+        ),
+      ),
+    );
+  }
+
+  String _getMonthName(int month) => ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][month - 1];
 }

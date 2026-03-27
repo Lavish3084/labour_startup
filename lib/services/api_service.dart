@@ -194,33 +194,6 @@ class ApiService {
     }
   }
 
-  static Future<bool> updateWorkerProfile(Map<String, dynamic> data) async {
-    final token = await getToken();
-    final response = await http.post(
-      Uri.parse('$baseUrl/profile/worker'),
-      headers: {
-        'Content-Type': 'application/json',
-        'x-auth-token': token ?? '',
-      },
-      body: jsonEncode(data),
-    );
-
-    return response.statusCode == 200;
-  }
-
-  static Future<bool> updateUpiId(String upiId) async {
-    final token = await getToken();
-    final response = await http.put(
-      Uri.parse('$baseUrl/profile/worker/upi'),
-      headers: {
-        'Content-Type': 'application/json',
-        'x-auth-token': token ?? '',
-      },
-      body: jsonEncode({'upiId': upiId}),
-    );
-    return response.statusCode == 200;
-  }
-
   static Future<bool> updateProfilePicture(String base64Image) async {
     final token = await getToken();
     print('Sending PUT request to $baseUrl/profile/image');
@@ -326,18 +299,6 @@ class ApiService {
     }
   }
 
-  static Future<bool> claimBooking(String bookingId) async {
-    final token = await getToken();
-    final response = await http.put(
-      Uri.parse('$baseUrl/bookings/$bookingId/claim'),
-      headers: {
-        'Content-Type': 'application/json',
-        'x-auth-token': token ?? '',
-      },
-    );
-    return response.statusCode == 200;
-  }
-
   static Future<List<dynamic>> getUserBookings() async {
     final token = await getToken();
     final response = await http.get(
@@ -350,22 +311,6 @@ class ApiService {
     } else if (response.statusCode == 401) {
       await logout();
       throw Exception('Unauthorized');
-    } else {
-      throw Exception(
-        'Failed to load bookings: ${response.statusCode} ${response.body}',
-      );
-    }
-  }
-
-  static Future<List<dynamic>> getWorkerBookings() async {
-    final token = await getToken();
-    final response = await http.get(
-      Uri.parse('$baseUrl/bookings/worker'),
-      headers: {'x-auth-token': token ?? ''},
-    );
-
-    if (response.statusCode == 200) {
-      return jsonDecode(response.body);
     } else {
       throw Exception(
         'Failed to load bookings: ${response.statusCode} ${response.body}',
@@ -402,6 +347,15 @@ class ApiService {
   }
 
   // Data
+  static Future<Map<String, dynamic>> getSettings() async {
+    final response = await http.get(Uri.parse('$baseUrl/settings'));
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      throw Exception('Failed to load settings');
+    }
+  }
+
   static Future<List<ServiceCategory>> getCategories() async {
     final response = await http.get(Uri.parse('$baseUrl/categories'));
 

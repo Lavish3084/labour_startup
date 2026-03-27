@@ -14,10 +14,9 @@ import '../utils/app_theme.dart';
 import 'login_screen.dart';
 import 'saved_addresses_screen.dart';
 import 'splash_screen.dart';
-import 'worker_details_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
-  const ProfileScreen({Key? key}) : super(key: key);
+  const ProfileScreen({super.key});
 
   @override
   State<ProfileScreen> createState() => _ProfileScreenState();
@@ -30,10 +29,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
   void initState() {
     super.initState();
     // Fetch profile data when screen initializes to ensure fresh data
-    Future.microtask(
-      () =>
-          Provider.of<AppStateProvider>(context, listen: false).fetchProfile(),
-    );
+    Future.microtask(() {
+      if (!mounted) return;
+      Provider.of<AppStateProvider>(context, listen: false).fetchProfile();
+    });
   }
 
   Future<void> _handleRefresh() async {
@@ -123,8 +122,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
 
     if (confirmed == true) {
-      if (!context.mounted) return;
-
+      if (!mounted) return;
+      
       showDialog(
         context: context,
         barrierDismissible: false,
@@ -159,606 +158,402 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
-  Future<void> _showUpdateUpiDialog(BuildContext context) async {
-    final appState = Provider.of<AppStateProvider>(context, listen: false);
-    final currentUpi = appState.profileData?['labourer']?['upiId']?.toString() ?? '';
-    final upiController = TextEditingController(text: currentUpi);
-    bool isSaving = false;
-
-    await showDialog<bool>(
-      context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setState) {
-          return AlertDialog(
-            title: Text('Update UPI ID', style: GoogleFonts.inter(fontWeight: FontWeight.bold)),
-            content: TextField(
-              controller: upiController,
-              decoration: InputDecoration(
-                labelText: 'UPI ID',
-                hintText: 'e.g., number@upi',
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-              ),
-            ),
-            actions: [
-              TextButton(
-                onPressed: isSaving ? null : () => Navigator.pop(context),
-                child: Text('Cancel', style: GoogleFonts.inter(color: Colors.grey)),
-              ),
-              ElevatedButton(
-                onPressed: isSaving ? null : () async {
-                  final newUpi = upiController.text.trim();
-                  if (newUpi != currentUpi) {
-                    setState(() => isSaving = true);
-                    try {
-                      final success = await ApiService.updateUpiId(newUpi);
-                      if (success) {
-                        await appState.fetchProfile();
-                        if (context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('UPI ID updated successfully!'), backgroundColor: Colors.green),
-                          );
-                        }
-                      }
-                    } catch (e) {
-                      if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text(ErrorHandler.getErrorMessage(e, action: 'Update failed')), backgroundColor: Colors.red),
-                        );
-                      }
-                    } finally {
-                      setState(() => isSaving = false);
-                    }
-                  }
-                  if (context.mounted) Navigator.pop(context);
-                },
-                style: ElevatedButton.styleFrom(backgroundColor: AppTheme.primary),
-                child: isSaving 
-                  ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)) 
-                  : Text('Save', style: GoogleFonts.inter(color: Colors.white)),
-              ),
-            ],
-          );
-        }
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final appState = Provider.of<AppStateProvider>(context);
     final profileData = appState.profileData;
     final isLoading = appState.isProfileLoading;
 
+    if (isLoading && profileData == null) {
+      return const Scaffold(
+        backgroundColor: AppTheme.scaffoldBg,
+        body: Center(child: CircularProgressIndicator(color: AppTheme.primary)),
+      );
+    }
+
+    final user = profileData?['user'];
+    final labourer = profileData?['labourer'];
+
     return Scaffold(
       backgroundColor: AppTheme.scaffoldBg,
-      body:
-          isLoading && profileData == null
-              ? const Center(child: CircularProgressIndicator(color: AppTheme.primary))
-              : SafeArea(
-                child: RefreshIndicator(
-                  onRefresh: _handleRefresh,
-                  child: Stack(
+      body: RefreshIndicator(
+        onRefresh: _handleRefresh,
+        edgeOffset: 120, // Offset to start below the hero
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: Column(
+            children: [
+              _buildHeroSection(user, labourer),
+              Transform.translate(
+                offset: const Offset(0, -32),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Column(
                     children: [
-                      SingleChildScrollView(
-                        physics: const AlwaysScrollableScrollPhysics(),
-                        padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
-                        child: Column(
-                          children: [
-                            const SizedBox(
-                              height: 40,
-                            ), // Spacer for back button
-                            // Profile Picture
-                            Center(
-                              child: GestureDetector(
-                                onTap: _updateProfilePicture,
-                                child: Stack(
-                                  children: [
-                                    Container(
-                                      width: 120,
-                                      height: 120,
-                                      decoration: BoxDecoration(
-                                        shape: BoxShape.circle,
-                                        border: Border.all(
-                                          color: AppTheme.primary.withValues(alpha: 0.3),
-                                          width: 3,
-                                        ),
-                                        image:
-                                            profileData?['user'] != null &&
-                                                    profileData!['user']['profilePicture'] !=
-                                                        null &&
-                                                    profileData['user']['profilePicture']
-                                                        .toString()
-                                                        .isNotEmpty
-                                                ? DecorationImage(
-                                                  image:
-                                                      profileData['user']['profilePicture']
-                                                              .toString()
-                                                              .startsWith(
-                                                                'http',
-                                                              )
-                                                          ? NetworkImage(
-                                                            profileData['user']['profilePicture'],
-                                                          )
-                                                          : MemoryImage(
-                                                                base64Decode(
-                                                                  profileData['user']['profilePicture']
-                                                                      .toString()
-                                                                      .split(
-                                                                        ',',
-                                                                      )
-                                                                      .last,
-                                                                ),
-                                                              )
-                                                              as ImageProvider,
-                                                  fit: BoxFit.cover,
-                                                )
-                                                : null,
-                                        boxShadow: [
-                                          BoxShadow(
-                                            color: Colors.black.withOpacity(
-                                              0.1,
-                                            ),
-                                            blurRadius: 20,
-                                            offset: const Offset(0, 10),
-                                          ),
-                                        ],
-                                      ),
-                                      child:
-                                          profileData?['user']?['profilePicture'] ==
-                                                      null ||
-                                                  profileData!['user']['profilePicture']
-                                                      .toString()
-                                                      .isEmpty
-                                              ? const Icon(
-                                                Icons.person,
-                                                size: 60,
-                                                color: Colors.grey,
-                                              )
-                                              : null,
-                                    ),
-                                    Positioned(
-                                      bottom: 0,
-                                      right: 0,
-                                      child: Container(
-                                        padding: const EdgeInsets.all(8),
-                                        decoration: BoxDecoration(
-                                          gradient: AppTheme.primaryGradient,
-                                          shape: BoxShape.circle,
-                                          border: Border.all(color: Colors.white, width: 2),
-                                        ),
-                                        child: const Icon(
-                                          Icons.camera_alt_rounded,
-                                          color: Colors.white,
-                                          size: 16,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 20),
-
-                            // Name and Role
-                            Text(
-                              profileData?['user']['name'] ?? 'User',
-                              style: GoogleFonts.inter(
-                                fontSize: 24,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.black87,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              (profileData?['user']['role'] ?? 'user')
-                                  .toUpperCase(),
-                              style: GoogleFonts.inter(
-                                fontSize: 14,
-                                color: Colors.grey[600],
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                            const SizedBox(height: 30),
-
-                            const SizedBox(height: 30),
-                            // Professional Info Card (Worker Only)
-                            if (profileData?['labourer'] != null) ...[
-                              _buildProfessionalCard(profileData!['labourer']),
-                              const SizedBox(height: 20),
-                            ],
-
-                            // Settings Sections
-                            const SizedBox(height: 10),
-                            if (profileData?['user']?['role'] != 'worker') ...[
-                              _buildProfileOption(
-                                Icons.person_outline,
-                                'Full Name',
-                                profileData?['user']['name'] ?? '',
-                              ),
-                              _buildProfileOption(
-                                Icons.email_outlined,
-                                'Email',
-                                profileData?['user']['email'] ?? '',
-                              ),
-                            ],
-                            if (profileData?['user']?['role'] == 'worker') ...[
-                              _buildProfileOption(
-                                Icons.account_balance_wallet_outlined,
-                                'Update UPI ID',
-                                'Manage your payout method',
-                                onTap: () => _showUpdateUpiDialog(context),
-                              ),
-                            ],
-
-                            const SizedBox(height: 20),
-
-                            // Hide Saved Addresses for workers
-                            if (profileData?['user']?['role'] != 'worker')
-                              _buildProfileOption(
-                                Icons.location_on_outlined,
-                                'Saved Addresses',
-                                'Manage locations',
-                                onTap: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder:
-                                          (context) =>
-                                              const SavedAddressesScreen(),
-                                    ),
-                                  );
-                                },
-                              ),
-
-                            const SizedBox(height: 10),
-                            _buildSectionHeader('About & Policies'),
-                            const SizedBox(height: 10),
-                            _buildProfileOption(
-                              Icons.privacy_tip_outlined,
-                              'Privacy Policy',
-                              'Read our privacy policy',
-                              onTap: () {
-                                _launchURL('https://justlavish.tech/privacy-policy');
-                              },
-                            ),
-                            _buildProfileOption(
-                              Icons.description_outlined,
-                              'Terms of Service',
-                              'Read our terms and conditions',
-                              onTap: () {
-                                _launchURL('https://justlavish.tech/terms');
-                              },
-                            ),
-                            const Divider(height: 32),
-                            _buildProfileOption(
-                              Icons.delete_forever_outlined,
-                              'Delete Account',
-                              'Permanently remove your data',
-                              isDestructive: true,
-                              onTap: () => _showDeleteAccountDialog(context),
-                            ),
-
-                            const SizedBox(height: 20),
-                            SizedBox(
-                              width: double.infinity,
-                              child: ElevatedButton(
-                                onPressed: () async {
-                                  final stateProvider =
-                                      Provider.of<AppStateProvider>(
-                                    context,
-                                    listen: false,
-                                  );
-                                  final locationProvider =
-                                      Provider.of<LocationProvider>(
-                                    context,
-                                    listen: false,
-                                  );
-
-                                  stateProvider.clearData();
-                                  locationProvider.clearData();
-
-                                  await ApiService.logout();
-                                  if (context.mounted) {
-                                    Navigator.pushAndRemoveUntil(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (context) => const LoginScreen(),
-                                      ),
-                                      (route) => false,
-                                    );
-                                  }
-                                },
-                                style: AppTheme.dangerButton,
-                                child: Text(
-                                  'Log Out',
-                                  style: GoogleFonts.inter(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      // Custom Back Button - only for workers
-                      if (profileData?['user']?['role'] == 'worker')
-                        Positioned(
-                          top: 10,
-                          left: 10,
-                          child: GestureDetector(
-                            onTap: () => Navigator.pop(context),
-                            child: Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                shape: BoxShape.circle,
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withOpacity(0.05),
-                                    blurRadius: 10,
-                                    offset: const Offset(0, 4),
-                                  ),
-                                ],
-                              ),
-                              child: const Icon(
-                                Icons.arrow_back,
-                                color: Colors.black87,
-                              ),
-                            ),
-                          ),
-                        ),
+                      _buildUserInfoSection(user),
+                      _buildAccountSettings(user),
+                      const SizedBox(height: 12),
+                      _buildLogoutButton(),
+                      const SizedBox(height: 80),
                     ],
                   ),
                 ),
               ),
-    );
-  }
-
-  Widget _buildSectionHeader(String title) {
-    return Align(
-      alignment: Alignment.centerLeft,
-      child: Text(
-        title,
-        style: GoogleFonts.inter(
-          fontSize: 16,
-          fontWeight: FontWeight.bold,
-          color: Colors.black87,
+            ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildProfessionalCard(Map<String, dynamic> labourer) {
+  Widget _buildHeroSection(dynamic user, dynamic labourer) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-        boxShadow: AppTheme.shadowSm,
+      decoration: const BoxDecoration(
+        gradient: AppTheme.heroGradient,
+        borderRadius: BorderRadius.vertical(bottom: Radius.circular(40)),
       ),
+      padding: const EdgeInsets.fromLTRB(20, 64, 20, 48),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Professional Details',
-                    style: GoogleFonts.inter(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black87,
+              _buildGhostBackButton(),
+              const Spacer(),
+              _buildModernNotificationIcon(),
+            ],
+          ),
+          const SizedBox(height: 24),
+          // Avatar with premium border
+          Stack(
+            children: [
+              Container(
+                width: 110,
+                height: 110,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.white.withValues(alpha: 0.2), width: 1),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.3),
+                      blurRadius: 30,
+                      offset: const Offset(0, 15),
                     ),
-                  ),
-                  const SizedBox(height: 4),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 4,
-                    ),
+                  ],
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(4),
+                  child: Container(
                     decoration: BoxDecoration(
-                      color: AppTheme.primary.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(20),
+                      shape: BoxShape.circle,
+                      border: Border.all(color: AppTheme.saffron, width: 3),
+                      image: _getProfileImage(user),
                     ),
-                    child: Text(
-                      labourer['category'] ?? 'Worker',
-                      style: GoogleFonts.inter(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: AppTheme.primary,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              TextButton.icon(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const WorkerDetailsScreen(),
-                    ),
-                  );
-                },
-                icon: const Icon(Icons.edit, size: 16),
-                label: Text(
-                  'Edit',
-                  style: GoogleFonts.inter(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
+                    child: user?['profilePicture'] == null || user['profilePicture'].toString().isEmpty
+                        ? const Icon(Icons.person_rounded, size: 54, color: Colors.white70)
+                        : null,
                   ),
                 ),
-                style: TextButton.styleFrom(
-                  visualDensity: VisualDensity.compact,
+              ),
+              Positioned(
+                bottom: 4,
+                right: 4,
+                child: GestureDetector(
+                  onTap: _updateProfilePicture,
+                  child: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: AppTheme.saffron,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: const Color(0xFF1A1A1A), width: 3),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.2),
+                          blurRadius: 10,
+                          offset: const Offset(0, 5),
+                        ),
+                      ],
+                    ),
+                    child: const Icon(Icons.camera_alt_rounded, color: Colors.white, size: 16),
+                  ),
                 ),
               ),
             ],
           ),
-          const Divider(height: 30),
-          _buildInfoRow(
-            Icons.location_on_outlined,
-            'Location',
-            labourer['location'] ?? '',
-          ),
-          const SizedBox(height: 16),
-          _buildInfoRow(
-            Icons.payments_outlined,
-            'Hourly Rate',
-            '₹${labourer['hourlyRate'] ?? '0'}/hr',
-          ),
-          const SizedBox(height: 16),
-          _buildInfoRow(
-            Icons.history_outlined,
-            'Experience',
-            '${labourer['experienceYears'] ?? '0'} Years',
-          ),
-          if (labourer['upiId'] != null && labourer['upiId'].toString().isNotEmpty) ...[
-            const SizedBox(height: 16),
-            _buildInfoRow(
-              Icons.account_balance_wallet_outlined,
-              'UPI ID',
-              labourer['upiId'].toString(),
-            ),
-          ],
           const SizedBox(height: 20),
           Text(
-            'Skills',
-            style: GoogleFonts.inter(
-              fontSize: 14,
-              fontWeight: FontWeight.bold,
-              color: Colors.black54,
+            user?['name'] ?? (labourer != null ? 'Worker' : 'Guest'),
+            style: GoogleFonts.baloo2(
+              fontSize: 28,
+              fontWeight: FontWeight.w800,
+              color: Colors.white,
+              height: 1.1,
+              letterSpacing: -0.5,
             ),
           ),
-          const SizedBox(height: 10),
-          if (labourer['skills'] != null &&
-              (labourer['skills'] as List).isNotEmpty)
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children:
-                  (labourer['skills'] as List).map((skill) {
-                    return Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 6,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.grey[100],
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: Colors.grey[300]!),
-                      ),
-                      child: Text(
-                        skill.toString(),
-                        style: GoogleFonts.inter(
-                          fontSize: 12,
-                          color: Colors.black87,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    );
-                  }).toList(),
-            )
-          else
-            Text(
-              'No skills listed',
-              style: GoogleFonts.inter(fontSize: 12, color: Colors.grey),
-            ),
+          const SizedBox(height: 8),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.verified_user_rounded, color: AppTheme.saffron.withValues(alpha: 0.8), size: 16),
+              const SizedBox(width: 6),
+              Text(
+                (user?['role'] ?? 'User').toString().toUpperCase(),
+                style: GoogleFonts.inter(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w800,
+                  color: Colors.white.withValues(alpha: 0.5),
+                ),
+              ),
+            ],
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildInfoRow(IconData icon, String label, String value) {
-    return Row(
-      children: [
-        Icon(icon, size: 20, color: Colors.grey[600]),
-        const SizedBox(width: 12),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+  Widget _buildDetailRow(IconData icon, String label, String value, {VoidCallback? onTap}) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Row(
           children: [
-            Text(
-              label,
-              style: GoogleFonts.inter(
-                fontSize: 12,
-                color: Colors.grey[500],
-                fontWeight: FontWeight.w500,
+            Container(
+              width: 42,
+              height: 42,
+              decoration: BoxDecoration(
+                color: AppTheme.scaffoldBg,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(icon, color: AppTheme.textPrimary.withValues(alpha: 0.7), size: 20),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    label,
+                    style: GoogleFonts.inter(
+                      fontSize: 9,
+                      fontWeight: FontWeight.w800,
+                      color: AppTheme.textMuted,
+                      letterSpacing: 0.8,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    value,
+                    style: GoogleFonts.inter(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: AppTheme.textPrimary,
+                    ),
+                  ),
+                ],
               ),
             ),
-            Text(
-              value,
-              style: GoogleFonts.inter(
-                fontSize: 14,
-                color: Colors.black87,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
+            if (onTap != null)
+              Icon(Icons.edit_rounded, color: AppTheme.saffron.withValues(alpha: 0.5), size: 16),
           ],
         ),
-      ],
+      ),
     );
   }
 
-  Widget _buildProfileOption(
-    IconData icon,
-    String title,
-    String subtitle, {
-    VoidCallback? onTap,
-    bool isDestructive = false,
-  }) {
-    final color = isDestructive ? AppTheme.error : AppTheme.primary;
+  Widget _buildDivider() {
+    return Divider(height: 24, color: Colors.black.withValues(alpha: 0.05));
+  }
+
+  Widget _buildModernNotificationIcon() {
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.1),
+        shape: BoxShape.circle,
+      ),
+      child: const Icon(Icons.notifications_none_rounded, color: Colors.white, size: 22),
+    );
+  }
+
+  Widget _buildGhostBackButton() {
+    if (!Navigator.canPop(context)) return const SizedBox(width: 36, height: 36);
+    return GestureDetector(
+      onTap: () => Navigator.pop(context),
+      child: Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.1),
+          shape: BoxShape.circle,
+        ),
+        child: const Icon(Icons.arrow_back_rounded, color: Colors.white, size: 20),
+      ),
+    );
+  }
+
+  Widget _buildUserInfoSection(dynamic user) {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      margin: const EdgeInsets.only(bottom: 24),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(28),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.02),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+          ),
+        ],
+        border: Border.all(color: AppTheme.divider.withValues(alpha: 0.5)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Personal information',
+            style: GoogleFonts.baloo2(
+              fontSize: 18,
+              fontWeight: FontWeight.w800,
+              color: AppTheme.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 20),
+          _buildDetailRow(Icons.person_outline_rounded, 'FULL NAME', user?['name'] ?? 'Guest User'),
+          _buildDivider(),
+          _buildDetailRow(Icons.email_outlined, 'EMAIL ADDRESS', user?['email'] ?? 'No email set'),
+          _buildDivider(),
+          GestureDetector(
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const SavedAddressesScreen())),
+            child: _buildDetailRow(Icons.location_on_outlined, 'SAVED ADDRESSES', 'Manage your locations', onTap: () {}),
           ),
         ],
       ),
-      child: ListTile(
-        leading: Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: color.withOpacity(0.1),
-            shape: BoxShape.circle,
+    );
+  }
+
+  Widget _buildAccountSettings(dynamic user) {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      margin: const EdgeInsets.only(bottom: 24),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(28),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
           ),
-          child: Icon(icon, color: color, size: 20),
-        ),
-        title: Text(
-          title,
-          style: GoogleFonts.inter(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-            color: Colors.black87,
+        ],
+        border: Border.all(color: AppTheme.divider.withValues(alpha: 0.5)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Legal & Account',
+            style: GoogleFonts.baloo2(
+              fontSize: 18,
+              fontWeight: FontWeight.w800,
+              color: AppTheme.textPrimary,
+            ),
           ),
-        ),
-        subtitle:
-            subtitle.isNotEmpty
-                ? Text(
-                  subtitle,
-                  style: GoogleFonts.inter(
-                    fontSize: 12,
-                    color: Colors.grey[500],
-                  ),
-                )
-                : null,
-        trailing: const Icon(
-          Icons.arrow_forward_ios,
-          size: 16,
-          color: Colors.grey,
-        ),
-        onTap: onTap,
+          const SizedBox(height: 20),
+          _buildSettingItem(Icons.privacy_tip_outlined, 'Privacy Policy', onTap: () => _launchURL('https://justlavish.tech/privacy-policy')),
+          _buildDivider(),
+          _buildSettingItem(Icons.description_outlined, 'Terms of Service', onTap: () => _launchURL('https://justlavish.tech/terms')),
+          _buildDivider(),
+          _buildSettingItem(Icons.delete_outline_rounded, 'Delete Account', isDestructive: true, onTap: () => _showDeleteAccountDialog(context)),
+        ],
       ),
     );
+  }
+
+  Widget _buildSettingItem(IconData icon, String title, {VoidCallback? onTap, bool isDestructive = false}) {
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        child: Row(
+          children: [
+            Icon(icon, color: isDestructive ? AppTheme.error : AppTheme.textPrimary.withValues(alpha: 0.7), size: 22),
+            const SizedBox(width: 14),
+            Text(
+              title,
+              style: GoogleFonts.inter(
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+                color: isDestructive ? AppTheme.error : AppTheme.textPrimary,
+              ),
+            ),
+            const Spacer(),
+            Icon(Icons.chevron_right_rounded, color: AppTheme.divider, size: 20),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLogoutButton() {
+    return Container(
+      width: double.infinity,
+      height: 60,
+      margin: const EdgeInsets.only(top: 12),
+      child: ElevatedButton(
+        onPressed: () async {
+          final stateProvider = Provider.of<AppStateProvider>(context, listen: false);
+          final locationProvider = Provider.of<LocationProvider>(context, listen: false);
+
+          stateProvider.clearData();
+          locationProvider.clearData();
+
+          await ApiService.logout();
+          if (context.mounted) {
+            Navigator.pushAndRemoveUntil(
+              context,
+              MaterialPageRoute(builder: (context) => const LoginScreen()),
+              (route) => false,
+            );
+          }
+        },
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppTheme.error.withValues(alpha: 0.1),
+          foregroundColor: AppTheme.error,
+          elevation: 0,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        ),
+        child: Text(
+          'LOG OUT',
+          style: GoogleFonts.inter(
+            fontSize: 14,
+            fontWeight: FontWeight.w900,
+            letterSpacing: 2.0,
+          ),
+        ),
+      ),
+    );
+  }
+
+  DecorationImage? _getProfileImage(dynamic user) {
+    if (user?['profilePicture'] == null || user!['profilePicture'].toString().isEmpty) {
+      return null;
+    }
+    final String pic = user['profilePicture'].toString();
+    if (pic.startsWith('http')) {
+      return DecorationImage(image: NetworkImage(pic), fit: BoxFit.cover);
+    } else {
+      try {
+        return DecorationImage(
+          image: MemoryImage(base64Decode(pic.split(',').last)),
+          fit: BoxFit.cover,
+        );
+      } catch (e) {
+        return null;
+      }
+    }
   }
 
   Future<void> _launchURL(String urlString) async {

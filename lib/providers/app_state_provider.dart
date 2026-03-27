@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/service_category.dart';
+import '../models/labourer.dart';
 import '../services/api_service.dart';
 import '../services/error_handler.dart';
 
@@ -9,22 +10,52 @@ class AppStateProvider with ChangeNotifier {
   Map<String, dynamic>? _profileData;
   List<dynamic> _bookings = [];
   List<ServiceCategory> _categories = [];
+  int _selectedTab = 0;
+  String _searchQuery = '';
+  List<dynamic> _labourers = [];
   bool _isProfileLoading = false;
   bool _isBookingsLoading = false;
   bool _isCategoriesLoading = false;
+  bool _isLabourersLoading = false;
   String? _profileError;
   String? _bookingsError;
   String? _categoriesError;
+  String? _labourersError;
 
   Map<String, dynamic>? get profileData => _profileData;
   List<dynamic> get bookings => _bookings;
-  List<ServiceCategory> get categories => _categories;
+  List<ServiceCategory> get categories {
+    if (_searchQuery.isEmpty) return _categories;
+    return _categories
+        .where((c) => _fuzzyMatch(_searchQuery, c.name))
+        .toList();
+  }
+
+  bool _fuzzyMatch(String query, String target) {
+    query = query.toLowerCase();
+    target = target.toLowerCase();
+    
+    if (target.contains(query)) return true;
+    
+    int queryIdx = 0;
+    for (int targetIdx = 0; targetIdx < target.length; targetIdx++) {
+      if (queryIdx < query.length && target[targetIdx] == query[queryIdx]) {
+        queryIdx++;
+      }
+    }
+    return queryIdx == query.length;
+  }
+  int get selectedTab => _selectedTab;
+  String get searchQuery => _searchQuery;
+  List<dynamic> get labourers => _labourers;
   bool get isProfileLoading => _isProfileLoading;
   bool get isBookingsLoading => _isBookingsLoading;
   bool get isCategoriesLoading => _isCategoriesLoading;
+  bool get isLabourersLoading => _isLabourersLoading;
   String? get profileError => _profileError;
   String? get bookingsError => _bookingsError;
   String? get categoriesError => _categoriesError;
+  String? get labourersError => _labourersError;
 
   Future<void> fetchProfile() async {
     _isProfileLoading = true;
@@ -97,11 +128,38 @@ class AppStateProvider with ChangeNotifier {
     }
   }
 
+  Future<void> fetchLabourers() async {
+    _isLabourersLoading = true;
+    _labourersError = null;
+    notifyListeners();
+
+    try {
+      final fetchedLabourers = await ApiService.getLabourers();
+      _labourers = fetchedLabourers.map((l) => l.toJson()).toList();
+    } catch (e) {
+      _labourersError = ErrorHandler.getErrorMessage(e, action: 'Failed to load workers');
+    } finally {
+      _isLabourersLoading = false;
+      notifyListeners();
+    }
+  }
+
+  void setTab(int index) {
+    _selectedTab = index;
+    notifyListeners();
+  }
+
+  void setSearchQuery(String query) {
+    _searchQuery = query;
+    notifyListeners();
+  }
+
   void clearData() {
     _profileData = null;
     _bookings = [];
     _profileError = null;
     _bookingsError = null;
+    _searchQuery = '';
     notifyListeners();
   }
 }

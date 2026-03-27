@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const jwt = require('jsonwebtoken');
+const Setting = require('../models/Setting');
 
 // Middleware to verify token
 const verifyToken = (req, res, next) => {

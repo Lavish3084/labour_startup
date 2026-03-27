@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:geolocator/geolocator.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:google_sign_in/google_sign_in.dart';
 import '../services/api_service.dart';
 import '../services/error_handler.dart';
 import '../utils/app_theme.dart';
 import 'main_screen.dart';
 import 'signup_screen.dart';
-import 'worker_details_screen.dart';
-import 'worker_home_screen.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+import 'package:geolocator/geolocator.dart';
+
+
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
@@ -45,27 +45,20 @@ class _LoginScreenState extends State<LoginScreen> {
         print('Backend Response: $result');
         
         if (result['success']) {
-          final returnedRole = result['data']['role'];
           if (context.mounted) {
             await Geolocator.requestPermission();
             if (context.mounted) {
-              if (returnedRole == 'worker') {
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(builder: (context) => const WorkerHomeScreen()),
-                );
-              } else {
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(builder: (context) => const MainScreen()),
-                );
-              }
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (context) => const MainScreen()),
+              );
             }
           }
         } else {
           if (context.mounted) {
             if (result['code'] == 'USER_NOT_FOUND') {
-              _showRoleSelectionBottomSheet(idToken);
+              // Auto-signup as user if account doesn't exist
+              _completeGoogleSignup(idToken, 'user');
             } else {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(content: Text(result['message'] ?? 'Google Login failed')),
@@ -94,78 +87,6 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-  void _showRoleSelectionBottomSheet(String idToken) {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (context) => Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Complete Sign Up', style: AppTheme.heading2),
-            const SizedBox(height: 8),
-            Text(
-              'Your Google account is ready. How would you like to use the app?',
-              style: AppTheme.body.copyWith(color: AppTheme.textLight),
-            ),
-            const SizedBox(height: 24),
-            Row(
-              children: [
-                Expanded(
-                  child: _buildRoleButton(
-                    'user', 'Hire workers', Icons.search_rounded, idToken,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _buildRoleButton(
-                    'worker', 'Find work', Icons.construction_rounded, idToken,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildRoleButton(String role, String label, IconData icon, String idToken) {
-    return GestureDetector(
-      onTap: () {
-        Navigator.pop(context); // Close the bottom sheet
-        _completeGoogleSignup(idToken, role);
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 16),
-        decoration: BoxDecoration(
-          color: AppTheme.primaryLight,
-          borderRadius: BorderRadius.circular(AppTheme.radiusMd),
-          border: Border.all(color: AppTheme.primary, width: 1.5),
-        ),
-        child: Column(
-          children: [
-            Icon(icon, size: 28, color: AppTheme.primary),
-            const SizedBox(height: 8),
-            Text(
-              label,
-              style: GoogleFonts.inter(
-                fontWeight: FontWeight.w600,
-                fontSize: 14,
-                color: AppTheme.primary,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   Future<void> _completeGoogleSignup(String idToken, String role) async {
     setState(() => _isLoading = true);
     try {
@@ -174,25 +95,18 @@ class _LoginScreenState extends State<LoginScreen> {
         if (mounted) {
           await Geolocator.requestPermission();
           if (mounted) {
-            if (role == 'worker') {
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (context) => const WorkerDetailsScreen()),
-              );
-            } else {
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (context) => const MainScreen()),
-              );
-            }
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (context) => const MainScreen()),
+            );
           }
         }
       } else {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(result['message'] ?? 'Signup failed')),
-          );
-        }
+        if (!mounted) return;
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const LoginScreen()),
+        );
       }
     } catch (e) {
       if (mounted) {
@@ -221,9 +135,8 @@ class _LoginScreenState extends State<LoginScreen> {
               Container(
                 height: 48,
                 width: 48,
-                decoration: BoxDecoration(
-                  color: AppTheme.primary,
-                  borderRadius: BorderRadius.circular(12),
+                decoration: const BoxDecoration(
+                  gradient: AppTheme.profileGradient,
                 ),
                 child: const Icon(
                   Icons.handyman_rounded,
@@ -402,21 +315,13 @@ class _LoginScreenState extends State<LoginScreen> {
       final result = await ApiService.login(email, password);
 
       if (result['success']) {
-        final returnedRole = result['data']['role'];
         if (context.mounted) {
           await Geolocator.requestPermission();
           if (context.mounted) {
-            if (returnedRole == 'worker') {
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (context) => const WorkerHomeScreen()),
-              );
-            } else {
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (context) => const MainScreen()),
-              );
-            }
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (context) => const MainScreen()),
+            );
           }
         }
       } else {

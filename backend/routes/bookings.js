@@ -3,6 +3,7 @@ const router = express.Router();
 const Booking = require('../models/Booking');
 const Labourer = require('../models/Labourer');
 const User = require('../models/User');
+const Setting = require('../models/Setting');
 const jwt = require('jsonwebtoken');
 const admin = require('firebase-admin');
 const Razorpay = require('razorpay');
@@ -78,7 +79,11 @@ router.post('/', verifyToken, async (req, res) => {
                     labourer.user.fcmToken,
                     'New Job Request',
                     `You have a new booking request for ${date}! Price: ${priceDisplay}`,
-                    { bookingId: booking._id.toString() }
+                    { 
+                        type: 'booking',
+                        bookingId: booking._id.toString(),
+                        status: 'pending' 
+                    }
                 );
             } else {
                 console.log(`Worker ${labourerId} (User: ${labourer.user ? labourer.user._id : 'null'}) has no FCM token.`);
@@ -116,7 +121,11 @@ router.post('/', verifyToken, async (req, res) => {
                     tokens,
                     'New Job Opportunity',
                     `A new ${category} job is available nearby! Price: ${priceDisplay}`,
-                    { bookingId: booking._id.toString() }
+                    { 
+                        type: 'booking',
+                        bookingId: booking._id.toString(),
+                        status: 'pending'
+                    }
                 );
             } else {
                 console.log(`No valid FCM tokens found for category: ${category}. Category count: ${workers.length}`);
@@ -218,7 +227,11 @@ router.put('/:id/claim', verifyToken, async (req, res) => {
                     userToNotify.fcmToken,
                     'Booking Confirmed!',
                     `${workerUser.name} has accepted your request for ${labourer.category}.`,
-                    { bookingId: booking._id.toString(), status: 'confirmed' }
+                    { 
+                        type: 'booking',
+                        bookingId: booking._id.toString(), 
+                        status: 'confirmed' 
+                    }
                 );
             }
         } catch (notifyErr) {
@@ -289,7 +302,11 @@ router.put('/:id/status', verifyToken, async (req, res) => {
                     userToNotify.fcmToken,
                     'Booking Update',
                     `Your booking status has been updated to ${status.toUpperCase()}`,
-                    { bookingId: booking._id.toString() }
+                    { 
+                        type: 'booking',
+                        bookingId: booking._id.toString(),
+                        status: status
+                    }
                 );
             }
         }
@@ -322,13 +339,44 @@ router.put('/:id/confirm-work', verifyToken, async (req, res) => {
             return res.status(400).json({ msg: 'Work is already confirmed' });
         }
 
+        let commissionAmount = 20; // Default fallback
+        try {
+            const commissionSetting = await Setting.findOne({ key: 'adminCommissionPercentage' });
+            if (commissionSetting) {
+                commissionAmount = parseFloat(commissionSetting.value);
+            }
+        } catch (err) {
+            console.error("Error fetching commission setting:", err);
+        }
+
         booking.isWorkConfirmed = true;
-        booking.commissionAmount = 20; // Entire amount is platform fee
+        booking.commissionAmount = commissionAmount;
         booking.workerPayoutAmount = 0; // Settled directly via cash
         booking.status = 'completed'; // Also mark as completed
         booking.paymentStatus = 'released'; // Automatically mark as released since there's no hold
 
         await booking.save();
+        
+        // Notify the worker that work was confirmed
+        try {
+            if (booking.labourer) {
+                const labourer = await Labourer.findById(booking.labourer).populate('user');
+                if (labourer && labourer.user && labourer.user.fcmToken) {
+                    await sendNotification(
+                        labourer.user.fcmToken,
+                        'Work Confirmed',
+                        'The user has confirmed that you completed the job!',
+                        { 
+                            type: 'booking',
+                            bookingId: booking._id.toString(),
+                            status: 'completed'
+                        }
+                    );
+                }
+            }
+        } catch (notifyErr) {
+            console.error("Failed to send work confirmation notification:", notifyErr);
+        }
 
         res.json(booking);
     } catch (err) {

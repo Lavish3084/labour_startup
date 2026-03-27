@@ -71,3 +71,5 @@ admin/pnp.js
 admin/npm-debug.log*
 admin/yarn-debug.log*
 admin/yarn-error.log*
+
+worker_app/

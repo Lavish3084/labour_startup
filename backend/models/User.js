@@ -7,12 +7,15 @@ const UserSchema = new mongoose.Schema({
     },
     email: {
         type: String,
-        required: true,
-        unique: true
+        required: false
+    },
+    phoneNumber: {
+        type: String,
+        required: false
     },
     password: {
         type: String,
-        required: true
+        required: false
     },
     role: {
         type: String,
@@ -44,5 +47,8 @@ const UserSchema = new mongoose.Schema({
         default: Date.now
     }
 });
+
+UserSchema.index({ email: 1, role: 1 }, { unique: true, sparse: true });
+UserSchema.index({ phoneNumber: 1, role: 1 }, { unique: true, sparse: true });
 
 module.exports = mongoose.model('User', UserSchema);
