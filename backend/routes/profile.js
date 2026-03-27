@@ -360,4 +360,22 @@ router.delete('/address/:id', verifyToken, async (req, res) => {
     }
 });
 
+// @route   DELETE /api/profile
+// @desc    Delete user and associated labourer profile
+// @access  Private
+router.delete('/', verifyToken, async (req, res) => {
+    try {
+        // Remove labourer profile if exists
+        await Labourer.findOneAndDelete({ user: req.user.id });
+
+        // Remove user
+        await User.findOneAndDelete({ _id: req.user.id });
+
+        res.json({ msg: 'User deleted successfully' });
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Server Error');
+    }
+});
+
 module.exports = router;

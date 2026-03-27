@@ -277,7 +277,9 @@ router.put('/:id/status', verifyToken, async (req, res) => {
             targetUserId = booking.user;
         } else if (isUserOwner && booking.labourer) {
             const l = await Labourer.findById(booking.labourer);
-            targetUserId = l.user;
+            if (l) {
+                targetUserId = l.user;
+            }
         }
 
         if (targetUserId) {
