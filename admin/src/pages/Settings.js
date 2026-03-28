@@ -1,10 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import api from '../services/api';
-import { useAuth } from '../context/AuthContext';
 import { Settings as SettingsIcon, Save } from 'lucide-react';
 
 const Settings = () => {
-    const { token } = useAuth();
     const [settings, setSettings] = useState({ adminCommissionPercentage: 0 });
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);

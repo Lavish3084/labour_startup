@@ -1,12 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import api from '../services/api';
-import { useAuth } from '../context/AuthContext';
 import { Clock } from 'lucide-react';
 
 const Payouts = () => {
     const [bookings, setBookings] = useState([]);
     const [loading, setLoading] = useState(true);
-    const { token } = useAuth();
     const [processingId, setProcessingId] = useState(null);
 
     useEffect(() => {
