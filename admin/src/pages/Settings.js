@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { Settings as SettingsIcon, Save } from 'lucide-react';
 
@@ -16,7 +16,7 @@ const Settings = () => {
 
     const fetchSettings = async () => {
         try {
-            const res = await axios.get(`${process.env.REACT_APP_API_URL || 'http://localhost:5000/api'}/settings`);
+            const res = await api.get('/settings');
             // Initialize with default or retrieved values
             setSettings({
                 adminCommissionPercentage: res.data.adminCommissionPercentage || 0,
@@ -35,11 +35,7 @@ const Settings = () => {
         setMessage({ type: '', text: '' });
 
         try {
-            await axios.put(
-                `${process.env.REACT_APP_API_URL || 'http://localhost:5000/api'}/settings`,
-                settings,
-                { headers: { 'x-auth-token': token } }
-            );
+            await api.put('/settings', settings);
             setMessage({ type: 'success', text: 'Settings updated successfully!' });
         } catch (err) {
             console.error('Error saving settings:', err);

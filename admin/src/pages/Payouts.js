@@ -1,5 +1,4 @@
-import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { Clock } from 'lucide-react';
 
@@ -16,9 +15,7 @@ const Payouts = () => {
 
     const fetchPayouts = async () => {
         try {
-            const res = await axios.get(`${process.env.REACT_APP_API_URL || 'http://localhost:5000/api'}/admin/bookings`, {
-                headers: { 'x-auth-token': token }
-            });
+            const res = await api.get('/admin/bookings');
             // Filter bookings that have work confirmed but not released yet (or show all and just style them)
             // Let's just show all completed/confirmed work bookings
             const payoutBookings = res.data.filter(b => b.isWorkConfirmed);
@@ -35,11 +32,7 @@ const Payouts = () => {
         
         setProcessingId(id);
         try {
-            await axios.put(
-                `${process.env.REACT_APP_API_URL || 'http://localhost:5000/api'}/bookings/${id}/payout`,
-                {},
-                { headers: { 'x-auth-token': token } }
-            );
+            await api.put(`/bookings/${id}/payout`, {});
             // Refresh list
             fetchPayouts();
         } catch (err) {

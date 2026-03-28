@@ -22,6 +22,7 @@ const verifyToken = (req, res, next) => {
 // Let's make a generic endpoint for generic configs.
 router.get('/', async (req, res) => {
     try {
+        console.log("Fetching global settings...");
         const settings = await Setting.find();
         const config = {};
         settings.forEach(s => config[s.key] = s.value);
