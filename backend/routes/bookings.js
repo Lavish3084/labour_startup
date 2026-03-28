@@ -318,8 +318,6 @@ router.put('/:id/status', verifyToken, async (req, res) => {
     }
 });
 
-const Setting = require('../models/Setting');
-
 // @route   PUT /api/bookings/:id/confirm-work
 // @desc    User confirms the work is done and we calculate commission
 // @access  Private (User)
