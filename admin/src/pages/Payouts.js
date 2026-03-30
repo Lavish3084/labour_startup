@@ -5,7 +5,6 @@ import { Clock } from 'lucide-react';
 const Payouts = () => {
     const [bookings, setBookings] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [processingId, setProcessingId] = useState(null);
 
     useEffect(() => {
         fetchPayouts();
@@ -26,21 +25,6 @@ const Payouts = () => {
         }
     };
 
-    const handleReleasePayout = async (id) => {
-        if (!window.confirm('Are you sure you want to mark this payout as released?')) return;
-        
-        setProcessingId(id);
-        try {
-            await api.put(`/bookings/${id}/payout`, {});
-            // Refresh list
-            fetchPayouts();
-        } catch (err) {
-            console.error('Error releasing payout:', err);
-            alert('Failed to release payout.');
-        } finally {
-            setProcessingId(null);
-        }
-    };
 
     if (loading) return <div style={styles.loading}>Loading payouts...</div>;
 
@@ -70,7 +54,6 @@ const Payouts = () => {
                             </tr>
                         ) : (
                             bookings.map(booking => {
-                                const isReleased = booking.paymentStatus === 'released';
                                 const worker = booking.labourer || {};
                                 
                                 return (
