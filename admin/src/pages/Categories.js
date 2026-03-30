@@ -21,6 +21,8 @@ const Categories = () => {
         description: '',
         hourlyRate: '', // Discounted Price
         maxHourlyRate: '', // Actual Price
+        minHourlyRate: '', // Base for internal calcs
+        dailyRate: '',
         taskRate: '',
         commissionPercentage: '',
         supportedModes: ['Hourly', 'Daily']
@@ -74,11 +76,22 @@ const Categories = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        // Cast numeric fields to Number for backend validation
+        const submissionData = {
+            ...formData,
+            hourlyRate: Number(formData.hourlyRate),
+            maxHourlyRate: Number(formData.maxHourlyRate),
+            minHourlyRate: Number(formData.minHourlyRate || formData.hourlyRate),
+            dailyRate: Number(formData.dailyRate),
+            taskRate: Number(formData.taskRate || 0),
+            commissionPercentage: Number(formData.commissionPercentage || 0)
+        };
+
         try {
             if (editingCategory) {
-                await adminService.updateCategory(editingCategory._id, formData);
+                await adminService.updateCategory(editingCategory._id, submissionData);
             } else {
-                await adminService.createCategory(formData);
+                await adminService.createCategory(submissionData);
             }
             setIsModalOpen(false);
             fetchCategories();
@@ -210,7 +223,7 @@ const Categories = () => {
                                     onChange={e => setFormData({ ...formData, description: e.target.value })}
                                 />
                             </div>
-                            <div style={styles.formRow}>
+                            <div style={styles.formGrid}>
                                 <div style={styles.field}>
                                     <label style={styles.label}>Actual Hourly (₹)</label>
                                     <input
@@ -470,6 +483,8 @@ const styles = {
         maxWidth: '600px',
         padding: '2rem',
         boxShadow: '0 20px 40px rgba(0, 0, 0, 0.1)',
+        maxHeight: '90vh',
+        overflowY: 'auto',
     },
     modalHeader: {
         display: 'flex',
@@ -501,6 +516,13 @@ const styles = {
     formRow: {
         display: 'flex',
         gap: '1.5rem',
+        marginBottom: '0.5rem',
+    },
+    formGrid: {
+        display: 'grid',
+        gridTemplateColumns: 'repeat(2, 1fr)',
+        gap: '1.5rem',
+        marginBottom: '0.5rem',
     },
     field: {
         flex: 1,

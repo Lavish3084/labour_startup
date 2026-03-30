@@ -35,7 +35,9 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
   @override
   void initState() {
     super.initState();
-    _selectedBookingMode = widget.category.supportedModes.first;
+    _selectedBookingMode = widget.category.supportedModes.contains('Hourly') 
+        ? 'Hourly' 
+        : widget.category.supportedModes.first;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _initializeFromProvider();
     });
@@ -474,6 +476,73 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
       ).showSnackBar(const SnackBar(content: Text('Please select an address')));
       return;
     }
+
+    // Show confirmation dialog with breakdown
+    final total = _calculateTotalPrice();
+    final commission = (total * widget.category.commissionPercentage) / 100;
+    final toWorker = total - commission;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Confirm Booking', style: GoogleFonts.inter(fontWeight: FontWeight.bold)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.blue.shade50,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.blue.shade100),
+              ),
+              child: Column(
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text('Total Job Amount', style: GoogleFonts.inter(fontSize: 14)),
+                      Text('₹${total.toInt()}', style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.bold)),
+                    ],
+                  ),
+                  const Divider(height: 20),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text('Booking Fee (Pay Now)', style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.blue.shade700)),
+                      Text('₹${commission.toInt()}', style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w900, color: Colors.blue.shade700)),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text('Pay to Worker (Later)', style: GoogleFonts.inter(fontSize: 13, color: Colors.grey.shade700)),
+                      Text('₹${toWorker.toInt()}', style: GoogleFonts.inter(fontSize: 13, color: Colors.grey.shade700)),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'You will pay the booking fee of ₹${commission.toInt()} now to confirm. The rest should be paid directly to the worker after service.',
+              style: GoogleFonts.inter(fontSize: 12, color: Colors.grey.shade600),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.black),
+            child: const Text('Confirm & Pay', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
 
     if (setSheetState != null) {
       setSheetState(() {

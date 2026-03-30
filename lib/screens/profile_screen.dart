@@ -292,21 +292,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
           ),
           const SizedBox(height: 8),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.verified_user_rounded, color: AppTheme.saffron.withValues(alpha: 0.8), size: 16),
-              const SizedBox(width: 6),
-              Text(
-                (user?['role'] ?? 'User').toString().toUpperCase(),
-                style: GoogleFonts.inter(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w800,
-                  color: Colors.white.withValues(alpha: 0.5),
-                ),
-              ),
-            ],
-          ),
         ],
       ),
     );

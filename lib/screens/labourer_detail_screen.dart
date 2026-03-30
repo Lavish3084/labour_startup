@@ -44,7 +44,9 @@ class _LabourerDetailScreenState extends State<LabourerDetailScreen> {
             ),
       );
       setState(() {
-        _selectedMode = category.supportedModes.first;
+        _selectedMode = category.supportedModes.contains('Hourly') 
+            ? 'Hourly' 
+            : category.supportedModes.first;
       });
     });
   }
@@ -227,6 +229,61 @@ class _LabourerDetailScreenState extends State<LabourerDetailScreen> {
                     ),
                     const SizedBox(height: 16),
                   ],
+                  const SizedBox(height: 16),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.blue.shade50,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.blue.shade100),
+                    ),
+                    child: Column(
+                      children: [
+                        Consumer<AppStateProvider>(
+                          builder: (context, appState, child) {
+                            final category = appState.categories.firstWhere(
+                              (c) => c.name == widget.labourer.category,
+                              orElse: () => ServiceCategory(name: '', icon: Icons.work, description: '', supportedModes: [], hourlyRate: 0, dailyRate: 0, minHourlyRate: 0, maxHourlyRate: 0),
+                            );
+                            final total = _selectedMode == 'Hourly' 
+                                ? widget.labourer.hourlyRate * _numberOfHours 
+                                : widget.labourer.hourlyRate * 8;
+                            final commission = (total * category.commissionPercentage) / 100;
+                            final toWorker = total - commission;
+                            
+                            return Column(
+                              children: [
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Text('Total Job Amount', style: GoogleFonts.inter(fontSize: 14)),
+                                    Text('₹${total.toInt()}', style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.bold)),
+                                  ],
+                                ),
+                                const Divider(height: 20),
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Text('Booking Fee (Pay Now)', style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.blue.shade700)),
+                                    Text('₹${commission.toInt()}', style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w900, color: Colors.blue.shade700)),
+                                  ],
+                                ),
+                                const SizedBox(height: 4),
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Text('Pay to Worker (After Work)', style: GoogleFonts.inter(fontSize: 13, color: Colors.grey.shade700)),
+                                    Text('₹${toWorker.toInt()}', style: GoogleFonts.inter(fontSize: 13, color: Colors.grey.shade700)),
+                                  ],
+                                ),
+                              ],
+                            );
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
                   TextField(
                     controller: notesController,
                     decoration: const InputDecoration(

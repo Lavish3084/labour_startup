@@ -703,7 +703,21 @@ class _BookingsScreenState extends State<BookingsScreen> {
                     Row(
                       children: [
                         Expanded(child: _buildDetailRow('DATE', '${_getMonthName(date.month)} ${date.day}, ${date.year}')),
+                        Expanded(child: _buildDetailRow('TOTAL JOB AMOUNT', '₹${(booking['amount'] ?? 0).toInt()}')),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(child: _buildDetailRow('BOOKING FEE (PAY NOW)', '₹${calculatedFee.toInt()}')),
+                        Expanded(child: _buildDetailRow('PAY TO WORKER', '₹${((booking['amount'] ?? 0) - calculatedFee).toInt()}')),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
                         Expanded(child: _buildDetailRow('BOOKING ID', '#${(bookingId as String).substring(bookingId.length - 6).toUpperCase()}')),
+                        const Spacer(),
                       ],
                     ),
                     const SizedBox(height: 16),
@@ -770,8 +784,8 @@ class _BookingsScreenState extends State<BookingsScreen> {
           value, 
           style: GoogleFonts.inter(
             fontSize: 13, 
-            fontWeight: FontWeight.w600, 
-            color: Colors.white
+            fontWeight: FontWeight.w700, 
+            color: AppTheme.textPrimary,
           )
         ),
       ],
