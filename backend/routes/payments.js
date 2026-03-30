@@ -5,6 +5,7 @@ const Razorpay = require('razorpay');
 const crypto = require('crypto');
 const Booking = require('../models/Booking');
 const Setting = require('../models/Setting');
+const Category = require('../models/Category');
 const Labourer = require('../models/Labourer');
 const User = require('../models/User');
 const { sendNotification } = require('../utils/notification');
@@ -56,15 +57,28 @@ router.post('/create-order', verifyToken, async (req, res) => {
             return res.status(404).json({ msg: "Booking not found" });
         }
 
-        // Fetch the platform fee from settings
+        // Fetch the platform fee from the specific Category
         let feeAmount = 20; // Default fallback
         try {
-            const commissionSetting = await Setting.findOne({ key: 'adminCommissionPercentage' });
-            if (commissionSetting) {
-                feeAmount = parseFloat(commissionSetting.value);
+            const categoryObj = await Category.findOne({ name: booking.category });
+            if (categoryObj && categoryObj.commissionPercentage) {
+                // If it's a percentage, we might need the job amount to calculate the fee.
+                // However, the user said "make it clear how much commission we want to take".
+                // If it's a fixed amount entered as "percentage" in admin panel, or a real percentage?
+                // The user said "enter percentage of commision".
+                // Usually commission is a percentage of the total amount.
+                // But if amount is negotiable or not yet finalized, 
+                // we might want to take a fixed fee or calculate it if amount exists.
+                
+                if (booking.amount) {
+                    feeAmount = (booking.amount * categoryObj.commissionPercentage) / 100;
+                } else if (categoryObj.commissionPercentage > 0) {
+                    // Fallback to a minimum or the percentage of some base rate
+                    feeAmount = categoryObj.commissionPercentage; // Or keep it simple if it's meant to be a fixed amount for now
+                }
             }
         } catch (err) {
-            console.error("Error fetching fee setting:", err);
+            console.error("Error fetching category commission:", err);
         }
 
         const options = {

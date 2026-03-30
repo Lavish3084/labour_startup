@@ -337,14 +337,19 @@ router.put('/:id/confirm-work', verifyToken, async (req, res) => {
             return res.status(400).json({ msg: 'Work is already confirmed' });
         }
 
-        let commissionAmount = 20; // Default fallback
+        let commissionAmount = 0;
         try {
-            const commissionSetting = await Setting.findOne({ key: 'adminCommissionPercentage' });
-            if (commissionSetting) {
-                commissionAmount = parseFloat(commissionSetting.value);
+            const Category = require('../models/Category');
+            const categoryObj = await Category.findOne({ name: booking.category });
+            if (categoryObj && categoryObj.commissionPercentage) {
+                if (booking.amount) {
+                    commissionAmount = (booking.amount * categoryObj.commissionPercentage) / 100;
+                } else {
+                    commissionAmount = categoryObj.commissionPercentage;
+                }
             }
         } catch (err) {
-            console.error("Error fetching commission setting:", err);
+            console.error("Error fetching category commission:", err);
         }
 
         booking.isWorkConfirmed = true;

@@ -445,22 +445,24 @@ class _HomeScreenState extends State<HomeScreen> {
                       const SizedBox(height: 4),
                       Row(
                         children: [
+                          if (category.maxHourlyRate > category.hourlyRate)
+                            Padding(
+                              padding: const EdgeInsets.only(right: 4),
+                              child: Text(
+                                '₹${category.maxHourlyRate.toInt()}',
+                                style: GoogleFonts.inter(
+                                  fontSize: 10,
+                                  decoration: TextDecoration.lineThrough,
+                                  color: AppTheme.textMuted,
+                                ),
+                              ),
+                            ),
                           Text(
-                            '₹${category.minHourlyRate.toInt() > 0 ? category.minHourlyRate.toInt() : 49}',
+                            '₹${category.hourlyRate.toInt()}/hr',
                             style: GoogleFonts.inter(
                               fontSize: 13,
                               fontWeight: FontWeight.w800,
                               color: AppTheme.textPrimary,
-                            ),
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            '₹${(category.maxHourlyRate.toInt() > 0 ? category.maxHourlyRate.toInt() : 150)}',
-                            style: GoogleFonts.inter(
-                              fontSize: 10,
-                              fontWeight: FontWeight.w500,
-                              color: AppTheme.textMuted,
-                              decoration: TextDecoration.lineThrough,
                             ),
                           ),
                         ],

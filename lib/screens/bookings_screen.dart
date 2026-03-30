@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../services/api_service.dart';
@@ -9,7 +10,7 @@ import '../providers/app_state_provider.dart';
 import 'package:razorpay_flutter/razorpay_flutter.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import '../utils/app_theme.dart';
-import '../widgets/glass_card.dart';
+import '../models/service_category.dart';
 import 'dart:ui';
 
 class BookingsScreen extends StatefulWidget {
@@ -22,7 +23,6 @@ class BookingsScreen extends StatefulWidget {
 class _BookingsScreenState extends State<BookingsScreen> {
   final PaymentService _paymentService = PaymentService();
   String? _pendingBookingId;
-  double _platformFee = 20.0;
 
   @override
   void initState() {
@@ -33,21 +33,8 @@ class _BookingsScreenState extends State<BookingsScreen> {
       onFailure: _handlePaymentFailure,
       onExternalWallet: _handleExternalWallet,
     );
-    _fetchPlatformFee();
   }
 
-  Future<void> _fetchPlatformFee() async {
-    try {
-      final settings = await ApiService.getSettings();
-      if (settings.containsKey('adminCommissionPercentage')) {
-        setState(() {
-          _platformFee = double.tryParse(settings['adminCommissionPercentage'].toString()) ?? 20.0;
-        });
-      }
-    } catch (e) {
-      print("Error fetching platform fee: $e");
-    }
-  }
 
   @override
   void dispose() {
@@ -99,7 +86,7 @@ class _BookingsScreenState extends State<BookingsScreen> {
     );
   }
 
-  Future<void> _initiatePayment(dynamic booking) async {
+  Future<void> _initiatePayment(dynamic booking, int amount) async {
     try {
       // Need a key from env or config. Ideally fetched from backend or stored in config.
       // For now we will use a placeholder or ask user to provide it.
@@ -109,9 +96,7 @@ class _BookingsScreenState extends State<BookingsScreen> {
         fallback: 'rzp_test_YourKeyIDHere',
       );
 
-      // Fixed booking fee for the platform (now dynamic)
-      int amount = _platformFee.toInt();
-
+      // amount is now passed as an argument
       final order = await ApiService.createPaymentOrder(booking['_id'], amount);
 
       setState(() {
@@ -364,8 +349,12 @@ class _BookingsScreenState extends State<BookingsScreen> {
         automaticallyImplyLeading: false,
         actions: [
           IconButton(
-            onPressed: _refreshBookings,
-            icon: const Icon(Icons.tune_rounded, color: AppTheme.textPrimary),
+            onPressed: () {
+              HapticFeedback.mediumImpact();
+              _refreshBookings();
+            },
+            icon: const Icon(Icons.refresh_rounded, color: AppTheme.textPrimary, size: 28),
+            tooltip: 'Refresh',
           ),
           const SizedBox(width: 8),
         ],
@@ -430,6 +419,19 @@ class _BookingsScreenState extends State<BookingsScreen> {
                 child: Text(
                   'Explore Services',
                   style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w700, color: Colors.white),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextButton.icon(
+              onPressed: _refreshBookings,
+              icon: const Icon(Icons.refresh_rounded, color: AppTheme.saffron, size: 20),
+              label: Text(
+                'Check for updates',
+                style: GoogleFonts.inter(
+                  color: AppTheme.saffron,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 14,
                 ),
               ),
             ),
@@ -526,6 +528,25 @@ class _BookingsScreenState extends State<BookingsScreen> {
       imageUrl = 'https://ui-avatars.com/api/?name=${booking['category'] ?? 'S'}&background=FF6B00&color=fff';
       name = booking['category'] ?? 'Service Request';
       category = 'Broadcast Request';
+    }
+
+    final categories = Provider.of<AppStateProvider>(context, listen: false).categories;
+    ServiceCategory? categoryObj;
+    try {
+      categoryObj = categories.firstWhere((c) => c.name == booking['category']);
+    } catch (_) {
+      categoryObj = null;
+    }
+    
+    double calculatedFee = 0;
+    if (categoryObj != null) {
+      if (booking['amount'] != null && (booking['amount'] as num) > 0) {
+        calculatedFee = (booking['amount'] as num) * categoryObj.commissionPercentage / 100;
+      } else {
+        calculatedFee = categoryObj.commissionPercentage;
+      }
+    } else {
+      calculatedFee = 20.0; // Fallback default fee
     }
 
     Color statusColor;
@@ -696,7 +717,7 @@ class _BookingsScreenState extends State<BookingsScreen> {
                       children: [
                         if (status == 'confirmed' && (booking['paymentStatus'] != 'paid'))
                           Expanded(
-                            child: _buildActionButton('PAY FEE ₹${_platformFee.toInt()}', Colors.green, () => _initiatePayment(booking)),
+                            child: _buildActionButton('PAY FEE ₹${calculatedFee.toInt()}', Colors.green, () => _initiatePayment(booking, calculatedFee.toInt())),
                           ),
                         if (status == 'confirmed' && booking['paymentStatus'] == 'paid' && booking['isWorkConfirmed'] != true)
                           Expanded(
@@ -750,7 +771,7 @@ class _BookingsScreenState extends State<BookingsScreen> {
           style: GoogleFonts.inter(
             fontSize: 13, 
             fontWeight: FontWeight.w600, 
-            color: AppTheme.textPrimary
+            color: Colors.white
           )
         ),
       ],

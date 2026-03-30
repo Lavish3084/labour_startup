@@ -10,6 +10,7 @@ class ServiceCategory {
   final double dailyRate;
   final double minHourlyRate;
   final double maxHourlyRate;
+  final double commissionPercentage;
 
   ServiceCategory({
     required this.name,
@@ -21,6 +22,7 @@ class ServiceCategory {
     required this.dailyRate,
     required this.minHourlyRate,
     required this.maxHourlyRate,
+    this.commissionPercentage = 0.0,
   });
 
   factory ServiceCategory.fromJson(Map<String, dynamic> json) {
@@ -35,6 +37,7 @@ class ServiceCategory {
       dailyRate: (json['dailyRate'] as num).toDouble(),
       minHourlyRate: (json['minHourlyRate'] as num? ?? 0).toDouble(),
       maxHourlyRate: (json['maxHourlyRate'] as num? ?? 1000).toDouble(),
+      commissionPercentage: (json['commissionPercentage'] as num? ?? 0).toDouble(),
     );
   }
 
@@ -48,6 +51,7 @@ class ServiceCategory {
       'dailyRate': dailyRate,
       'minHourlyRate': minHourlyRate,
       'maxHourlyRate': maxHourlyRate,
+      'commissionPercentage': commissionPercentage,
     };
   }
 

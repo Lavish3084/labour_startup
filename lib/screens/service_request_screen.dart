@@ -384,9 +384,7 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
                                   style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.white60),
                                 ),
                                 Text(
-                                  _selectedBookingMode == 'Hourly'
-                                    ? '₹${(widget.category.minHourlyRate * _numberOfHours).toInt()} - ₹${(widget.category.maxHourlyRate * _numberOfHours).toInt()}'
-                                    : '₹${_calculateTotalPrice().toInt()}',
+                                  '₹${(_selectedBookingMode == 'Hourly' ? widget.category.hourlyRate * _numberOfHours : widget.category.dailyRate).toInt()}',
                                   style: GoogleFonts.inter(fontSize: 20, fontWeight: FontWeight.w900, color: Colors.white),
                                 ),
                               ],
@@ -408,7 +406,10 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
                                     : Row(
                                         mainAxisAlignment: MainAxisAlignment.center,
                                         children: [
-                                          Text('PLACE REQUEST', style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w900, letterSpacing: 1)),
+                                          Text(
+                                            'BOOK FOR ₹${((_selectedBookingMode == 'Hourly' ? widget.category.hourlyRate * _numberOfHours : widget.category.dailyRate) * (widget.category.commissionPercentage / 100)).toInt()}',
+                                            style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w900, letterSpacing: 1),
+                                          ),
                                           const SizedBox(width: 8),
                                           
                                         ],
@@ -505,14 +506,8 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
         latitude: _latitude,
         longitude: _longitude,
         amount: _calculateTotalPrice(),
-        minAmount:
-            _selectedBookingMode == 'Hourly'
-                ? (widget.category.minHourlyRate * _numberOfHours)
-                : null,
-        maxAmount:
-            _selectedBookingMode == 'Hourly'
-                ? (widget.category.maxHourlyRate * _numberOfHours)
-                : null,
+        minAmount: null,
+        maxAmount: null,
       );
 
       if (mounted) {
@@ -647,12 +642,27 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
                               ),
                             ),
                             const SizedBox(width: 8),
-                            Text(
-                              '₹${widget.category.minHourlyRate.toInt()}-${widget.category.maxHourlyRate.toInt()}/hr',
-                              style: AppTheme.bodySmall.copyWith(
-                                fontWeight: FontWeight.w600,
-                                color: AppTheme.textSecondary,
-                              ),
+                             Row(
+                              children: [
+                                if (widget.category.maxHourlyRate > widget.category.hourlyRate)
+                                  Padding(
+                                    padding: const EdgeInsets.only(right: 6),
+                                    child: Text(
+                                      '₹${widget.category.maxHourlyRate.toInt()}',
+                                      style: AppTheme.bodySmall.copyWith(
+                                        decoration: TextDecoration.lineThrough,
+                                        color: AppTheme.textMuted,
+                                      ),
+                                    ),
+                                  ),
+                                Text(
+                                  '₹${widget.category.hourlyRate.toInt()}/hr',
+                                  style: AppTheme.bodySmall.copyWith(
+                                    fontWeight: FontWeight.w800,
+                                    color: AppTheme.textPrimary,
+                                  ),
+                                ),
+                              ],
                             ),
                           ],
                         ),

@@ -98,7 +98,8 @@ router.post('/categories', verifyAdmin, async (req, res) => {
             dailyRate,
             taskRate: taskRate || 0,
             minHourlyRate: minHourlyRate || hourlyRate,
-            maxHourlyRate: maxHourlyRate || (hourlyRate * 2)
+            maxHourlyRate: maxHourlyRate || (hourlyRate * 2),
+            commissionPercentage: req.body.commissionPercentage || 0
         });
         await category.save();
         res.json(category);
@@ -166,7 +167,7 @@ router.get('/bookings', verifyAdmin, async (req, res) => {
             .populate('user', 'name email')
             .populate({
                 path: 'labourer',
-                select: 'name upiId'
+                select: 'name'
             })
             .sort({ createdAt: -1 });
         res.json(bookings);

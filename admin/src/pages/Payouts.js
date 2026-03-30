@@ -48,8 +48,8 @@ const Payouts = () => {
         <div style={styles.container}>
             <div style={styles.header}>
                 <div>
-                    <h1 style={styles.title}>Worker Payouts</h1>
-                    <p style={styles.subtitle}>Payouts are automated via Razorpay Route. Use this page to monitor or manually retry failed payouts.</p>
+                    <h1 style={styles.title}>Platform Commissions</h1>
+                    <p style={styles.subtitle}>Track commissions collected from user bookings. Payments were made directly to workers by users.</p>
                 </div>
             </div>
 
@@ -58,10 +58,9 @@ const Payouts = () => {
                     <thead>
                         <tr>
                             <th style={styles.th}>Booking Details</th>
-                            <th style={styles.th}>Worker & UPI</th>
+                            <th style={styles.th}>Worker Name</th>
                             <th style={styles.th}>Amounts</th>
                             <th style={styles.th}>Status</th>
-                            <th style={styles.th}>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -85,34 +84,20 @@ const Payouts = () => {
                                         </td>
                                         <td style={styles.td}>
                                             <div style={styles.bold}>{worker.name || 'Unknown Worker'}</div>
+                                        </td>
+                                        <td style={styles.td}>
+                                            <div style={{...styles.bold, color: '#f59e0b'}}>
+                                                Commission: ₹{booking.commissionAmount || 0}
+                                            </div>
                                             <div style={styles.subtext}>
-                                                UPI: {worker.upiId || <span style={{color: '#f59e0b'}}>Not provided</span>}
+                                                Total Job: ₹{booking.amount || 0}
                                             </div>
                                         </td>
                                         <td style={styles.td}>
-                                            <div style={{...styles.bold, color: '#16a34a'}}>
-                                                Payout: ₹{booking.workerPayoutAmount || 0}
-                                            </div>
-                                            <div style={styles.subtext}>
-                                                Total: ₹{booking.amount || 0} | Comm: ₹{booking.commissionAmount || 0}
-                                            </div>
-                                        </td>
-                                        <td style={styles.td}>
-                                            {isReleased ? (
-                                                <span style={styles.statusBadge.released}>Released</span>
+                                            {booking.paymentStatus === 'paid' ? (
+                                                <span style={styles.statusBadge.released}>Collected</span>
                                             ) : (
-                                                <span style={styles.statusBadge.pending}>Pending</span>
-                                            )}
-                                        </td>
-                                        <td style={styles.td}>
-                                            {!isReleased && (
-                                                <button 
-                                                    onClick={() => handleReleasePayout(booking._id)}
-                                                    disabled={processingId === booking._id}
-                                                    style={styles.actionBtn}
-                                                >
-                                                    {processingId === booking._id ? 'Processing...' : 'Manual Retry'}
-                                                </button>
+                                                <span style={styles.statusBadge.pending}>Unpaid</span>
                                             )}
                                         </td>
                                     </tr>

@@ -59,6 +59,17 @@ class _LabourerDetailScreenState extends State<LabourerDetailScreen> {
 
     if (pickedDate != null && mounted) {
       final notesController = TextEditingController();
+      final appState = Provider.of<AppStateProvider>(context, listen: false);
+      final category = appState.categories.firstWhere(
+        (c) => c.name == widget.labourer.category,
+        orElse: () => ServiceCategory(name: '', icon: Icons.work, description: '', supportedModes: [], hourlyRate: 0, dailyRate: 0, minHourlyRate: 0, maxHourlyRate: 0),
+      );
+
+      final totalAmount = _selectedMode == 'Hourly' 
+          ? widget.labourer.hourlyRate * _numberOfHours 
+          : widget.labourer.hourlyRate * 8;
+      
+      final commissionAmount = (totalAmount * category.commissionPercentage) / 100;
 
       await showDialog(
         context: context,
@@ -70,10 +81,38 @@ class _LabourerDetailScreenState extends State<LabourerDetailScreen> {
               ),
               content: Column(
                 mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     'Book ${widget.labourer.name} on ${pickedDate.day}/${pickedDate.month}/${pickedDate.year}?',
                     style: GoogleFonts.inter(),
+                  ),
+                  const SizedBox(height: 16),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.blue.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Column(
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text('Booking Fee (Pay Now)', style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
+                            Text('₹${commissionAmount.toInt()}', style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: Colors.blue)),
+                          ],
+                        ),
+                        const Divider(height: 16),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text('Pay directly to worker', style: GoogleFonts.inter(color: Colors.grey[600], fontSize: 12)),
+                            Text('₹${(totalAmount - commissionAmount).toInt()}', style: GoogleFonts.inter(color: Colors.grey[600], fontSize: 12)),
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
                   const SizedBox(height: 16),
                   Text(
@@ -224,7 +263,6 @@ class _LabourerDetailScreenState extends State<LabourerDetailScreen> {
 
   Future<void> _createBooking(DateTime date, String notes) async {
     setState(() => _isLoading = true);
-    final appState = Provider.of<AppStateProvider>(context, listen: false);
     try {
       final success = await ApiService.createBooking(
         labourerId: widget.labourer.id,
@@ -243,20 +281,8 @@ class _LabourerDetailScreenState extends State<LabourerDetailScreen> {
             (_selectedMode == 'Hourly'
                 ? widget.labourer.hourlyRate * _numberOfHours
                 : widget.labourer.hourlyRate * 8),
-        minAmount:
-            _selectedMode == 'Hourly'
-                ? (appState.categories
-                        .firstWhere((c) => c.name == widget.labourer.category)
-                        .minHourlyRate *
-                    _numberOfHours)
-                : null,
-        maxAmount:
-            _selectedMode == 'Hourly'
-                ? (appState.categories
-                        .firstWhere((c) => c.name == widget.labourer.category)
-                        .maxHourlyRate *
-                    _numberOfHours)
-                : null,
+        minAmount: null,
+        maxAmount: null,
       );
       if (mounted) {
         if (success) {
@@ -393,13 +419,33 @@ class _LabourerDetailScreenState extends State<LabourerDetailScreen> {
                                   ),
                                 ),
                                 const SizedBox(height: 4),
-                                Text(
-                                  widget.labourer.category,
-                                  style: GoogleFonts.inter(
-                                    fontSize: 16,
-                                    color: AppTheme.primary,
-                                    fontWeight: FontWeight.w600,
-                                  ),
+                                 Row(
+                                  children: [
+                                    if (widget.labourer.hourlyRate <
+                                        Provider.of<AppStateProvider>(context, listen: false)
+                                            .categories
+                                            .firstWhere((c) => c.name == widget.labourer.category)
+                                            .maxHourlyRate)
+                                      Padding(
+                                        padding: const EdgeInsets.only(right: 8),
+                                        child: Text(
+                                          '₹${Provider.of<AppStateProvider>(context, listen: false).categories.firstWhere((c) => c.name == widget.labourer.category).maxHourlyRate.toInt()}',
+                                          style: GoogleFonts.inter(
+                                            fontSize: 14,
+                                            decoration: TextDecoration.lineThrough,
+                                            color: Colors.grey[400],
+                                          ),
+                                        ),
+                                      ),
+                                    Text(
+                                      '₹${widget.labourer.hourlyRate.toInt()}/hr',
+                                      style: GoogleFonts.inter(
+                                        fontSize: 18,
+                                        color: AppTheme.primary,
+                                        fontWeight: FontWeight.w800,
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ],
                             ),
@@ -567,19 +613,19 @@ class _LabourerDetailScreenState extends State<LabourerDetailScreen> {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Text(
-                          'Total Price',
+                          'Estimated Total',
                           style: GoogleFonts.inter(
                             fontSize: 12,
                             color: Colors.grey[600],
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
+                        const SizedBox(height: 4),
                         Text(
-                          _selectedMode == 'Hourly'
-                              ? '₹${(Provider.of<AppStateProvider>(context, listen: false).categories.firstWhere((c) => c.name == widget.labourer.category, orElse: () => ServiceCategory(name: '', icon: Icons.work, description: '', supportedModes: [], hourlyRate: 0, dailyRate: 0, minHourlyRate: 0, maxHourlyRate: 0)).minHourlyRate * _numberOfHours).toStringAsFixed(0)} - ₹${(Provider.of<AppStateProvider>(context, listen: false).categories.firstWhere((c) => c.name == widget.labourer.category, orElse: () => ServiceCategory(name: '', icon: Icons.work, description: '', supportedModes: [], hourlyRate: 0, dailyRate: 0, minHourlyRate: 0, maxHourlyRate: 0)).maxHourlyRate * _numberOfHours).toStringAsFixed(0)}'
-                              : '₹${(widget.labourer.hourlyRate * 8).toInt()}',
+                          '₹${(_selectedMode == 'Hourly' ? (widget.labourer.hourlyRate * _numberOfHours).toInt() : (widget.labourer.hourlyRate * 8).toInt())}',
                           style: GoogleFonts.inter(
-                            fontSize: 16, // Slightly smaller to fit range
-                            fontWeight: FontWeight.bold,
+                            fontSize: 24,
+                            fontWeight: FontWeight.w900,
                             color: Colors.black,
                           ),
                         ),
@@ -598,13 +644,26 @@ class _LabourerDetailScreenState extends State<LabourerDetailScreen> {
                           borderRadius: BorderRadius.circular(16),
                         ),
                       ),
-                      child: Text(
-                        _isLoading ? 'Processing...' : 'Book Now',
-                        style: GoogleFonts.inter(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
+                      child: Consumer<AppStateProvider>(
+                        builder: (context, appState, child) {
+                          final category = appState.categories.firstWhere(
+                            (c) => c.name == widget.labourer.category,
+                            orElse: () => ServiceCategory(name: '', icon: Icons.work, description: '', supportedModes: [], hourlyRate: 0, dailyRate: 0, minHourlyRate: 0, maxHourlyRate: 0),
+                          );
+                          final totalAmount = _selectedMode == 'Hourly' 
+                              ? widget.labourer.hourlyRate * _numberOfHours 
+                              : widget.labourer.hourlyRate * 8;
+                          final commission = (totalAmount * category.commissionPercentage) / 100;
+                          
+                          return Text(
+                            _isLoading ? 'Processing...' : 'Book for ₹${commission.toInt()}',
+                            style: GoogleFonts.inter(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          );
+                        }
                       ),
                     ),
                   ),
