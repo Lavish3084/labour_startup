@@ -1,34 +1,8 @@
 const admin = require('firebase-admin');
 const path = require('path');
 
-// Initialize Firebase Admin SDK
-let serviceAccount;
-try {
-    // Check for environment variable first (Render path)
-    const credentialsPath = process.env.FIREBASE_CREDENTIALS_PATH || '../serviceAccountKey.json';
-
-    // If it's an absolute path (like /etc/secrets/...), require might need to be resolved differently or use fs
-    // But require works if the file exists. 
-    // For Render Secret Files, they are at /etc/secrets/serviceAccountKey.json
-
-    if (path.isAbsolute(credentialsPath)) {
-        serviceAccount = require(credentialsPath);
-    } else {
-        serviceAccount = require(path.resolve(__dirname, credentialsPath));
-    }
-
-    admin.initializeApp({
-        credential: admin.credential.cert(serviceAccount)
-    });
-    console.log('Firebase Admin Initialized');
-} catch (error) {
-    console.warn(`WARNING: Firebase service account key not found at default locations.`);
-    console.warn('Push notifications will NOT work. Ensure serviceAccountKey.json is available.');
-    console.error(error.message);
-}
-
 const sendNotification = async (fcmToken, title, body, data = {}) => {
-    if (!serviceAccount) {
+    if (admin.apps.length === 0) {
         console.warn('Skipping notification: Firebase Admin not initialized.');
         return;
     }
@@ -51,12 +25,15 @@ const sendNotification = async (fcmToken, title, body, data = {}) => {
         });
         console.log(`[Notification] Successfully sent message: ${response}`);
     } catch (error) {
-        console.error('[Notification] Error sending notification:', error);
+        console.error(`[Notification] Error sending to token ${fcmToken.substring(0, 10)}...:`, error.code || error.message);
+        if (error.code === 'messaging/registration-token-not-registered') {
+            console.warn(`[Notification] Token is no longer valid. Should be removed from DB.`);
+        }
     }
 };
 
 const sendBroadcastNotification = async (tokens, title, body, data = {}) => {
-    if (!serviceAccount) {
+    if (admin.apps.length === 0) {
         console.warn('Skipping broadcast: Firebase Admin not initialized.');
         return;
     }

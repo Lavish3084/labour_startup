@@ -2,8 +2,31 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const dotenv = require('dotenv');
+const admin = require('firebase-admin');
 
 dotenv.config();
+
+// Initialize Firebase Admin
+if (!admin.apps.length) {
+    try {
+        let serviceAccount;
+        if (process.env.FIREBASE_SERVICE_ACCOUNT) {
+            console.log('Firebase Admin: Initializing with service account from env var');
+            serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+        } else {
+            console.log('Firebase Admin: Initializing with service account from file');
+            serviceAccount = require('./serviceAccountKey.json');
+        }
+        
+        admin.initializeApp({
+            credential: admin.credential.cert(serviceAccount)
+        });
+        console.log('Firebase Admin Initialized');
+    } catch (error) {
+        console.warn('WARNING: Firebase Admin failed to initialize:', error.message);
+        console.warn('Push notifications and Phone Login will NOT work until initialized.');
+    }
+}
 
 const app = express();
 const PORT = process.env.PORT || 5000;

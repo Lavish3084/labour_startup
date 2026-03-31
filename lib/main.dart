@@ -8,6 +8,7 @@ import 'package:provider/provider.dart';
 import 'providers/app_state_provider.dart';
 import 'providers/location_provider.dart';
 import 'utils/app_theme.dart';
+import 'services/api_service.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
@@ -22,6 +23,8 @@ void main() async {
   try {
     await Firebase.initializeApp();
     await NotificationService().initialize();
+    // Update FCM token on server for already logged-in users
+    ApiService.updateFcmToken();
   } catch (e) {
     print("WARNING: Firebase initialization failed: $e");
     print("Push notifications will NOT work.");

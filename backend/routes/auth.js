@@ -7,19 +7,6 @@ const Labourer = require('../models/Labourer');
 const { OAuth2Client } = require('google-auth-library');
 const admin = require('firebase-admin');
 
-// Initialize Firebase Admin
-if (!admin.apps.length) {
-    try {
-        const serviceAccount = require('../serviceAccountKey.json');
-        admin.initializeApp({
-            credential: admin.credential.cert(serviceAccount)
-        });
-        console.log('Firebase Admin Initialized');
-    } catch (error) {
-        console.error('Firebase Admin Init Error:', error.message);
-    }
-}
-
 // We use the empty client to verify tokens just from their issuer and audience.
 // In a real production app, pass your specific CLIENT_ID to prevent confused deputy attacks.
 const client = new OAuth2Client();
