@@ -35,9 +35,10 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
   @override
   void initState() {
     super.initState();
-    _selectedBookingMode = widget.category.supportedModes.contains('Hourly') 
-        ? 'Hourly' 
-        : widget.category.supportedModes.first;
+    _selectedBookingMode =
+        widget.category.supportedModes.contains('Hourly')
+            ? 'Hourly'
+            : widget.category.supportedModes.first;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _initializeFromProvider();
     });
@@ -65,13 +66,66 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
   }
 
   Future<void> _selectTime(BuildContext context) async {
+    // Round current time to nearest 5 mins for initial view
+    final int initialMinute = (_selectedTime.minute / 5).round() * 5;
+    final TimeOfDay initialTime = TimeOfDay(hour: _selectedTime.hour, minute: initialMinute % 60);
+
     final TimeOfDay? picked = await showTimePicker(
       context: context,
-      initialTime: _selectedTime,
+      initialTime: initialTime,
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.light(
+              primary: AppTheme.saffron,
+              onPrimary: Colors.white,
+              onSurface: AppTheme.textPrimary,
+            ),
+            timePickerTheme: TimePickerThemeData(
+              backgroundColor: Colors.white.withValues(alpha: 0.12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(32),
+                side: BorderSide(
+                  color: Colors.white.withValues(alpha: 0.4),
+                  width: 1.5,
+                ),
+              ),
+              hourMinuteColor: WidgetStateColor.resolveWith((states) => 
+                states.contains(WidgetState.selected) 
+                  ? AppTheme.saffron.withValues(alpha: 0.2) 
+                  : Colors.white.withValues(alpha: 0.1)),
+              hourMinuteTextColor: WidgetStateColor.resolveWith((states) => 
+                states.contains(WidgetState.selected) 
+                  ? AppTheme.saffron 
+                  : AppTheme.textPrimary),
+              dialBackgroundColor: Colors.white.withValues(alpha: 0.1),
+              dialHandColor: AppTheme.saffron,
+              dialTextColor: AppTheme.textPrimary,
+              entryModeIconColor: AppTheme.saffron,
+              dayPeriodColor: WidgetStateColor.resolveWith((states) => 
+                states.contains(WidgetState.selected) 
+                  ? AppTheme.saffron.withValues(alpha: 0.2) 
+                  : Colors.transparent),
+            ),
+          ),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 12.0, sigmaY: 12.0),
+            child: child!,
+          ),
+        );
+      },
     );
-    if (picked != null && picked != _selectedTime) {
+    
+    if (picked != null) {
+      // Snap to nearest 5 minutes
+      final int roundedMinute = (picked.minute / 5).round() * 5;
+      final snappedTime = TimeOfDay(
+        hour: (picked.hour + (roundedMinute >= 60 ? 1 : 0)) % 24,
+        minute: roundedMinute % 60
+      );
+      
       setState(() {
-        _selectedTime = picked;
+        _selectedTime = snappedTime;
       });
     }
   }
@@ -127,7 +181,7 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
                           ),
                         ),
                       ),
-                      
+
                       // Checkout Header
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -141,12 +195,18 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
                               ),
                               Text(
                                 widget.category.name,
-                                style: AppTheme.bodySmall.copyWith(fontWeight: FontWeight.w600, color: AppTheme.saffron),
+                                style: AppTheme.bodySmall.copyWith(
+                                  fontWeight: FontWeight.w600,
+                                  color: AppTheme.saffron,
+                                ),
                               ),
                             ],
                           ),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 6,
+                            ),
                             decoration: BoxDecoration(
                               color: AppTheme.scaffoldBg,
                               borderRadius: BorderRadius.circular(10),
@@ -154,9 +214,20 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
                             ),
                             child: Row(
                               children: [
-                                const Icon(Icons.info_outline_rounded, size: 14, color: AppTheme.textMuted),
+                                const Icon(
+                                  Icons.info_outline_rounded,
+                                  size: 14,
+                                  color: AppTheme.textMuted,
+                                ),
                                 const SizedBox(width: 4),
-                                Text('Pricing Info', style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w600, color: AppTheme.textMuted)),
+                                Text(
+                                  'Pricing Info',
+                                  style: GoogleFonts.inter(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600,
+                                    color: AppTheme.textMuted,
+                                  ),
+                                ),
                               ],
                             ),
                           ),
@@ -211,41 +282,68 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
                                         });
                                       },
                                       child: AnimatedContainer(
-                                        duration: const Duration(milliseconds: 200),
+                                        duration: const Duration(
+                                          milliseconds: 200,
+                                        ),
                                         width: 180,
-                                        margin: const EdgeInsets.only(right: 12, bottom: 8),
+                                        margin: const EdgeInsets.only(
+                                          right: 12,
+                                          bottom: 8,
+                                        ),
                                         padding: const EdgeInsets.all(16),
                                         decoration: BoxDecoration(
-                                          color: isSelected ? AppTheme.textPrimary : Colors.white,
-                                          borderRadius: BorderRadius.circular(20),
+                                          color:
+                                              isSelected
+                                                  ? AppTheme.textPrimary
+                                                  : Colors.white,
+                                          borderRadius: BorderRadius.circular(
+                                            20,
+                                          ),
                                           border: Border.all(
-                                            color: isSelected ? AppTheme.textPrimary : AppTheme.divider,
+                                            color:
+                                                isSelected
+                                                    ? AppTheme.textPrimary
+                                                    : AppTheme.divider,
                                             width: 1.5,
                                           ),
-                                          boxShadow: isSelected ? AppTheme.shadowMd : AppTheme.shadowSm,
+                                          boxShadow:
+                                              isSelected
+                                                  ? AppTheme.shadowMd
+                                                  : AppTheme.shadowSm,
                                         ),
                                         child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.center,
                                           children: [
                                             Row(
                                               children: [
                                                 Icon(
                                                   Icons.home_filled,
                                                   size: 16,
-                                                  color: isSelected ? AppTheme.saffron : AppTheme.textMuted,
+                                                  color:
+                                                      isSelected
+                                                          ? AppTheme.saffron
+                                                          : AppTheme.textMuted,
                                                 ),
                                                 const SizedBox(width: 8),
                                                 Expanded(
                                                   child: Text(
                                                     loc.label,
                                                     style: GoogleFonts.inter(
-                                                      fontWeight: FontWeight.w800,
+                                                      fontWeight:
+                                                          FontWeight.w800,
                                                       fontSize: 14,
-                                                      color: isSelected ? Colors.white : AppTheme.textPrimary,
+                                                      color:
+                                                          isSelected
+                                                              ? Colors.white
+                                                              : AppTheme
+                                                                  .textPrimary,
                                                     ),
                                                     maxLines: 1,
-                                                    overflow: TextOverflow.ellipsis,
+                                                    overflow:
+                                                        TextOverflow.ellipsis,
                                                   ),
                                                 ),
                                               ],
@@ -255,7 +353,10 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
                                               loc.address,
                                               style: GoogleFonts.inter(
                                                 fontSize: 11,
-                                                color: isSelected ? Colors.white70 : AppTheme.textLight,
+                                                color:
+                                                    isSelected
+                                                        ? Colors.white70
+                                                        : AppTheme.textLight,
                                                 fontWeight: FontWeight.w500,
                                               ),
                                               maxLines: 2,
@@ -282,31 +383,51 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
                         },
                         borderRadius: BorderRadius.circular(16),
                         child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 14,
+                          ),
                           decoration: BoxDecoration(
                             color: AppTheme.scaffoldBg,
                             borderRadius: BorderRadius.circular(16),
                             border: Border.all(
-                              color: _selectedAddress == null ? AppTheme.error.withValues(alpha: 0.3) : AppTheme.divider,
+                              color:
+                                  _selectedAddress == null
+                                      ? AppTheme.error.withValues(alpha: 0.3)
+                                      : AppTheme.divider,
                             ),
                           ),
                           child: Row(
                             children: [
-                              Icon(Icons.map_rounded, size: 20, color: _selectedAddress == null ? AppTheme.error : AppTheme.saffron),
+                              Icon(
+                                Icons.map_rounded,
+                                size: 20,
+                                color:
+                                    _selectedAddress == null
+                                        ? AppTheme.error
+                                        : AppTheme.saffron,
+                              ),
                               const SizedBox(width: 12),
                               Expanded(
                                 child: Text(
-                                  _selectedAddress ?? 'Search for your location...',
+                                  _selectedAddress ??
+                                      'Search for your location...',
                                   style: GoogleFonts.inter(
                                     fontSize: 14,
                                     fontWeight: FontWeight.w600,
-                                    color: _selectedAddress == null ? AppTheme.textMuted : AppTheme.textPrimary,
+                                    color:
+                                        _selectedAddress == null
+                                            ? AppTheme.textMuted
+                                            : AppTheme.textPrimary,
                                   ),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                 ),
                               ),
-                              const Icon(Icons.chevron_right_rounded, color: AppTheme.textMuted),
+                              const Icon(
+                                Icons.chevron_right_rounded,
+                                color: AppTheme.textMuted,
+                              ),
                             ],
                           ),
                         ),
@@ -337,7 +458,7 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
                       ),
 
                       const SizedBox(height: 24),
-                      
+
                       // Save Checkbox - Modern Styled
                       Container(
                         padding: const EdgeInsets.all(12),
@@ -352,15 +473,24 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
                               height: 24,
                               child: Checkbox(
                                 value: _saveAddress,
-                                onChanged: (val) => setSheetState(() => _saveAddress = val ?? false),
+                                onChanged:
+                                    (val) => setSheetState(
+                                      () => _saveAddress = val ?? false,
+                                    ),
                                 activeColor: AppTheme.saffron,
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
                               ),
                             ),
                             const SizedBox(width: 12),
                             Text(
                               'Save this address for fast checkout',
-                              style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.textSecondary),
+                              style: GoogleFonts.inter(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: AppTheme.textSecondary,
+                              ),
                             ),
                           ],
                         ),
@@ -382,12 +512,22 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
                                 Text(
-                                  _selectedBookingMode == 'Hourly' ? 'Est. Total (${_numberOfHours}h)' : 'Total Amount',
-                                  style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.white60),
+                                  _selectedBookingMode == 'Hourly'
+                                      ? 'Est. Total (${_numberOfHours}h)'
+                                      : 'Total Amount',
+                                  style: GoogleFonts.inter(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.white60,
+                                  ),
                                 ),
                                 Text(
                                   '₹${(_selectedBookingMode == 'Hourly' ? widget.category.hourlyRate * _numberOfHours : widget.category.dailyRate).toInt()}',
-                                  style: GoogleFonts.inter(fontSize: 20, fontWeight: FontWeight.w900, color: Colors.white),
+                                  style: GoogleFonts.inter(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.w900,
+                                    color: Colors.white,
+                                  ),
                                 ),
                               ],
                             ),
@@ -396,26 +536,43 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
                               width: double.infinity,
                               height: 56,
                               child: ElevatedButton(
-                                onPressed: _isLoading ? null : () => _submitRequest(setSheetState),
+                                onPressed:
+                                    _isLoading
+                                        ? null
+                                        : () => _submitRequest(setSheetState),
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: AppTheme.saffron,
                                   foregroundColor: Colors.white,
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(16),
+                                  ),
                                   elevation: 0,
                                 ),
-                                child: _isLoading
-                                    ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                                    : Row(
-                                        mainAxisAlignment: MainAxisAlignment.center,
-                                        children: [
-                                          Text(
-                                            'BOOK FOR ₹${((_selectedBookingMode == 'Hourly' ? widget.category.hourlyRate * _numberOfHours : widget.category.dailyRate) * (widget.category.commissionPercentage / 100)).toInt()}',
-                                            style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w900, letterSpacing: 1),
+                                child:
+                                    _isLoading
+                                        ? const SizedBox(
+                                          width: 24,
+                                          height: 24,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                            color: Colors.white,
                                           ),
-                                          const SizedBox(width: 8),
-                                          
-                                        ],
-                                      ),
+                                        )
+                                        : Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.center,
+                                          children: [
+                                            Text(
+                                              'BOOK FOR ₹${((_selectedBookingMode == 'Hourly' ? widget.category.hourlyRate * _numberOfHours : widget.category.dailyRate) * (widget.category.commissionPercentage / 100)).toInt()}',
+                                              style: GoogleFonts.inter(
+                                                fontSize: 16,
+                                                fontWeight: FontWeight.w900,
+                                                letterSpacing: 1,
+                                              ),
+                                            ),
+                                            const SizedBox(width: 8),
+                                          ],
+                                        ),
                               ),
                             ),
                           ],
@@ -430,11 +587,24 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
     );
   }
 
-  Widget _buildSheetInput({required TextEditingController controller, required String label, required String hint, required IconData icon}) {
+  Widget _buildSheetInput({
+    required TextEditingController controller,
+    required String label,
+    required String hint,
+    required IconData icon,
+  }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w800, color: AppTheme.textMuted, letterSpacing: 0.5)),
+        Text(
+          label,
+          style: GoogleFonts.inter(
+            fontSize: 11,
+            fontWeight: FontWeight.w800,
+            color: AppTheme.textMuted,
+            letterSpacing: 0.5,
+          ),
+        ),
         const SizedBox(height: 8),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -448,7 +618,10 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
             style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600),
             decoration: InputDecoration(
               hintText: hint,
-              hintStyle: GoogleFonts.inter(fontSize: 12, color: AppTheme.textMuted.withValues(alpha: 0.5)),
+              hintStyle: GoogleFonts.inter(
+                fontSize: 12,
+                color: AppTheme.textMuted.withValues(alpha: 0.5),
+              ),
               border: InputBorder.none,
               icon: Icon(icon, size: 16, color: AppTheme.textMuted),
             ),
@@ -484,62 +657,110 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
 
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Confirm Booking', style: GoogleFonts.inter(fontWeight: FontWeight.bold)),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.blue.shade50,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.blue.shade100),
-              ),
-              child: Column(
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text('Total Job Amount', style: GoogleFonts.inter(fontSize: 14)),
-                      Text('₹${total.toInt()}', style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.bold)),
-                    ],
-                  ),
-                  const Divider(height: 20),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text('Booking Fee (Pay Now)', style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.blue.shade700)),
-                      Text('₹${commission.toInt()}', style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w900, color: Colors.blue.shade700)),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text('Pay to Worker (Later)', style: GoogleFonts.inter(fontSize: 13, color: Colors.grey.shade700)),
-                      Text('₹${toWorker.toInt()}', style: GoogleFonts.inter(fontSize: 13, color: Colors.grey.shade700)),
-                    ],
-                  ),
-                ],
-              ),
+      builder:
+          (context) => AlertDialog(
+            title: Text(
+              'Confirm Booking',
+              style: GoogleFonts.inter(fontWeight: FontWeight.bold),
             ),
-            const SizedBox(height: 16),
-            Text(
-              'You will pay the booking fee of ₹${commission.toInt()} now to confirm. The rest should be paid directly to the worker after service.',
-              style: GoogleFonts.inter(fontSize: 12, color: Colors.grey.shade600),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.shade50,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.blue.shade100),
+                  ),
+                  child: Column(
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'Total Job Amount',
+                            style: GoogleFonts.inter(fontSize: 14),
+                          ),
+                          Text(
+                            '₹${total.toInt()}',
+                            style: GoogleFonts.inter(
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const Divider(height: 20),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'Booking Fee (Pay Now)',
+                            style: GoogleFonts.inter(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.blue.shade700,
+                            ),
+                          ),
+                          Text(
+                            '₹${commission.toInt()}',
+                            style: GoogleFonts.inter(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w900,
+                              color: Colors.blue.shade700,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'Pay to Worker (Later)',
+                            style: GoogleFonts.inter(
+                              fontSize: 13,
+                              color: Colors.grey.shade700,
+                            ),
+                          ),
+                          Text(
+                            '₹${toWorker.toInt()}',
+                            style: GoogleFonts.inter(
+                              fontSize: 13,
+                              color: Colors.grey.shade700,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'You will pay the booking fee of ₹${commission.toInt()} now to confirm. The rest should be paid directly to the worker after service.',
+                  style: GoogleFonts.inter(
+                    fontSize: 12,
+                    color: Colors.grey.shade600,
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.black),
-            child: const Text('Confirm & Pay', style: TextStyle(color: Colors.white)),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('Cancel'),
+              ),
+              ElevatedButton(
+                onPressed: () => Navigator.pop(context, true),
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.black),
+                child: const Text(
+                  'Confirm & Pay',
+                  style: TextStyle(color: Colors.white),
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
     );
 
     if (confirmed != true) return;
@@ -562,7 +783,7 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
         _selectedTime.minute,
       );
 
-      final success = await ApiService.createBooking(
+      final result = await ApiService.createBooking(
         labourerId: null, // Broadcast request
         category: widget.category.name,
         date: scheduledDateTime,
@@ -580,7 +801,7 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
       );
 
       if (mounted) {
-        if (success) {
+        if (result['success']) {
           // Update global current address to the one used for booking
           Provider.of<LocationProvider>(
             context,
@@ -624,15 +845,17 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
             const SnackBar(
               content: Text('Service request sent to all nearby workers!'),
               backgroundColor: AppTheme.success,
+              behavior: SnackBarBehavior.floating,
             ),
           );
           Navigator.pop(context); // Close bottom sheet
           Navigator.pop(context); // Go back to Home
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Failed to submit request'),
-              backgroundColor: AppTheme.error,
+            SnackBar(
+              content: Text(result['message'] ?? 'Something went wrong'),
+              backgroundColor: Colors.red.shade800,
+              behavior: SnackBarBehavior.floating,
             ),
           );
         }
@@ -640,7 +863,11 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(ErrorHandler.getErrorMessage(e, action: 'Booking failed')), backgroundColor: AppTheme.error),
+          SnackBar(
+            content: Text(ErrorHandler.getErrorMessage(e)),
+            backgroundColor: Colors.red.shade800,
+            behavior: SnackBarBehavior.floating,
+          ),
         );
       }
     } finally {
@@ -657,130 +884,249 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
     }
   }
 
+  String _getCategoryBanner(String categoryName) {
+    final name = categoryName.toLowerCase();
+    if (name.contains('mason')) return 'assets/images/mason_banner.png';
+    if (name.contains('garden')) return 'assets/images/gardener_banner.png';
+    if (name.contains('clean')) return 'assets/images/cleaner_banner.png';
+    if (name.contains('plumb')) return 'assets/images/plumber_banner.png';
+    if (name.contains('electric'))
+      return 'assets/images/electrician_banner.png';
+    if (name.contains('paint')) return 'assets/images/painter_banner.png';
+    if (name.contains('carpent')) return 'assets/images/carpenter_banner.png';
+    return 'assets/images/general_worker_banner.png';
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppTheme.scaffoldBg,
-      body: SafeArea(
-        child: Column(
-          children: [
-            // Custom Top Nav - Refined Zomato style
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
-              child: Row(
-                children: [
-                  GestureDetector(
-                    onTap: () => Navigator.pop(context),
-                    child: Container(
-                      width: 44,
-                      height: 44,
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        shape: BoxShape.circle,
-                        boxShadow: AppTheme.shadowMd,
-                        border: Border.all(color: AppTheme.divider.withValues(alpha: 0.5)),
+      body: Column(
+        children: [
+          Expanded(
+            child: Stack(
+              children: [
+                // Fixed Background Illustration
+                Positioned(
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  height: 380,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      image: DecorationImage(
+                        image: AssetImage(
+                          _getCategoryBanner(widget.category.name),
+                        ),
+                        fit: BoxFit.cover,
+                        alignment: Alignment.bottomCenter,
                       ),
-                      child: const Icon(Icons.arrow_back_rounded, color: AppTheme.textPrimary, size: 22),
                     ),
                   ),
-                  const SizedBox(width: 16),
-                  Expanded(
+                ),
+
+                // Scrolling Content
+                Positioned.fill(
+                  child: SingleChildScrollView(
+                    physics: const BouncingScrollPhysics(),
                     child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          'Setup your booking',
-                          style: AppTheme.heading2,
-                        ),
-                        Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: AppTheme.saffron.withValues(alpha: 0.1),
-                                borderRadius: BorderRadius.circular(4),
+                        // Spacer to reveal image (leaves room for fixed back button)
+                        const SizedBox(height: 220),
+
+                        // Glassmorphic Full Form Sheet
+                        ClipRRect(
+                          borderRadius: const BorderRadius.vertical(
+                            top: Radius.circular(32),
+                          ),
+                          child: BackdropFilter(
+                            filter: ImageFilter.blur(
+                              sigmaX: 16.0,
+                              sigmaY: 16.0,
+                            ),
+                            child: Container(
+                              width: double.infinity,
+                              constraints: BoxConstraints(
+                                minHeight:
+                                    MediaQuery.of(context).size.height - 240,
                               ),
-                              child: Text(
-                                widget.category.name,
-                                style: GoogleFonts.inter(
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w700,
-                                  color: AppTheme.saffron,
-                                  letterSpacing: 0.5,
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  begin: Alignment.topCenter,
+                                  end: Alignment.bottomCenter,
+                                  colors: [
+                                    AppTheme.scaffoldBg.withValues(alpha: 0.0),
+                                    AppTheme.scaffoldBg.withValues(alpha: 1.0),
+                                  ],
+                                  stops: const [0.0, 0.4],
+                                ),
+                                border: Border(
+                                  top: BorderSide(
+                                    color: Colors.white.withValues(alpha: 0.6),
+                                    width: 1.5,
+                                  ),
                                 ),
                               ),
-                            ),
-                            const SizedBox(width: 8),
-                             Row(
-                              children: [
-                                if (widget.category.maxHourlyRate > widget.category.hourlyRate)
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  // Setup Booking Header
                                   Padding(
-                                    padding: const EdgeInsets.only(right: 6),
-                                    child: Text(
-                                      '₹${widget.category.maxHourlyRate.toInt()}',
-                                      style: AppTheme.bodySmall.copyWith(
-                                        decoration: TextDecoration.lineThrough,
-                                        color: AppTheme.textMuted,
-                                      ),
+                                    padding: const EdgeInsets.fromLTRB(
+                                      24,
+                                      28,
+                                      24,
+                                      32,
+                                    ),
+                                    child: Row(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.end,
+                                      children: [
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                'Setup your booking',
+                                                style: AppTheme.heading2
+                                                    .copyWith(fontSize: 22),
+                                              ),
+                                              const SizedBox(height: 4),
+                                              Text(
+                                                'for ${widget.category.name}',
+                                                style: AppTheme.bodySmall
+                                                    .copyWith(
+                                                      fontWeight:
+                                                          FontWeight.w600,
+                                                      color: AppTheme.textMuted,
+                                                      fontSize: 13,
+                                                    ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                        Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.end,
+                                          children: [
+                                            if (widget.category.maxHourlyRate >
+                                                widget.category.hourlyRate)
+                                              Text(
+                                                '₹${widget.category.maxHourlyRate.toInt()}',
+                                                style: AppTheme.bodySmall
+                                                    .copyWith(
+                                                      decoration:
+                                                          TextDecoration
+                                                              .lineThrough,
+                                                      color: AppTheme.textMuted,
+                                                      fontSize: 11,
+                                                    ),
+                                              ),
+                                            Text(
+                                              '₹${widget.category.hourlyRate.toInt()}/hr',
+                                              style: AppTheme.bodySmall
+                                                  .copyWith(
+                                                    fontWeight: FontWeight.w900,
+                                                    color: AppTheme.textPrimary,
+                                                    fontSize: 15,
+                                                  ),
+                                            ),
+                                          ],
+                                        ),
+                                      ],
                                     ),
                                   ),
-                                Text(
-                                  '₹${widget.category.hourlyRate.toInt()}/hr',
-                                  style: AppTheme.bodySmall.copyWith(
-                                    fontWeight: FontWeight.w800,
-                                    color: AppTheme.textPrimary,
+
+                                  // The rest of the form
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 20,
+                                    ),
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        _buildSectionLabel('BOOKING TYPE'),
+                                        const SizedBox(height: 16),
+                                        _buildBookingTypeCards(),
+
+                                        if (_selectedBookingMode ==
+                                            'Hourly') ...[
+                                          const SizedBox(height: 24),
+                                          _buildSectionLabel('DURATION'),
+                                          const SizedBox(height: 12),
+                                          _buildDurationCard(),
+                                        ],
+
+                                        const SizedBox(height: 24),
+                                        _buildSectionLabel('SCHEDULE'),
+                                        const SizedBox(height: 16),
+                                        _buildDatePills(),
+                                        const SizedBox(height: 16),
+                                        _buildTimeCard(),
+
+                                        const SizedBox(height: 32),
+                                        _buildSectionLabel('NOTES'),
+                                        const SizedBox(height: 16),
+                                        _buildNotesCard(),
+
+                                        const SizedBox(height: 40),
+                                      ],
+                                    ),
                                   ),
-                                ),
-                              ],
+                                ],
+                              ),
                             ),
-                          ],
+                          ),
                         ),
                       ],
                     ),
                   ),
-                ],
-              ),
-            ),
-
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildSectionLabel('BOOKING TYPE'),
-                    const SizedBox(height: 16),
-                    _buildBookingTypeCards(),
-                    
-                    if (_selectedBookingMode == 'Hourly') ...[
-                      const SizedBox(height: 32),
-                      _buildSectionLabel('DURATION'),
-                      const SizedBox(height: 16),
-                      _buildDurationCard(),
-                    ],
-
-                    const SizedBox(height: 32),
-                    _buildSectionLabel('SCHEDULE'),
-                    const SizedBox(height: 16),
-                    _buildDatePills(),
-                    const SizedBox(height: 16),
-                    _buildTimeCard(),
-
-                    const SizedBox(height: 32),
-                    _buildSectionLabel('NOTES'),
-                    const SizedBox(height: 16),
-                    _buildNotesCard(),
-                    
-                    const SizedBox(height: 40),
-                  ],
                 ),
-              ),
+
+                // Fixed Back Button placed on top of scrolling content
+                Positioned(
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  child: SafeArea(
+                    bottom: false,
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+                      child: Align(
+                        alignment: Alignment.centerLeft,
+                        child: GestureDetector(
+                          onTap: () => Navigator.pop(context),
+                          child: Container(
+                            width: 44,
+                            height: 44,
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.9),
+                              shape: BoxShape.circle,
+                              boxShadow: AppTheme.shadowMd,
+                              border: Border.all(
+                                color: AppTheme.divider.withValues(alpha: 0.5),
+                              ),
+                            ),
+                            child: const Icon(
+                              Icons.arrow_back_rounded,
+                              color: AppTheme.textPrimary,
+                              size: 22,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
-            
-            // Bottom Action Area
-            _buildBottomBanner(),
-          ],
-        ),
+          ),
+
+          // Bottom Action Area
+          _buildBottomBanner(),
+        ],
       ),
     );
   }
@@ -792,7 +1138,6 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
         fontSize: 11,
         fontWeight: FontWeight.w800,
         color: AppTheme.textMuted,
-        letterSpacing: 1.2,
       ),
     );
   }
@@ -802,20 +1147,29 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
       children: widget.category.supportedModes.map((mode) {
         final isSelected = _selectedBookingMode == mode;
         IconData modeIcon;
+        String modeTitle;
         String modeDesc;
-        
-        switch (mode) {
-          case 'Hourly':
-            modeIcon = Icons.timer_outlined;
-            modeDesc = 'Quick tasks';
-            break;
-          case 'Daily':
-            modeIcon = Icons.calendar_today_outlined;
-            modeDesc = 'Full day';
-            break;
-          default:
-            modeIcon = Icons.assignment_outlined;
-            modeDesc = 'Per job';
+        Color activeColor;
+        Color bgColor;
+
+        if (mode == 'Hourly') {
+          modeIcon = Icons.timer_outlined;
+          modeTitle = 'Hourly';
+          modeDesc = 'for quick tasks';
+          activeColor = AppTheme.saffron;
+          bgColor = isSelected ? const Color(0xFFFFE6D5).withValues(alpha: 0.8) : Colors.white.withValues(alpha: 0.05);
+        } else if (mode == 'Daily') {
+          modeIcon = Icons.calendar_today_outlined;
+          modeTitle = 'Daily';
+          modeDesc = 'for a full day';
+          activeColor = AppTheme.saffron;
+          bgColor = isSelected ? const Color(0xFFFFE6D5).withValues(alpha: 0.8) : Colors.white.withValues(alpha: 0.05);
+        } else {
+          modeIcon = Icons.assignment_outlined;
+          modeTitle = mode;
+          modeDesc = 'Per job';
+          activeColor = AppTheme.saffron;
+          bgColor = isSelected ? const Color(0xFFFFE6D5).withValues(alpha: 0.8) : Colors.white.withValues(alpha: 0.05);
         }
 
         return Expanded(
@@ -823,53 +1177,64 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
             onTap: () => setState(() => _selectedBookingMode = mode),
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 250),
-              curve: Curves.easeInOut,
               margin: EdgeInsets.only(
-                left: mode == widget.category.supportedModes.first ? 0 : 6,
-                right: mode == widget.category.supportedModes.last ? 0 : 6,
+                left: mode == widget.category.supportedModes.first ? 0 : 8,
+                right: mode == widget.category.supportedModes.last ? 0 : 8,
               ),
               padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 12),
               decoration: BoxDecoration(
-                color: isSelected ? Colors.white : AppTheme.scaffoldBg,
+                color: bgColor,
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(
-                  color: isSelected ? AppTheme.saffron : AppTheme.divider.withValues(alpha: 0.5),
-                  width: isSelected ? 2 : 1,
+                  color: isSelected ? activeColor.withValues(alpha: 0.4) : Colors.transparent,
+                  width: 2,
                 ),
-                boxShadow: isSelected ? AppTheme.saffronGlow : [],
+                boxShadow: isSelected ? [
+                  BoxShadow(
+                    color: activeColor.withValues(alpha: 0.15),
+                    blurRadius: 20,
+                    offset: const Offset(0, 10),
+                  )
+                ] : [],
               ),
               child: Column(
                 children: [
-                  AnimatedContainer(
-                    duration: const Duration(milliseconds: 250),
+                  Container(
                     width: 48,
                     height: 48,
                     decoration: BoxDecoration(
-                      color: isSelected ? AppTheme.saffron : AppTheme.paleSaffron,
+                      color: isSelected ? activeColor : Colors.grey.withValues(alpha: 0.12),
                       shape: BoxShape.circle,
+                      boxShadow: isSelected ? [
+                        BoxShadow(
+                          color: activeColor.withValues(alpha: 0.3),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        )
+                      ] : [],
                     ),
                     child: Icon(
                       modeIcon,
-                      color: isSelected ? Colors.white : AppTheme.saffron,
+                      color: isSelected ? Colors.white : AppTheme.textSecondary.withValues(alpha: 0.7),
                       size: 24,
                     ),
                   ),
                   const SizedBox(height: 12),
                   Text(
-                    mode,
+                    modeTitle,
                     style: GoogleFonts.inter(
                       fontSize: 14,
-                      fontWeight: FontWeight.w700,
-                      color: isSelected ? AppTheme.textPrimary : AppTheme.textSecondary,
+                      fontWeight: FontWeight.w800,
+                      color: isSelected ? activeColor : AppTheme.textSecondary,
                     ),
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 6),
                   Text(
                     modeDesc,
                     style: GoogleFonts.inter(
-                      fontSize: 10,
-                      fontWeight: FontWeight.w500,
-                      color: AppTheme.textMuted,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: isSelected ? activeColor.withValues(alpha: 0.8) : AppTheme.textMuted,
                     ),
                   ),
                 ],
@@ -881,82 +1246,111 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
     );
   }
 
-
   Widget _buildDurationCard() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 24),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: AppTheme.divider.withValues(alpha: 0.5)),
-        boxShadow: AppTheme.shadowMd,
-      ),
-      child: Column(
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.baseline,
-            textBaseline: TextBaseline.alphabetic,
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(28),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(vertical: 22, horizontal: 24),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(28),
+            border: Border.all(
+              color: Colors.white.withValues(alpha: 0.6),
+              width: 2.0,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.05),
+                blurRadius: 10,
+                offset: const Offset(0, 8),
+              ),
+            ],
+          ),
+          child: Column(
             children: [
-              Text(
-                '$_numberOfHours',
-                style: GoogleFonts.baloo2(
-                  fontSize: 64,
-                  fontWeight: FontWeight.w800,
-                  color: AppTheme.textPrimary,
-                  height: 1,
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.baseline,
+                textBaseline: TextBaseline.alphabetic,
+                children: [
+                  Text(
+                    '$_numberOfHours',
+                    style: GoogleFonts.inter(
+                      fontSize: 72,
+                      fontWeight: FontWeight.w900,
+                      color: AppTheme.textPrimary,
+                      height: 1,
+                      letterSpacing: -2,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Text(
+                    'HOURS',
+                    style: GoogleFonts.inter(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w900,
+                      color: AppTheme.primary,
+                      letterSpacing: 1.0,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
+              // Custom Slider with metallic style
+              SliderTheme(
+                data: SliderTheme.of(context).copyWith(
+                  activeTrackColor: AppTheme.saffron,
+                  inactiveTrackColor: AppTheme.textPrimary.withValues(alpha: 0.05),
+                  overlayColor: AppTheme.saffron.withValues(alpha: 0.1),
+                  thumbColor: Colors.white,
+                  thumbShape: const RoundSliderThumbShape(
+                    enabledThumbRadius: 10,
+                    elevation: 4,
+                    pressedElevation: 8,
+                  ),
+                  trackHeight: 6,
+                  trackShape: const RoundedRectSliderTrackShape(),
+                ),
+                child: Slider(
+                  value: _numberOfHours.toDouble().clamp(1.0, 6.0),
+                  min: 1,
+                  max: 6,
+                  divisions: 5,
+                  onChanged: (val) => setState(() => _numberOfHours = val.toInt()),
                 ),
               ),
-              const SizedBox(width: 8),
-              Text(
-                'HOURS',
-                style: GoogleFonts.inter(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w800,
-                  color: AppTheme.saffron,
-                  letterSpacing: 1.5,
+              const SizedBox(height: 8),
+              // Ticks (Precision Scale)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Row(
+                  children: List.generate(26, (index) {
+                    final bool isMajor = index % 5 == 0;
+                    final double currentVal = 1 + (index / 5);
+                    
+                    return Expanded(
+                      child: Center(
+                        child: Container(
+                          width: isMajor ? 2.0 : 1.0,
+                          height: isMajor ? 12 : 6,
+                          decoration: BoxDecoration(
+                            color: _numberOfHours >= currentVal 
+                                ? AppTheme.saffron 
+                                : AppTheme.textMuted.withValues(alpha: isMajor ? 0.4 : 0.2),
+                            borderRadius: BorderRadius.circular(1),
+                          ),
+                        ),
+                      ),
+                    );
+                  }),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 32),
-          // Custom Slider with better styling
-          SliderTheme(
-            data: SliderTheme.of(context).copyWith(
-              activeTrackColor: AppTheme.saffron,
-              inactiveTrackColor: AppTheme.paleSaffron,
-              thumbColor: Colors.white,
-              overlayColor: AppTheme.saffron.withValues(alpha: 0.1),
-              thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 10, elevation: 4),
-              trackHeight: 6,
-            ),
-            child: Slider(
-              value: _numberOfHours.toDouble(),
-              min: 1,
-              max: 12,
-              divisions: 11,
-              onChanged: (val) => setState(() => _numberOfHours = val.toInt()),
-            ),
-          ),
-          const SizedBox(height: 12),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: ['1H', '4H', '8H', '12H'].map((label) {
-                return Text(
-                  label,
-                  style: GoogleFonts.inter(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                    color: AppTheme.textMuted,
-                  ),
-                );
-              }).toList(),
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -970,10 +1364,16 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
         itemCount: 14,
         itemBuilder: (context, index) {
           final date = DateTime.now().add(Duration(days: index));
-          final isSelected = _selectedDate.day == date.day && 
-                            _selectedDate.month == date.month;
-          final dayName = index == 0 ? 'Today' : (index == 1 ? 'Tom' : _getDayName(date.weekday).substring(0, 3));
-          
+          final isSelected =
+              _selectedDate.day == date.day &&
+              _selectedDate.month == date.month;
+          final dayName =
+              index == 0
+                  ? 'Today'
+                  : (index == 1
+                      ? 'Tom'
+                      : _getDayName(date.weekday).substring(0, 3));
+
           return GestureDetector(
             onTap: () => setState(() => _selectedDate = date),
             child: AnimatedContainer(
@@ -981,7 +1381,7 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
               width: 72,
               margin: const EdgeInsets.only(right: 12),
               decoration: BoxDecoration(
-                color: isSelected ? AppTheme.textPrimary : Colors.white,
+                color: isSelected ? AppTheme.textPrimary : Colors.white.withValues(alpha: 0.8),
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(
                   color: isSelected ? AppTheme.textPrimary : AppTheme.divider,
@@ -997,7 +1397,10 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
                     style: GoogleFonts.inter(
                       fontSize: 10,
                       fontWeight: FontWeight.w800,
-                      color: isSelected ? Colors.white.withValues(alpha: 0.6) : AppTheme.textMuted,
+                      color:
+                          isSelected
+                              ? Colors.white.withValues(alpha: 0.6)
+                              : AppTheme.textMuted,
                       letterSpacing: 1,
                     ),
                   ),
@@ -1015,7 +1418,10 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
                     style: GoogleFonts.inter(
                       fontSize: 9,
                       fontWeight: FontWeight.w700,
-                      color: isSelected ? Colors.white.withValues(alpha: 0.4) : AppTheme.textMuted,
+                      color:
+                          isSelected
+                              ? Colors.white.withValues(alpha: 0.4)
+                              : AppTheme.textMuted,
                     ),
                   ),
                 ],
@@ -1030,14 +1436,15 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
   Widget _buildTimeCard() {
     final h = _selectedTime.hour;
     final hour = h == 0 ? 12 : (h > 12 ? h - 12 : h);
-    final timeString = "${hour.toString().padLeft(2, '0')}:${_selectedTime.minute.toString().padLeft(2, '0')} ${h >= 12 ? 'PM' : 'AM'}";
+    final timeString =
+        "${hour.toString().padLeft(2, '0')}:${_selectedTime.minute.toString().padLeft(2, '0')} ${h >= 12 ? 'PM' : 'AM'}";
 
     return GestureDetector(
       onTap: () => _selectTime(context),
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 20),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Colors.white.withValues(alpha: 0.8),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(color: AppTheme.divider.withValues(alpha: 0.5)),
           boxShadow: AppTheme.shadowMd,
@@ -1050,7 +1457,11 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
                 color: AppTheme.saffron.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(14),
               ),
-              child: const Icon(Icons.alarm_on_rounded, color: AppTheme.saffron, size: 22),
+              child: const Icon(
+                Icons.alarm_on_rounded,
+                color: AppTheme.saffron,
+                size: 22,
+              ),
             ),
             const SizedBox(width: 16),
             Column(
@@ -1081,7 +1492,11 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
                 color: AppTheme.scaffoldBg,
                 shape: BoxShape.circle,
               ),
-              child: const Icon(Icons.edit_calendar_rounded, color: AppTheme.textLight, size: 18),
+              child: const Icon(
+                Icons.edit_calendar_rounded,
+                color: AppTheme.textLight,
+                size: 18,
+              ),
             ),
           ],
         ),
@@ -1092,7 +1507,7 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
   Widget _buildNotesCard() {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Colors.white.withValues(alpha: 0.8),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: AppTheme.divider.withValues(alpha: 0.5)),
         boxShadow: AppTheme.shadowMd,
@@ -1100,15 +1515,26 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
       child: TextField(
         controller: _notesController,
         maxLines: 4,
-        style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w500, color: AppTheme.textPrimary),
+        style: GoogleFonts.inter(
+          fontSize: 14,
+          fontWeight: FontWeight.w500,
+          color: AppTheme.textPrimary,
+        ),
         decoration: InputDecoration(
           hintText: 'Any specific tools or details the worker should know?',
-          hintStyle: GoogleFonts.inter(color: AppTheme.textMuted.withValues(alpha: 0.6), fontSize: 13),
+          hintStyle: GoogleFonts.inter(
+            color: AppTheme.textMuted.withValues(alpha: 0.6),
+            fontSize: 13,
+          ),
           contentPadding: const EdgeInsets.all(20),
           border: InputBorder.none,
           suffixIcon: const Padding(
             padding: EdgeInsets.all(16),
-            child: Icon(Icons.sticky_note_2_outlined, color: AppTheme.divider, size: 24),
+            child: Icon(
+              Icons.sticky_note_2_outlined,
+              color: AppTheme.divider,
+              size: 24,
+            ),
           ),
         ),
       ),
@@ -1133,7 +1559,10 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
                 offset: const Offset(0, -12),
               ),
             ],
-            border: Border.all(color: Colors.white.withValues(alpha: 0.4), width: 1.5),
+            border: Border.all(
+              color: Colors.white.withValues(alpha: 0.4),
+              width: 1.5,
+            ),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -1167,14 +1596,21 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
                     ],
                   ),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
                     decoration: BoxDecoration(
                       color: AppTheme.saffron.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: AppTheme.saffron.withValues(alpha: 0.2)),
+                      border: Border.all(
+                        color: AppTheme.saffron.withValues(alpha: 0.2),
+                      ),
                     ),
                     child: Text(
-                      _selectedBookingMode == 'Hourly' ? '₹${widget.category.hourlyRate.toInt()}/hr' : 'Fixed Rate',
+                      _selectedBookingMode == 'Hourly'
+                          ? '₹${widget.category.hourlyRate.toInt()}/hr'
+                          : 'Fixed Rate',
                       style: GoogleFonts.inter(
                         fontSize: 12,
                         fontWeight: FontWeight.w800,
@@ -1229,32 +1665,55 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
 
   String _getMonthName(int month) {
     switch (month) {
-      case 1: return 'January';
-      case 2: return 'February';
-      case 3: return 'March';
-      case 4: return 'April';
-      case 5: return 'May';
-      case 6: return 'June';
-      case 7: return 'July';
-      case 8: return 'August';
-      case 9: return 'September';
-      case 10: return 'October';
-      case 11: return 'November';
-      case 12: return 'December';
-      default: return '';
+      case 1:
+        return 'January';
+      case 2:
+        return 'February';
+      case 3:
+        return 'March';
+      case 4:
+        return 'April';
+      case 5:
+        return 'May';
+      case 6:
+        return 'June';
+      case 7:
+        return 'July';
+      case 8:
+        return 'August';
+      case 9:
+        return 'September';
+      case 10:
+        return 'October';
+      case 11:
+        return 'November';
+      case 12:
+        return 'December';
+      default:
+        return '';
     }
   }
 
   String _getDayName(int day) {
     switch (day) {
-      case 1: return 'Mon';
-      case 2: return 'Tue';
-      case 3: return 'Wed';
-      case 4: return 'Thu';
-      case 5: return 'Fri';
-      case 6: return 'Sat';
-      case 7: return 'Sun';
-      default: return '';
+      case 1:
+        return 'Mon';
+      case 2:
+        return 'Tue';
+      case 3:
+        return 'Wed';
+      case 4:
+        return 'Thu';
+      case 5:
+        return 'Fri';
+      case 6:
+        return 'Sat';
+      case 7:
+        return 'Sun';
+      default:
+        return '';
     }
   }
 }
+
+

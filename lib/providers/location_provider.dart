@@ -47,6 +47,7 @@ class SavedLocation {
 class LocationProvider with ChangeNotifier {
   List<SavedLocation> _savedLocations = [];
   bool _isLoading = false;
+  String? _error;
 
   String? _currentAddress;
   String? _currentHouseNumber;
@@ -56,6 +57,7 @@ class LocationProvider with ChangeNotifier {
 
   List<SavedLocation> get savedLocations => _savedLocations;
   bool get isLoading => _isLoading;
+  String? get error => _error;
   String? get currentAddress => _currentAddress;
   String? get currentHouseNumber => _currentHouseNumber;
   String? get currentLandmark => _currentLandmark;
@@ -149,6 +151,7 @@ class LocationProvider with ChangeNotifier {
     if (email == null) return;
 
     _isLoading = true;
+    _error = null;
     notifyListeners();
 
     try {
@@ -192,7 +195,8 @@ class LocationProvider with ChangeNotifier {
         await _persistLocations();
       }
     } catch (e) {
-      debugPrint(ErrorHandler.getErrorMessage(e, action: 'Failed to load locations'));
+      _error = ErrorHandler.getErrorMessage(e, action: 'Failed to load locations');
+      notifyListeners();
     } finally {
       _isLoading = false;
       notifyListeners();

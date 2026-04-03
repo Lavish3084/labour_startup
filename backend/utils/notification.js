@@ -26,8 +26,15 @@ const sendNotification = async (fcmToken, title, body, data = {}) => {
         console.log(`[Notification] Successfully sent message: ${response}`);
     } catch (error) {
         console.error(`[Notification] Error sending to token ${fcmToken.substring(0, 10)}...:`, error.code || error.message);
-        if (error.code === 'messaging/registration-token-not-registered') {
-            console.warn(`[Notification] Token is no longer valid. Should be removed from DB.`);
+        if (error.code === 'messaging/registration-token-not-registered' || error.code === 'messaging/invalid-registration-token') {
+            console.warn(`[Notification] Token is no longer valid. Attempting to remove from users.`);
+            try {
+                const User = require('../models/User');
+                await User.updateMany({ fcmToken: fcmToken }, { $unset: { fcmToken: "" } });
+                console.log(`[Notification] Invalid token removed from database.`);
+            } catch (dbErr) {
+                console.error(`[Notification] Failed to remove invalid token from DB:`, dbErr.message);
+            }
         }
     }
 };

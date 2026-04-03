@@ -24,6 +24,7 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> {
   bool _isPickingImage = false;
+  AppStateProvider? _appState;
 
   @override
   void initState() {
@@ -31,8 +32,32 @@ class _ProfileScreenState extends State<ProfileScreen> {
     // Fetch profile data when screen initializes to ensure fresh data
     Future.microtask(() {
       if (!mounted) return;
-      Provider.of<AppStateProvider>(context, listen: false).fetchProfile();
+      _appState = Provider.of<AppStateProvider>(context, listen: false);
+      _appState?.fetchProfile();
+      
+      // Listen for profile errors
+      _appState?.addListener(_errorListener);
     });
+  }
+
+  void _errorListener() {
+    if (!mounted || _appState == null) return;
+    if (_appState!.profileError != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(_appState!.profileError!),
+          backgroundColor: Colors.red.shade800,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+  }
+
+  @override
+  void dispose() {
+    // Safely remove listener
+    _appState?.removeListener(_errorListener);
+    super.dispose();
   }
 
   Future<void> _handleRefresh() async {

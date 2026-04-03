@@ -61,7 +61,11 @@ class _LoginScreenState extends State<LoginScreen> {
               _completeGoogleSignup(idToken, 'user');
             } else {
               ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text(result['message'] ?? 'Google Login failed')),
+                SnackBar(
+                  content: Text(result['message'] ?? 'Google Login failed'),
+                  backgroundColor: Colors.red.shade800,
+                  behavior: SnackBarBehavior.floating,
+                ),
               );
             }
           }
@@ -69,7 +73,11 @@ class _LoginScreenState extends State<LoginScreen> {
       } else {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Failed to retrieve Google Identity Token.')),
+            SnackBar(
+              content: const Text('Failed to retrieve Google Identity Token.'),
+              backgroundColor: Colors.red.shade800,
+              behavior: SnackBarBehavior.floating,
+            ),
           );
         }
       }
@@ -78,7 +86,9 @@ class _LoginScreenState extends State<LoginScreen> {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(ErrorHandler.getErrorMessage(e, action: 'Google Login failed: $e')),
+            content: Text(ErrorHandler.getErrorMessage(e)),
+            backgroundColor: Colors.red.shade800,
+            behavior: SnackBarBehavior.floating,
           ),
         );
       }
@@ -111,7 +121,11 @@ class _LoginScreenState extends State<LoginScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(ErrorHandler.getErrorMessage(e, action: 'Signup failed'))),
+          SnackBar(
+            content: Text(ErrorHandler.getErrorMessage(e)),
+            backgroundColor: Colors.red.shade800,
+            behavior: SnackBarBehavior.floating,
+          ),
         );
       }
     } finally {
@@ -304,7 +318,11 @@ class _LoginScreenState extends State<LoginScreen> {
 
     if (email.isEmpty || password.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please fill in all fields')),
+        SnackBar(
+          content: const Text('Please fill in all fields'),
+          backgroundColor: Colors.red.shade800,
+          behavior: SnackBarBehavior.floating,
+        ),
       );
       return;
     }
@@ -327,7 +345,11 @@ class _LoginScreenState extends State<LoginScreen> {
       } else {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(result['message'] ?? 'Login failed')),
+            SnackBar(
+              content: Text(result['message'] ?? 'Something went wrong'),
+              backgroundColor: Colors.red.shade800,
+              behavior: SnackBarBehavior.floating,
+            ),
           );
         }
       }
@@ -335,8 +357,9 @@ class _LoginScreenState extends State<LoginScreen> {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
-                ErrorHandler.getErrorMessage(e, action: 'Login failed')),
+            content: Text(ErrorHandler.getErrorMessage(e)),
+            backgroundColor: Colors.red.shade800,
+            behavior: SnackBarBehavior.floating,
           ),
         );
       }

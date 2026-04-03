@@ -9,6 +9,7 @@ import 'package:provider/provider.dart';
 import '../providers/app_state_provider.dart';
 import 'package:razorpay_flutter/razorpay_flutter.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:shimmer/shimmer.dart';
 import '../utils/app_theme.dart';
 import '../models/service_category.dart';
 import 'dart:ui';
@@ -23,22 +24,42 @@ class BookingsScreen extends StatefulWidget {
 class _BookingsScreenState extends State<BookingsScreen> {
   final PaymentService _paymentService = PaymentService();
   String? _pendingBookingId;
+  AppStateProvider? _appState;
 
   @override
   void initState() {
     super.initState();
-    // Data is fetched in MainScreen or via RefreshIndicator
     _paymentService.initialize(
       onSuccess: _handlePaymentSuccess,
       onFailure: _handlePaymentFailure,
       onExternalWallet: _handleExternalWallet,
     );
+    
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _appState = Provider.of<AppStateProvider>(context, listen: false);
+        _appState?.addListener(_errorListener);
+      }
+    });
   }
 
+  void _errorListener() {
+    if (!mounted || _appState == null) return;
+    if (_appState!.bookingsError != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(_appState!.bookingsError!),
+          backgroundColor: Colors.red.shade800,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+  }
 
   @override
   void dispose() {
     _paymentService.dispose();
+    _appState?.removeListener(_errorListener);
     super.dispose();
   }
 
@@ -121,10 +142,24 @@ class _BookingsScreenState extends State<BookingsScreen> {
     }
   }
 
+  bool _isHistory(dynamic booking) {
+    final status = (booking['status'] as String).toLowerCase();
+    if (status == 'completed' || status == 'cancelled') return true;
+
+    final date = DateTime.parse(booking['date']);
+    final hours = int.tryParse(booking['numberOfHours']?.toString() ?? '2') ?? 2;
+    final endTime = date.add(Duration(hours: hours));
+
+    return DateTime.now().isAfter(endTime);
+  }
+
   final Set<String> _expandedBookingIds = {};
+  bool _isRefreshing = false;
 
   Future<void> _refreshBookings() async {
+    setState(() => _isRefreshing = true);
     await Provider.of<AppStateProvider>(context, listen: false).fetchBookings();
+    if (mounted) setState(() => _isRefreshing = false);
   }
 
   String _getDateHeader(DateTime date) {
@@ -335,16 +370,25 @@ class _BookingsScreenState extends State<BookingsScreen> {
   @override
   Widget build(BuildContext context) {
     final appState = Provider.of<AppStateProvider>(context);
-    final bookings = appState.bookings;
+    final allBookings = appState.bookings;
+    final bookings = allBookings.where((b) => !_isHistory(b)).toList();
     final isLoading = appState.isBookingsLoading;
 
     return Scaffold(
       backgroundColor: AppTheme.scaffoldBg,
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
-        title: Text('My Bookings', style: GoogleFonts.baloo2(fontSize: 24, fontWeight: FontWeight.w800, color: AppTheme.textPrimary)),
-        backgroundColor: Colors.white,
+        title: Text(
+          'My Bookings',
+          style: GoogleFonts.baloo2(
+            fontSize: 24,
+            fontWeight: FontWeight.w800,
+            color: AppTheme.textPrimary,
+          ),
+        ),
+        backgroundColor: Colors.transparent,
         elevation: 0,
-        scrolledUnderElevation: 1,
+        scrolledUnderElevation: 0,
         centerTitle: true,
         automaticallyImplyLeading: false,
         actions: [
@@ -359,12 +403,88 @@ class _BookingsScreenState extends State<BookingsScreen> {
           const SizedBox(width: 8),
         ],
       ),
-      body:
-          isLoading && bookings.isEmpty
-              ? const Center(child: CircularProgressIndicator(color: AppTheme.primary))
-              : (bookings.isEmpty
-                  ? _buildEmptyState()
-                  : _buildbookingsList(bookings)),
+      body: Stack(
+        children: [
+          // Background Mesh Gradient Effect
+          // Top Right Circle
+          Positioned(
+            top: -100,
+            right: -50,
+            child: Container(
+              width: 300,
+              height: 300,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: AppTheme.saffron.withValues(alpha: 0.15),
+              ),
+            ),
+          ),
+          // Top Left Circle
+          Positioned(
+            top: -50,
+            left: -100,
+            child: Container(
+              width: 400,
+              height: 400,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: AppTheme.primary.withValues(alpha: 0.1),
+              ),
+            ),
+          ),
+          // Middle Right Circle
+          Positioned(
+            top: 400,
+            right: -80,
+            child: Container(
+              width: 250,
+              height: 250,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: AppTheme.primary.withValues(alpha: 0.08),
+              ),
+            ),
+          ),
+          // Bottom Left Circle
+          Positioned(
+            bottom: -50,
+            left: -50,
+            child: Container(
+              width: 350,
+              height: 350,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: AppTheme.saffron.withValues(alpha: 0.1),
+              ),
+            ),
+          ),
+          // Full Background Gradient Overlay
+          Positioned.fill(
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    AppTheme.primary.withValues(alpha: 0.05),
+                    AppTheme.scaffoldBg.withValues(alpha: 0.8),
+                    AppTheme.scaffoldBg,
+                  ],
+                ),
+              ),
+            ),
+          ),
+
+          // Scrollable Content
+          _isRefreshing
+              ? _buildLoadingState()
+              : (isLoading && bookings.isEmpty
+                  ? const Center(child: CircularProgressIndicator(color: AppTheme.saffron))
+                  : (bookings.isEmpty
+                      ? _buildEmptyState()
+                      : _buildbookingsList(bookings))),
+        ],
+      ),
     );
   }
 
@@ -372,70 +492,113 @@ class _BookingsScreenState extends State<BookingsScreen> {
     return Center(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 40),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(32),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(32),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+            child: Container(
+              padding: const EdgeInsets.all(40),
               decoration: BoxDecoration(
-                color: AppTheme.saffron.withValues(alpha: 0.1),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.calendar_month_outlined,
-                size: 72,
-                color: AppTheme.saffron,
-              ),
-            ),
-            const SizedBox(height: 32),
-            Text(
-              'No Bookings Yet',
-              style: GoogleFonts.baloo2(
-                fontSize: 26,
-                fontWeight: FontWeight.w800,
-                color: AppTheme.textPrimary,
-              ),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              "Looks like you haven't made any bookings yet. Find the right service and get things done today!",
-              textAlign: TextAlign.center,
-              style: GoogleFonts.inter(
-                color: AppTheme.textMuted,
-                fontSize: 15,
-                height: 1.5,
-              ),
-            ),
-            const SizedBox(height: 40),
-            SizedBox(
-              width: 180,
-              height: 52,
-              child: ElevatedButton(
-                onPressed: () => Provider.of<AppStateProvider>(context, listen: false).setTab(0),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppTheme.textPrimary,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                color: Colors.white.withValues(alpha: 0.8),
+                borderRadius: BorderRadius.circular(32),
+                border: Border.all(
+                  color: Colors.white.withValues(alpha: 0.6),
+                  width: 1.5,
                 ),
-                child: Text(
-                  'Explore Services',
-                  style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w700, color: Colors.white),
-                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.05),
+                    blurRadius: 30,
+                    offset: const Offset(0, 15),
+                  ),
+                ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(28),
+                    decoration: BoxDecoration(
+                      color: AppTheme.saffron.withValues(alpha: 0.1),
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: AppTheme.saffron.withValues(alpha: 0.2),
+                        width: 2,
+                      ),
+                    ),
+                    child: const Icon(
+                      Icons.calendar_month_outlined,
+                      size: 64,
+                      color: AppTheme.saffron,
+                    ),
+                  ),
+                  const SizedBox(height: 32),
+                  Text(
+                    'No Active Bookings',
+                    style: GoogleFonts.baloo2(
+                      fontSize: 26,
+                      fontWeight: FontWeight.w800,
+                      color: AppTheme.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    "Looks like you haven't made any bookings yet. Find the right service and get things done today!",
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.inter(
+                      color: AppTheme.textMuted,
+                      fontSize: 14,
+                      height: 1.6,
+                    ),
+                  ),
+                  const SizedBox(height: 40),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 56,
+                    child: ElevatedButton(
+                      onPressed: () =>
+                          Provider.of<AppStateProvider>(context, listen: false)
+                              .setTab(0),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppTheme.textPrimary,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(18),
+                        ),
+                        elevation: 8,
+                        shadowColor: AppTheme.textPrimary.withValues(alpha: 0.3),
+                      ),
+                      child: Text(
+                        'Explore Services',
+                        style: GoogleFonts.inter(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w800,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  TextButton.icon(
+                    onPressed: _refreshBookings,
+                    icon: const Icon(
+                      Icons.refresh_rounded,
+                      color: AppTheme.saffron,
+                      size: 20,
+                    ),
+                    label: Text(
+                      'Check for updates',
+                      style: GoogleFonts.inter(
+                        color: AppTheme.saffron,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height: 16),
-            TextButton.icon(
-              onPressed: _refreshBookings,
-              icon: const Icon(Icons.refresh_rounded, color: AppTheme.saffron, size: 20),
-              label: Text(
-                'Check for updates',
-                style: GoogleFonts.inter(
-                  color: AppTheme.saffron,
-                  fontWeight: FontWeight.w600,
-                  fontSize: 14,
-                ),
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );
@@ -451,7 +614,7 @@ class _BookingsScreenState extends State<BookingsScreen> {
       displacement: 20,
       color: AppTheme.saffron,
       child: ListView.builder(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+        padding: const EdgeInsets.only(top: 130, left: 20, right: 20, bottom: 100),
         itemCount: sortedBookings.length,
         itemBuilder: (context, index) {
           final booking = sortedBookings[index];
@@ -474,7 +637,7 @@ class _BookingsScreenState extends State<BookingsScreen> {
             children: [
               if (showHeader)
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(4, 16, 0, 16),
+                  padding: const EdgeInsets.fromLTRB(4, 5, 0, 16),
                   child: Row(
                     children: [
                       Text(
@@ -573,41 +736,55 @@ class _BookingsScreenState extends State<BookingsScreen> {
         statusIcon = Icons.help_outline_rounded;
     }
 
-    return GestureDetector(
-      onTap: () => setState(() => isExpanded ? _expandedBookingIds.remove(bookingId) : _expandedBookingIds.add(bookingId)),
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 20),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(24),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04),
-              blurRadius: 16,
-              offset: const Offset(0, 8),
-            ),
-          ],
-          border: Border.all(color: AppTheme.divider.withValues(alpha: 0.5)),
-        ),
-        child: Column(
-          children: [
-            // Internal Header with Image & Status
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Row(
-                children: [
-                  Container(
-                    width: 56,
-                    height: 56,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(16),
-                      image: DecorationImage(
-                        image: NetworkImage(imageUrl),
-                        fit: BoxFit.cover,
-                      ),
-                      border: Border.all(color: AppTheme.divider, width: 0.5),
-                    ),
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 20),
+      child: GestureDetector(
+        onTap: () => setState(() => isExpanded ? _expandedBookingIds.remove(bookingId) : _expandedBookingIds.add(bookingId)),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(28),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.8),
+                borderRadius: BorderRadius.circular(28),
+                border: Border.all(
+                  color: Colors.white.withValues(alpha: 0.6),
+                  width: 1.5,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.05),
+                    blurRadius: 20,
+                    offset: const Offset(0, 10),
                   ),
+                ],
+              ),
+              child: Column(
+                children: [
+                  // Internal Header with Image & Status
+                  Padding(
+                    padding: const EdgeInsets.all(20),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 60,
+                          height: 60,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(18),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.1),
+                                blurRadius: 10,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                            image: DecorationImage(
+                              image: NetworkImage(imageUrl),
+                              fit: BoxFit.cover,
+                            ),
+                          ),
+                        ),
                   const SizedBox(width: 14),
                   Expanded(
                     child: Column(
@@ -638,6 +815,10 @@ class _BookingsScreenState extends State<BookingsScreen> {
                     decoration: BoxDecoration(
                       color: statusColor.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
+                        color: statusColor.withValues(alpha: 0.2),
+                        width: 1,
+                      ),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
@@ -665,8 +846,12 @@ class _BookingsScreenState extends State<BookingsScreen> {
               margin: const EdgeInsets.symmetric(horizontal: 16),
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: BoxDecoration(
-                color: AppTheme.scaffoldBg.withValues(alpha: 0.5),
+                color: Colors.white.withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: Colors.white.withValues(alpha: 0.3),
+                  width: 1,
+                ),
               ),
               child: Row(
                 children: [
@@ -760,7 +945,10 @@ class _BookingsScreenState extends State<BookingsScreen> {
                 borderRadius: BorderRadius.circular(10),
               ),
             ),
-          ],
+                ],
+              ),
+            ),
+          ),
         ),
       ),
     );
@@ -820,4 +1008,91 @@ class _BookingsScreenState extends State<BookingsScreen> {
   }
 
   String _getMonthName(int month) => ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][month - 1];
+
+  Widget _buildLoadingState() {
+    return ListView.builder(
+      padding: const EdgeInsets.only(top: 130, left: 20, right: 20),
+      itemCount: 4,
+      physics: const NeverScrollableScrollPhysics(),
+      itemBuilder: (context, index) => _buildSkeletonCard(),
+    );
+  }
+
+  Widget _buildSkeletonCard() {
+    return Shimmer.fromColors(
+      baseColor: Colors.white.withValues(alpha: 0.4),
+      highlightColor: Colors.white.withValues(alpha: 0.8),
+      child: Padding(
+        padding: const EdgeInsets.only(bottom: 20),
+        child: Container(
+          height: 160,
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.5),
+            borderRadius: BorderRadius.circular(28),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.3), width: 1.5),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      width: 60,
+                      height: 60,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.5),
+                        borderRadius: BorderRadius.circular(18),
+                      ),
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Container(
+                            width: 120,
+                            height: 20,
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.5),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Container(
+                            width: 80,
+                            height: 14,
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.5),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Container(
+                      width: 60,
+                      height: 24,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.5),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                  ],
+                ),
+                const Spacer(),
+                Container(
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.4),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }

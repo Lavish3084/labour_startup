@@ -90,14 +90,22 @@ class _SignupScreenState extends State<SignupScreen> {
       } else {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(result['message'])),
+            SnackBar(
+              content: Text(result['message'] ?? 'Something went wrong'),
+              backgroundColor: Colors.red.shade800,
+              behavior: SnackBarBehavior.floating,
+            ),
           );
         }
       }
     } catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(ErrorHandler.getErrorMessage(e, action: 'Signup failed'))),
+          SnackBar(
+            content: Text(ErrorHandler.getErrorMessage(e)),
+            backgroundColor: Colors.red.shade800,
+            behavior: SnackBarBehavior.floating,
+          ),
         );
       }
     } finally {
@@ -134,7 +142,11 @@ class _SignupScreenState extends State<SignupScreen> {
         } else {
           if (context.mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(result['message'] ?? 'Google Login failed')),
+              SnackBar(
+                content: Text(result['message'] ?? 'Something went wrong'),
+                backgroundColor: Colors.red.shade800,
+                behavior: SnackBarBehavior.floating,
+              ),
             );
           }
         }
@@ -142,7 +154,11 @@ class _SignupScreenState extends State<SignupScreen> {
     } catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(ErrorHandler.getErrorMessage(e, action: 'Google Login failed'))),
+          SnackBar(
+            content: Text(ErrorHandler.getErrorMessage(e)),
+            backgroundColor: Colors.red.shade800,
+            behavior: SnackBarBehavior.floating,
+          ),
         );
       }
     } finally {

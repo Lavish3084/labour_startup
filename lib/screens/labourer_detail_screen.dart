@@ -3,6 +3,7 @@ import '../utils/app_theme.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../models/labourer.dart';
 import '../services/api_service.dart';
+import '../services/error_handler.dart';
 import '../models/service_category.dart';
 import 'package:provider/provider.dart';
 import '../providers/app_state_provider.dart';
@@ -321,40 +322,40 @@ class _LabourerDetailScreenState extends State<LabourerDetailScreen> {
   Future<void> _createBooking(DateTime date, String notes) async {
     setState(() => _isLoading = true);
     try {
-      final success = await ApiService.createBooking(
+      final result = await ApiService.createBooking(
         labourerId: widget.labourer.id,
         category: widget.labourer.category,
         date: date,
         bookingMode: _selectedMode,
         numberOfHours: _selectedMode == 'Hourly' ? _numberOfHours : null,
         notes: notes,
-        address:
-            null, // Specific worker booking usually uses current location or user profile default
+        address: null, 
         houseNumber: null,
         landmark: null,
         latitude: null,
         longitude: null,
-        amount:
-            (_selectedMode == 'Hourly'
-                ? widget.labourer.hourlyRate * _numberOfHours
-                : widget.labourer.hourlyRate * 8),
+        amount: (_selectedMode == 'Hourly'
+            ? widget.labourer.hourlyRate * _numberOfHours
+            : widget.labourer.hourlyRate * 8),
         minAmount: null,
         maxAmount: null,
       );
       if (mounted) {
-        if (success) {
+        if (result['success']) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('Booking Confirmed!'),
               backgroundColor: Colors.green,
+              behavior: SnackBarBehavior.floating,
             ),
           );
           Navigator.pop(context); // Go back to Home
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Booking Failed'),
-              backgroundColor: Colors.red,
+            SnackBar(
+              content: Text(result['message'] ?? 'Something went wrong'),
+              backgroundColor: Colors.red.shade800,
+              behavior: SnackBarBehavior.floating,
             ),
           );
         }
@@ -362,7 +363,11 @@ class _LabourerDetailScreenState extends State<LabourerDetailScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+          SnackBar(
+            content: Text(ErrorHandler.getErrorMessage(e)),
+            backgroundColor: Colors.red.shade800,
+            behavior: SnackBarBehavior.floating,
+          ),
         );
       }
     } finally {

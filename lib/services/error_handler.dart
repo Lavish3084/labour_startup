@@ -10,24 +10,22 @@ class ErrorHandler {
     }
 
     String message;
-
     if (error is SocketException || 
+        error is HttpException ||
         error.toString().contains('SocketException') || 
         error.toString().contains('Connection failed') ||
-        error.toString().contains('Network is unreachable')) {
-      message = 'Internet error. Please check your connection.';
-    } else if (error is HttpException || error.toString().contains('HttpException')) {
-      message = 'Server connection error. Please try again.';
-    } else if (error.toString().contains('TimeoutException')) {
-      message = 'Connection timed out. Please try again.';
+        error.toString().contains('Network is unreachable') ||
+        error.toString().contains('TimeoutException') ||
+        error.toString().contains('ClientException') ||
+        error.toString().contains('Internet error')) {
+      message = 'Internet error';
     } else {
-      message = 'Something went wrong. Please try again later.';
+      message = 'Something went wrong';
     }
 
     if (action != null && action.isNotEmpty) {
       return '$action: $message';
     }
-
     return message;
   }
 }

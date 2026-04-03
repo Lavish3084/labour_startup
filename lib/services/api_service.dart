@@ -5,6 +5,7 @@ import '../config.dart';
 import '../models/labourer.dart';
 import '../models/service_category.dart';
 import 'notification_service.dart';
+import 'error_handler.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
 class ApiService {
@@ -18,36 +19,40 @@ class ApiService {
     String role,
     String? profilePicture,
   ) async {
-    final response = await http.post(
-      Uri.parse('$baseUrl/auth/signup'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({
-        'name': name,
-        'email': email,
-        'password': password,
-        'role': role,
-        'profilePicture': profilePicture,
-      }),
-    );
-
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body);
-      final dataMap = data is Map ? data : {};
-      await _saveAuthData(
-        dataMap['token']?.toString(), 
-        dataMap['role']?.toString(), 
-        dataMap['name']?.toString(), 
-        email
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/auth/signup'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'name': name,
+          'email': email,
+          'password': password,
+          'role': role,
+          'profilePicture': profilePicture,
+        }),
       );
-      return {'success': true, 'data': dataMap};
-    } else {
-      dynamic error;
-      try {
-        error = jsonDecode(response.body);
-      } catch (_) {
-        error = null;
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final dataMap = data is Map ? data : {};
+        await _saveAuthData(
+          dataMap['token']?.toString(), 
+          dataMap['role']?.toString(), 
+          dataMap['name']?.toString(), 
+          email
+        );
+        return {'success': true, 'data': dataMap};
+      } else {
+        dynamic error;
+        try {
+          error = jsonDecode(response.body);
+        } catch (_) {
+          error = null;
+        }
+        return {'success': false, 'message': (error is Map && error.containsKey('msg')) ? error['msg'] : 'Something went wrong'};
       }
-      return {'success': false, 'message': (error is Map && error.containsKey('msg')) ? error['msg'] : 'Signup failed'};
+    } catch (e) {
+      return {'success': false, 'message': ErrorHandler.getErrorMessage(e)};
     }
   }
 
@@ -55,32 +60,36 @@ class ApiService {
     String email,
     String password,
   ) async {
-    final response = await http.post(
-      Uri.parse('$baseUrl/auth/login'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({'email': email, 'password': password}),
-    );
-
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body);
-      final dataMap = data is Map ? data : {};
-      await _saveAuthData(
-        dataMap['token']?.toString(), 
-        dataMap['role']?.toString(), 
-        dataMap['name']?.toString(), 
-        email
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/auth/login'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'email': email, 'password': password}),
       );
-      // Update FCM Token
-      await updateFcmToken();
-      return {'success': true, 'data': dataMap};
-    } else {
-      dynamic error;
-      try {
-        error = jsonDecode(response.body);
-      } catch (_) {
-        error = null;
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final dataMap = data is Map ? data : {};
+        await _saveAuthData(
+          dataMap['token']?.toString(), 
+          dataMap['role']?.toString(), 
+          dataMap['name']?.toString(), 
+          email
+        );
+        // Update FCM Token
+        await updateFcmToken();
+        return {'success': true, 'data': dataMap};
+      } else {
+        dynamic error;
+        try {
+          error = jsonDecode(response.body);
+        } catch (_) {
+          error = null;
+        }
+        return {'success': false, 'message': (error is Map && error.containsKey('msg')) ? error['msg'] : 'Something went wrong'};
       }
-      return {'success': false, 'message': (error is Map && error.containsKey('msg')) ? error['msg'] : 'Login failed'};
+    } catch (e) {
+      return {'success': false, 'message': ErrorHandler.getErrorMessage(e)};
     }
   }
 
@@ -178,19 +187,23 @@ class ApiService {
 
   // Profile
   static Future<Map<String, dynamic>> getProfile() async {
-    final token = await getToken();
-    final response = await http.get(
-      Uri.parse('$baseUrl/profile/me'),
-      headers: {'x-auth-token': token ?? ''},
-    );
+    try {
+      final token = await getToken();
+      final response = await http.get(
+        Uri.parse('$baseUrl/profile/me'),
+        headers: {'x-auth-token': token ?? ''},
+      );
 
-    if (response.statusCode == 200) {
-      return jsonDecode(response.body);
-    } else if (response.statusCode == 401) {
-      await logout();
-      throw Exception('Unauthorized');
-    } else {
-      throw Exception('Failed to load profile');
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      } else if (response.statusCode == 401) {
+        await logout();
+        throw Exception('Unauthorized');
+      } else {
+        throw Exception('Data error');
+      }
+    } catch (e) {
+      throw Exception(ErrorHandler.getErrorMessage(e));
     }
   }
 
@@ -243,7 +256,7 @@ class ApiService {
   }
 
   // Bookings
-  static Future<bool> createBooking({
+  static Future<Map<String, dynamic>> createBooking({
     String? labourerId,
     required String category,
     required DateTime date,
@@ -286,95 +299,112 @@ class ApiService {
       );
 
       if (response.statusCode != 200) {
-        print(
-          'ApiService: createBooking failed with status: ${response.statusCode}',
-        );
-        print('ApiService: Error response: ${response.body}');
-        return false;
+        return {'success': false, 'message': 'Something went wrong'};
       }
-      return true;
+      return {'success': true};
     } catch (e) {
-      print('ApiService: Error creating booking: $e');
-      return false;
+      return {'success': false, 'message': ErrorHandler.getErrorMessage(e)};
     }
   }
 
   static Future<List<dynamic>> getUserBookings() async {
-    final token = await getToken();
-    final response = await http.get(
-      Uri.parse('$baseUrl/bookings/user'),
-      headers: {'x-auth-token': token ?? ''},
-    );
-
-    if (response.statusCode == 200) {
-      return jsonDecode(response.body);
-    } else if (response.statusCode == 401) {
-      await logout();
-      throw Exception('Unauthorized');
-    } else {
-      throw Exception(
-        'Failed to load bookings: ${response.statusCode} ${response.body}',
+    try {
+      final token = await getToken();
+      final response = await http.get(
+        Uri.parse('$baseUrl/bookings/user'),
+        headers: {'x-auth-token': token ?? ''},
       );
+
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      } else if (response.statusCode == 401) {
+        await logout();
+        throw Exception('Unauthorized');
+      } else {
+        throw Exception('Data error');
+      }
+    } catch (e) {
+      throw Exception(ErrorHandler.getErrorMessage(e));
     }
   }
 
   static Future<bool> confirmWork(String bookingId) async {
-    final token = await getToken();
-    final response = await http.put(
-      Uri.parse('$baseUrl/bookings/$bookingId/confirm-work'),
-      headers: {
-        'Content-Type': 'application/json',
-        'x-auth-token': token ?? '',
-      },
-    );
-    return response.statusCode == 200;
+    try {
+      final token = await getToken();
+      final response = await http.put(
+        Uri.parse('$baseUrl/bookings/$bookingId/confirm-work'),
+        headers: {
+          'Content-Type': 'application/json',
+          'x-auth-token': token ?? '',
+        },
+      );
+      return response.statusCode == 200;
+    } catch (e) {
+      return false;
+    }
   }
 
   static Future<bool> updateBookingStatus(
     String bookingId,
     String status,
   ) async {
-    final token = await getToken();
-    final response = await http.put(
-      Uri.parse('$baseUrl/bookings/$bookingId/status'),
-      headers: {
-        'Content-Type': 'application/json',
-        'x-auth-token': token ?? '',
-      },
-      body: jsonEncode({'status': status}),
-    );
-    return response.statusCode == 200;
+    try {
+      final token = await getToken();
+      final response = await http.put(
+        Uri.parse('$baseUrl/bookings/$bookingId/status'),
+        headers: {
+          'Content-Type': 'application/json',
+          'x-auth-token': token ?? '',
+        },
+        body: jsonEncode({'status': status}),
+      );
+      return response.statusCode == 200;
+    } catch (e) {
+      return false;
+    }
   }
 
   // Data
   static Future<Map<String, dynamic>> getSettings() async {
-    final response = await http.get(Uri.parse('$baseUrl/settings'));
-    if (response.statusCode == 200) {
-      return jsonDecode(response.body);
-    } else {
-      throw Exception('Failed to load settings');
+    try {
+      final response = await http.get(Uri.parse('$baseUrl/settings'));
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      } else {
+        throw Exception('Data error');
+      }
+    } catch (e) {
+      throw Exception(ErrorHandler.getErrorMessage(e));
     }
   }
 
   static Future<List<ServiceCategory>> getCategories() async {
-    final response = await http.get(Uri.parse('$baseUrl/categories'));
+    try {
+      final response = await http.get(Uri.parse('$baseUrl/categories'));
 
-    if (response.statusCode == 200) {
-      final List<dynamic> data = jsonDecode(response.body);
-      return data.map((json) => ServiceCategory.fromJson(json)).toList();
-    } else {
-      throw Exception('Failed to load categories');
+      if (response.statusCode == 200) {
+        final List<dynamic> data = jsonDecode(response.body);
+        return data.map((json) => ServiceCategory.fromJson(json)).toList();
+      } else {
+        throw Exception('Data error');
+      }
+    } catch (e) {
+      throw Exception(ErrorHandler.getErrorMessage(e));
     }
   }
 
   static Future<List<Labourer>> getLabourers() async {
-    final response = await http.get(Uri.parse('$baseUrl/labourers'));
+    try {
+      final response = await http.get(Uri.parse('$baseUrl/labourers'));
 
-    if (response.statusCode == 200) {
-      final List<dynamic> data = jsonDecode(response.body);
-      return data.map((json) => Labourer.fromJson(json)).toList();
-    } else {
-      throw Exception('Failed to load labourers');
+      if (response.statusCode == 200) {
+        final List<dynamic> data = jsonDecode(response.body);
+        return data.map((json) => Labourer.fromJson(json)).toList();
+      } else {
+        throw Exception('Data error');
+      }
+    } catch (e) {
+      throw Exception(ErrorHandler.getErrorMessage(e));
     }
   }
 
@@ -383,20 +413,24 @@ class ApiService {
     String bookingId,
     int amount,
   ) async {
-    final token = await getToken();
-    final response = await http.post(
-      Uri.parse('$baseUrl/payments/create-order'),
-      headers: {
-        'Content-Type': 'application/json',
-        'x-auth-token': token ?? '',
-      },
-      body: jsonEncode({'bookingId': bookingId, 'amount': amount}),
-    );
+    try {
+      final token = await getToken();
+      final response = await http.post(
+        Uri.parse('$baseUrl/payments/create-order'),
+        headers: {
+          'Content-Type': 'application/json',
+          'x-auth-token': token ?? '',
+        },
+        body: jsonEncode({'bookingId': bookingId, 'amount': amount}),
+      );
 
-    if (response.statusCode == 200) {
-      return jsonDecode(response.body);
-    } else {
-      throw Exception('Failed to create payment order');
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      } else {
+        throw Exception('Payment error');
+      }
+    } catch (e) {
+      throw Exception(ErrorHandler.getErrorMessage(e));
     }
   }
 
@@ -406,67 +440,77 @@ class ApiService {
     String signature,
     String bookingId,
   ) async {
-    final token = await getToken();
-    final response = await http.post(
-      Uri.parse('$baseUrl/payments/verify-payment'),
-      headers: {
-        'Content-Type': 'application/json',
-        'x-auth-token': token ?? '',
-      },
-      body: jsonEncode({
-        'razorpay_order_id': orderId,
-        'razorpay_payment_id': paymentId,
-        'razorpay_signature': signature,
-        'bookingId': bookingId,
-      }),
-    );
+    try {
+      final token = await getToken();
+      final response = await http.post(
+        Uri.parse('$baseUrl/payments/verify-payment'),
+        headers: {
+          'Content-Type': 'application/json',
+          'x-auth-token': token ?? '',
+        },
+        body: jsonEncode({
+          'razorpay_order_id': orderId,
+          'razorpay_payment_id': paymentId,
+          'razorpay_signature': signature,
+          'bookingId': bookingId,
+        }),
+      );
 
-    return response.statusCode == 200;
+      return response.statusCode == 200;
+    } catch (e) {
+      return false;
+    }
   }
 
   static Future<bool> addSavedAddress(Map<String, dynamic> data) async {
-    final token = await getToken();
-    print('ApiService: Adding saved address to $baseUrl/profile/address');
-    print('ApiService: Request Body: ${jsonEncode(data)}');
+    try {
+      final token = await getToken();
+      final response = await http.post(
+        Uri.parse('$baseUrl/profile/address'),
+        headers: {
+          'Content-Type': 'application/json',
+          'x-auth-token': token ?? '',
+        },
+        body: jsonEncode(data),
+      );
 
-    final response = await http.post(
-      Uri.parse('$baseUrl/profile/address'),
-      headers: {
-        'Content-Type': 'application/json',
-        'x-auth-token': token ?? '',
-      },
-      body: jsonEncode(data),
-    );
-
-    print('ApiService: Status Code: ${response.statusCode}');
-    print('ApiService: Response Body: ${response.body}');
-
-    return response.statusCode == 200;
+      return response.statusCode == 200;
+    } catch (e) {
+      return false;
+    }
   }
 
   static Future<bool> deleteSavedAddress(String addressId) async {
-    final token = await getToken();
-    final response = await http.delete(
-      Uri.parse('$baseUrl/profile/address/$addressId'),
-      headers: {'x-auth-token': token ?? ''},
-    );
-    return response.statusCode == 200;
+    try {
+      final token = await getToken();
+      final response = await http.delete(
+        Uri.parse('$baseUrl/profile/address/$addressId'),
+        headers: {'x-auth-token': token ?? ''},
+      );
+      return response.statusCode == 200;
+    } catch (e) {
+      return false;
+    }
   }
 
   static Future<bool> deleteAccount() async {
-    final token = await getToken();
-    final response = await http.delete(
-      Uri.parse('$baseUrl/profile'),
-      headers: {
-        'Content-Type': 'application/json',
-        'x-auth-token': token ?? '',
-      },
-    );
+    try {
+      final token = await getToken();
+      final response = await http.delete(
+        Uri.parse('$baseUrl/profile'),
+        headers: {
+          'Content-Type': 'application/json',
+          'x-auth-token': token ?? '',
+        },
+      );
 
-    if (response.statusCode == 200) {
-      await logout();
-      return true;
+      if (response.statusCode == 200) {
+        await logout();
+        return true;
+      }
+      return false;
+    } catch (e) {
+      return false;
     }
-    return false;
   }
 }

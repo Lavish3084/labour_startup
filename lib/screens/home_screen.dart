@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
+import 'package:shimmer/shimmer.dart';
 import '../models/service_category.dart';
 import 'service_request_screen.dart';
+import 'history_screen.dart';
 import '../providers/location_provider.dart';
 import 'package:provider/provider.dart';
 import '../widgets/address_selection_sheet.dart';
@@ -20,14 +22,37 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  bool _isRefreshing = false;
+  AppStateProvider? _appState;
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final appState = Provider.of<AppStateProvider>(context, listen: false);
-      appState.loadCategories();
+      _appState = Provider.of<AppStateProvider>(context, listen: false);
+      _appState?.loadCategories();
       _initLocation();
+      _appState?.addListener(_errorListener);
     });
+  }
+
+  void _errorListener() {
+    if (!mounted || _appState == null) return;
+    if (_appState!.categoriesError != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(_appState!.categoriesError!),
+          backgroundColor: Colors.red.shade800,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+  }
+
+  @override
+  void dispose() {
+    _appState?.removeListener(_errorListener);
+    super.dispose();
   }
 
   Future<void> _initLocation() async {
@@ -96,8 +121,10 @@ class _HomeScreenState extends State<HomeScreen> {
       backgroundColor: AppTheme.scaffoldBg,
       body: RefreshIndicator(
         onRefresh: () async {
+          setState(() => _isRefreshing = true);
           final appState = Provider.of<AppStateProvider>(context, listen: false);
           await appState.fetchCategories();
+          if (mounted) setState(() => _isRefreshing = false);
         },
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
@@ -189,7 +216,10 @@ class _HomeScreenState extends State<HomeScreen> {
                     ],
                   ),
                 ),
-                _buildCircularAction(Icons.account_balance_wallet_outlined),
+                _buildCircularAction(
+                  Icons.history_rounded,
+                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const HistoryScreen())),
+                ),
                 const SizedBox(width: 12),
                 _buildCircularAction(Icons.person_outline_rounded),
               ],
@@ -263,14 +293,17 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildCircularAction(IconData icon) {
-    return Container(
-      padding: const EdgeInsets.all(10),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.2),
-        shape: BoxShape.circle,
+  Widget _buildCircularAction(IconData icon, {VoidCallback? onTap}) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(10),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.2),
+          shape: BoxShape.circle,
+        ),
+        child: Icon(icon, color: Colors.white, size: 20),
       ),
-      child: Icon(icon, color: Colors.white, size: 20),
     );
   }
 
@@ -483,6 +516,10 @@ class _HomeScreenState extends State<HomeScreen> {
       builder: (context, appState, _) {
         final categories = appState.categories;
         
+        if (_isRefreshing) {
+          return _buildSkeletonGrid();
+        }
+
         if (appState.isCategoriesLoading && categories.isEmpty) {
           return const Center(
             child: Padding(
@@ -559,6 +596,80 @@ class _HomeScreenState extends State<HomeScreen> {
       context,
       MaterialPageRoute(
         builder: (context) => ServiceRequestScreen(category: category),
+      ),
+    );
+  }
+
+  Widget _buildSkeletonGrid() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: GridView.builder(
+        padding: const EdgeInsets.only(top: 10, bottom: 40),
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 3,
+          mainAxisSpacing: 12,
+          crossAxisSpacing: 12,
+          mainAxisExtent: 160,
+        ),
+        itemCount: 9, // Fill the view
+        itemBuilder: (context, index) => _buildSkeletonCard(),
+      ),
+    );
+  }
+
+  Widget _buildSkeletonCard() {
+    return Shimmer.fromColors(
+      baseColor: Colors.grey[300]!,
+      highlightColor: Colors.grey[100]!,
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Column(
+          children: [
+            // Top Image Area Placeholder
+            Container(
+              height: 100,
+              width: double.infinity,
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+              ),
+            ),
+            // Bottom Info Placeholder
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.all(10.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      width: 60,
+                      height: 12,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Container(
+                      width: 40,
+                      height: 10,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

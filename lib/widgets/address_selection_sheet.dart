@@ -21,8 +21,34 @@ class _AddressSelectionSheetState extends State<AddressSelectionSheet> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<LocationProvider>().loadSavedLocations();
+      if (mounted) {
+        final locationProvider = context.read<LocationProvider>();
+        locationProvider.loadSavedLocations();
+        locationProvider.addListener(_errorListener);
+      }
     });
+  }
+
+  void _errorListener() {
+    if (!mounted) return;
+    final locationProvider = context.read<LocationProvider>();
+    if (locationProvider.error != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(locationProvider.error!),
+          backgroundColor: Colors.red.shade800,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+  }
+
+  @override
+  void dispose() {
+    if (mounted) {
+      context.read<LocationProvider>().removeListener(_errorListener);
+    }
+    super.dispose();
   }
 
   Future<void> _useCurrentLocation() async {
