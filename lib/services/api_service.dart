@@ -341,21 +341,6 @@ class ApiService {
     }
   }
 
-  static Future<bool> confirmWork(String bookingId) async {
-    try {
-      final token = await getToken();
-      final response = await http.put(
-        Uri.parse('$baseUrl/bookings/$bookingId/confirm-work'),
-        headers: {
-          'Content-Type': 'application/json',
-          'x-auth-token': token ?? '',
-        },
-      );
-      return response.statusCode == 200;
-    } catch (e) {
-      return false;
-    }
-  }
 
   static Future<bool> updateBookingStatus(
     String bookingId,
@@ -440,9 +425,16 @@ class ApiService {
       if (response.statusCode == 200) {
         return jsonDecode(response.body);
       } else {
-        throw Exception('Payment error');
+        final errorData = jsonDecode(response.body);
+        if (errorData['code'] == 'ALREADY_PAID') {
+          throw Exception('ALREADY_PAID');
+        }
+        throw Exception(errorData['msg'] ?? 'Payment error');
       }
     } catch (e) {
+      if (e.toString().contains('ALREADY_PAID')) {
+        rethrow;
+      }
       throw Exception(ErrorHandler.getErrorMessage(e));
     }
   }

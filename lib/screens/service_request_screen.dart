@@ -798,7 +798,7 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
       final result = await ApiService.createBooking(
         labourerId: null, // Broadcast request
         category: widget.category.name,
-        date: scheduledDateTime,
+        date: scheduledDateTime.toUtc(),
         bookingMode: _selectedBookingMode,
         numberOfHours: _selectedBookingMode == 'Hourly' ? _numberOfHours : null,
         notes: _notesController.text,

@@ -54,6 +54,10 @@ const BookingSchema = new mongoose.Schema({
     address: {
         type: String
     },
+    declinedBy: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Labourer'
+    }],
     houseNumber: {
         type: String
     },

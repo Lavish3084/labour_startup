@@ -13,6 +13,8 @@ import 'package:shimmer/shimmer.dart';
 import '../utils/app_theme.dart';
 import '../models/service_category.dart';
 import 'history_screen.dart';
+import '../services/notification_service.dart';
+import 'dart:async';
 import 'dart:ui';
 
 class BookingsScreen extends StatefulWidget {
@@ -42,7 +44,15 @@ class _BookingsScreenState extends State<BookingsScreen> {
         _appState?.addListener(_errorListener);
       }
     });
+
+    _notificationSubscription = NotificationService.onNotification.listen((_) {
+      if (mounted) {
+        _refreshBookings();
+      }
+    });
   }
+
+  StreamSubscription<void>? _notificationSubscription;
 
   void _errorListener() {
     if (!mounted || _appState == null) return;
@@ -61,6 +71,7 @@ class _BookingsScreenState extends State<BookingsScreen> {
   void dispose() {
     _paymentService.dispose();
     _appState?.removeListener(_errorListener);
+    _notificationSubscription?.cancel();
     super.dispose();
   }
 
@@ -135,10 +146,22 @@ class _BookingsScreenState extends State<BookingsScreen> {
         amount: order['amount'],
       );
     } catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(ErrorHandler.getErrorMessage(e, action: 'Payment initiation failed'))),
-        );
+      if (e.toString().contains('ALREADY_PAID')) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text("This booking was already paid. Refreshing..."),
+              backgroundColor: Colors.green,
+            ),
+          );
+          _refreshBookings();
+        }
+      } else {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(ErrorHandler.getErrorMessage(e, action: 'Payment initiation failed'))),
+          );
+        }
       }
     }
   }
@@ -324,49 +347,6 @@ class _BookingsScreenState extends State<BookingsScreen> {
     }
   }
 
-  Future<void> _handleConfirmWork(dynamic booking) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Confirm Work Completion', style: GoogleFonts.inter(fontWeight: FontWeight.bold)),
-        content: Text('Are you sure the worker has completed the job? This will release the payout to the worker.', style: GoogleFonts.inter()),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: Text('Cancel', style: GoogleFonts.inter(color: Colors.grey)),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
-            child: Text('Yes, Confirm', style: GoogleFonts.inter(color: Colors.white)),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed == true) {
-      if (!mounted) return;
-      try {
-        final success = await ApiService.confirmWork(booking['_id']);
-        if (success) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("Work confirmed successfully!"), backgroundColor: Colors.green),
-          );
-          _refreshBookings();
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("Failed to confirm work"), backgroundColor: AppTheme.error),
-          );
-        }
-      } catch (e) {
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(ErrorHandler.getErrorMessage(e, action: 'Confirmation failed'))),
-          );
-        }
-      }
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -601,7 +581,7 @@ class _BookingsScreenState extends State<BookingsScreen> {
         itemCount: sortedBookings.length,
         itemBuilder: (context, index) {
           final booking = sortedBookings[index];
-          final date = DateTime.parse(booking['date']);
+          final date = DateTime.parse(booking['date']).toLocal();
           final dateHeader = _getDateHeader(date);
 
           bool showHeader = false;
@@ -609,7 +589,7 @@ class _BookingsScreenState extends State<BookingsScreen> {
             showHeader = true;
           } else {
             final prevBooking = sortedBookings[index - 1];
-            final prevDate = DateTime.parse(prevBooking['date']);
+            final prevDate = DateTime.parse(prevBooking['date']).toLocal();
             if (_getDateHeader(prevDate) != dateHeader) {
               showHeader = true;
             }
@@ -659,7 +639,7 @@ class _BookingsScreenState extends State<BookingsScreen> {
     final bookingId = booking['_id'];
     final isExpanded = _expandedBookingIds.contains(bookingId);
     final status = (booking['status'] as String).toLowerCase();
-    final date = DateTime.parse(booking['date']);
+    final date = DateTime.parse(booking['date']).toLocal();
     final timeString = "${date.hour % 12 == 0 ? 12 : date.hour % 12}:${date.minute.toString().padLeft(2, '0')} ${date.hour >= 12 ? 'PM' : 'AM'}";
 
     String imageUrl;
@@ -667,7 +647,9 @@ class _BookingsScreenState extends State<BookingsScreen> {
     String category;
 
     if (labourer != null) {
-      imageUrl = labourer['imageUrl'] ?? 'https://randomuser.me/api/portraits/lego/1.jpg';
+      imageUrl = (labourer['imageUrl'] != null && labourer['imageUrl'].toString().isNotEmpty) 
+          ? labourer['imageUrl'] 
+          : 'https://randomuser.me/api/portraits/lego/1.jpg';
       name = labourer['name'] ?? 'Worker';
       category = labourer['category'] ?? 'Service';
     } else {
@@ -899,7 +881,7 @@ class _BookingsScreenState extends State<BookingsScreen> {
                       Builder(
                         builder: (context) {
                           final now = DateTime.now();
-                          final bookingDate = DateTime.parse(booking['date']);
+                          final bookingDate = DateTime.parse(booking['date']).toLocal();
                           final startWindow = bookingDate.subtract(const Duration(hours: 1));
                           final endWindow = bookingDate.add(const Duration(minutes: 30));
                           
@@ -938,7 +920,21 @@ class _BookingsScreenState extends State<BookingsScreen> {
                                   ],
                                 ),
                                 const SizedBox(height: 8),
-                                if (isArrival && !inWindow) ...[
+                                if (isArrival && booking['paymentStatus'] != 'paid') ...[
+                                  Text(
+                                    'Payment Pending',
+                                    style: GoogleFonts.inter(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w700,
+                                      color: Colors.amber.shade800,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    'Complete payment to reveal Arrival OTP.',
+                                    style: GoogleFonts.inter(fontSize: 10, color: AppTheme.textLight),
+                                  ),
+                                ] else if (isArrival && !inWindow) ...[
                                   Text(
                                     isTooEarly ? 'Available 1h before start' : 'Verification Expired (Late)',
                                     style: GoogleFonts.inter(
@@ -966,26 +962,50 @@ class _BookingsScreenState extends State<BookingsScreen> {
                                           fontSize: 24,
                                           fontWeight: FontWeight.w900,
                                           letterSpacing: 4,
-                                          color: AppTheme.textPrimary,
+                                          color: status == 'arrived' ? AppTheme.success : AppTheme.textPrimary,
                                         ),
                                       ),
                                       Container(
                                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                                         decoration: BoxDecoration(
-                                          color: Colors.white,
+                                          color: status == 'arrived' ? AppTheme.success.withValues(alpha: 0.1) : Colors.white,
                                           borderRadius: BorderRadius.circular(8),
+                                          border: status == 'arrived' ? Border.all(color: AppTheme.success.withValues(alpha: 0.2)) : null,
                                         ),
                                         child: Text(
-                                          status == 'confirmed' ? 'Share on Arrival' : 'Share on Completion',
+                                          status == 'confirmed' ? 'Share on Arrival' : 'Share to Complete',
                                           style: GoogleFonts.inter(
                                             fontSize: 10,
                                             fontWeight: FontWeight.bold,
-                                            color: AppTheme.textMuted,
+                                            color: status == 'arrived' ? AppTheme.success : AppTheme.textMuted,
                                           ),
                                         ),
                                       ),
                                     ],
                                   ),
+                                  if (status == 'arrived') ...[
+                                    const SizedBox(height: 12),
+                                    Container(
+                                      padding: const EdgeInsets.all(12),
+                                      decoration: BoxDecoration(
+                                        color: Colors.blue.shade50,
+                                        borderRadius: BorderRadius.circular(12),
+                                        border: Border.all(color: Colors.blue.shade100),
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          Icon(Icons.info_outline_rounded, size: 16, color: Colors.blue.shade700),
+                                          const SizedBox(width: 8),
+                                          Expanded(
+                                            child: Text(
+                                              'Share this OTP only when work is satisfactorily completed.',
+                                              style: GoogleFonts.inter(fontSize: 10, color: Colors.blue.shade800, fontWeight: FontWeight.w500),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
                                 ],
                               ],
                             ),
@@ -1003,10 +1023,6 @@ class _BookingsScreenState extends State<BookingsScreen> {
                         if (status == 'confirmed' && (booking['paymentStatus'] != 'paid'))
                           Expanded(
                             child: _buildActionButton('PAY FEE ₹${calculatedFee.toInt()}', Colors.green, () => _initiatePayment(booking, calculatedFee.toInt())),
-                          ),
-                        if (status == 'confirmed' && booking['paymentStatus'] == 'paid' && booking['isWorkConfirmed'] != true)
-                          Expanded(
-                            child: _buildActionButton('CONFIRM WORK', AppTheme.saffron, () => _handleConfirmWork(booking)),
                           ),
                         if (status != 'completed' && booking['isWorkConfirmed'] != true) ...[
                            const SizedBox(width: 8),

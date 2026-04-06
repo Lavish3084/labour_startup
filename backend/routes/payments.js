@@ -57,6 +57,14 @@ router.post('/create-order', verifyToken, async (req, res) => {
             return res.status(404).json({ msg: "Booking not found" });
         }
 
+        // PREVENTION: Don't create a new order if already paid
+        if (booking.paymentStatus === 'paid') {
+            return res.status(400).json({ 
+                msg: "This booking is already paid.",
+                code: "ALREADY_PAID"
+            });
+        }
+
         // Fetch the platform fee from the specific Category
         let feeAmount = 20; // Default fallback
         try {

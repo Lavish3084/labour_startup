@@ -181,19 +181,62 @@ router.get('/worker', verifyToken, async (req, res) => {
 
         // Fetch bookings:
         // 1. Assigned to this labourer
-        // 2. Unassigned (labourer: null) AND matching category (and maybe status pending)
+        // 2. Unassigned (labourer: null) AND matching category (and status pending)
+        //    AND not declined by this labourer AND start date is not completely expired (>3 hours ago)
+        
+        const expirationTime = new Date(Date.now() - 3 * 60 * 60 * 1000); // 3 hours ago
+
         const bookings = await Booking.find({
             $or: [
                 { labourer: labourer._id },
-                { labourer: null, category: labourer.category, status: 'pending' }
+                { 
+                    labourer: null, 
+                    category: labourer.category, 
+                    status: 'pending',
+                    declinedBy: { $ne: labourer._id },
+                    date: { $gt: expirationTime }
+                }
             ]
         })
-            .populate('user', 'name email') // Populate user details who booked
+            .populate('user', 'name email phone') // Populate user details who booked
             .sort({ date: -1 });
 
         res.json(bookings);
     } catch (err) {
         console.error(err.message);
+        res.status(500).send('Server Error');
+    }
+});
+
+// @route   PUT /api/bookings/:id/decline
+// @desc    Worker declines an open job request
+// @access  Private (Worker)
+router.put('/:id/decline', verifyToken, async (req, res) => {
+    try {
+        const labourer = await Labourer.findOne({ user: req.user.id });
+        if (!labourer) {
+            return res.status(404).json({ msg: 'Labourer profile not found' });
+        }
+
+        let booking = await Booking.findById(req.params.id);
+        if (!booking) {
+            return res.status(404).json({ msg: 'Booking not found' });
+        }
+
+        // Only matters for unassigned pending requests
+        if (booking.labourer || booking.status !== 'pending') {
+            return res.status(400).json({ msg: 'Cannot decline this booking at this stage' });
+        }
+
+        // Add labourer to declinedBy if not already present
+        if (!booking.declinedBy.includes(labourer._id)) {
+            booking.declinedBy.push(labourer._id);
+            await booking.save();
+        }
+
+        res.json({ msg: 'Booking declined successfully' });
+    } catch (err) {
+        console.error('Error declining booking:', err.message);
         res.status(500).send('Server Error');
     }
 });
@@ -340,80 +383,18 @@ router.put('/:id/status', verifyToken, async (req, res) => {
 });
 
 // @route   PUT /api/bookings/:id/confirm-work
-// @desc    User confirms the work is done and we calculate commission
-// @access  Private (User)
+// @desc    DEPRECATED: User confirms work completion. Replaced by OTP verification.
+// @access  Private
 router.put('/:id/confirm-work', verifyToken, async (req, res) => {
-    try {
-        let booking = await Booking.findById(req.params.id);
-        if (!booking) {
-            return res.status(404).json({ msg: 'Booking not found' });
-        }
-
-        // Must be the user who booked it
-        if (booking.user.toString() !== req.user.id) {
-            return res.status(401).json({ msg: 'Not authorized to confirm this work' });
-        }
-
-        if (booking.isWorkConfirmed) {
-            return res.status(400).json({ msg: 'Work is already confirmed' });
-        }
-
-        let commissionAmount = 0;
-        try {
-            const Category = require('../models/Category');
-            const categoryObj = await Category.findOne({ name: booking.category });
-            if (categoryObj && categoryObj.commissionPercentage) {
-                if (booking.amount) {
-                    commissionAmount = (booking.amount * categoryObj.commissionPercentage) / 100;
-                } else {
-                    commissionAmount = categoryObj.commissionPercentage;
-                }
-            }
-        } catch (err) {
-            console.error("Error fetching category commission:", err);
-        }
-
-        booking.isWorkConfirmed = true;
-        booking.commissionAmount = commissionAmount;
-        booking.workerPayoutAmount = 0; // Settled directly via cash
-        booking.status = 'completed'; // Also mark as completed
-        booking.paymentStatus = 'released'; // Automatically mark as released since there's no hold
-
-        await booking.save();
-        
-        // Notify the worker that work was confirmed
-        try {
-            if (booking.labourer) {
-                const labourer = await Labourer.findById(booking.labourer).populate('user');
-                if (labourer && labourer.user && labourer.user.fcmToken) {
-                    await sendNotification(
-                        labourer.user.fcmToken,
-                        'Work Confirmed',
-                        'The user has confirmed that you completed the job!',
-                        { 
-                            type: 'booking',
-                            bookingId: booking._id.toString(),
-                            status: 'completed'
-                        }
-                    );
-                }
-            }
-        } catch (notifyErr) {
-            console.error("Failed to send work confirmation notification:", notifyErr);
-        }
-
-        res.json(booking);
-    } catch (err) {
-        console.error(err.message);
-        res.status(500).send('Server Error');
-    }
+    return res.status(410).json({ 
+        msg: 'The manual confirmation method is no longer supported. Please provide the Completion OTP to the worker instead.' 
+    });
 });
 
 // @route   PUT /api/bookings/:id/payout
 // @desc    Admin manually marks a worker payout as released
 // @access  Private (Admin)
 router.put('/:id/payout', verifyToken, async (req, res) => {
-    // In a full implementation, enforce admin role here
     if (req.user.role !== 'admin') {
         return res.status(403).json({ msg: 'Access denied' });
     }
@@ -427,8 +408,6 @@ router.put('/:id/payout', verifyToken, async (req, res) => {
         if (!booking.isWorkConfirmed) {
             return res.status(400).json({ msg: 'Work has not been confirmed by user yet' });
         }
-
-
 
         booking.paymentStatus = 'released';
         await booking.save();

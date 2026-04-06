@@ -7,6 +7,7 @@ import '../main.dart'; // Import navigatorKey
 import '../screens/main_screen.dart';
 import 'package:provider/provider.dart';
 import '../providers/app_state_provider.dart';
+import 'dart:async'; // Added for StreamController
 
 // Background handler must be top-level
 @pragma('vm:entry-point')
@@ -25,6 +26,9 @@ class NotificationService {
   final FirebaseMessaging _firebaseMessaging = FirebaseMessaging.instance;
   final FlutterLocalNotificationsPlugin _localNotifications =
       FlutterLocalNotificationsPlugin();
+
+  static final StreamController<void> _notificationStreamController = StreamController<void>.broadcast();
+  static Stream<void> get onNotification => _notificationStreamController.stream;
 
   String? _fcmToken;
   String? get fcmToken => _fcmToken;
@@ -105,6 +109,9 @@ class NotificationService {
         );
         _showLocalNotification(message);
       }
+      
+      // Broadcast that a notification was received for real-time UI refresh
+      _notificationStreamController.add(null);
     });
 
     // 7. Handle initial message if app was terminated

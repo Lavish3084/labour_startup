@@ -169,10 +169,17 @@ class _HistoryScreenState extends State<HistoryScreen> {
         itemCount: sortedBookings.length,
         itemBuilder: (context, index) {
           final booking = sortedBookings[index];
-          final date = DateTime.parse(booking['date']);
+          final date = DateTime.parse(booking['date']).toLocal();
           final dateHeader = _getDateHeader(date);
 
-          bool showHeader = index == 0 || _getDateHeader(DateTime.parse(sortedBookings[index - 1]['date'])) != dateHeader;
+          bool showHeader = false;
+          if (index == 0) {
+            showHeader = true;
+          } else {
+            final prevBooking = sortedBookings[index - 1];
+            final prevDate = DateTime.parse(prevBooking['date']).toLocal();
+            showHeader = _getDateHeader(prevDate) != dateHeader;
+          }
 
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -197,7 +204,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
     final bookingId = booking['_id'];
     final isExpanded = _expandedBookingIds.contains(bookingId);
     final status = (booking['status'] as String).toLowerCase();
-    final date = DateTime.parse(booking['date']);
+    final date = DateTime.parse(booking['date']).toLocal();
     final timeString = "${date.hour % 12 == 0 ? 12 : date.hour % 12}:${date.minute.toString().padLeft(2, '0')} ${date.hour >= 12 ? 'PM' : 'AM'}";
     
     // Determine display status for expired bookings
