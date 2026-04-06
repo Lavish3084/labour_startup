@@ -8,6 +8,7 @@ import '../utils/app_theme.dart';
 import 'location_search_screen.dart';
 import 'package:provider/provider.dart';
 import '../providers/location_provider.dart';
+import '../providers/app_state_provider.dart';
 
 class ServiceRequestScreen extends StatefulWidget {
   final ServiceCategory category;
@@ -755,7 +756,7 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
                 onPressed: () => Navigator.pop(context, true),
                 style: ElevatedButton.styleFrom(backgroundColor: Colors.black),
                 child: const Text(
-                  'Confirm & Pay',
+                  'Confirm',
                   style: TextStyle(color: Colors.white),
                 ),
               ),
@@ -782,6 +783,17 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
         _selectedTime.hour,
         _selectedTime.minute,
       );
+
+      // Validation: Must be at least 1 hour in advance
+      if (scheduledDateTime.isBefore(DateTime.now().add(const Duration(hours: 1)))) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Booking must be scheduled at least 1 hour in advance.'),
+            backgroundColor: AppTheme.error,
+          ),
+        );
+        return;
+      }
 
       final result = await ApiService.createBooking(
         labourerId: null, // Broadcast request
@@ -848,8 +860,11 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
               behavior: SnackBarBehavior.floating,
             ),
           );
-          Navigator.pop(context); // Close bottom sheet
-          Navigator.pop(context); // Go back to Home
+
+          // Return to main screen and switch to bookings tab
+          final appState = Provider.of<AppStateProvider>(context, listen: false);
+          appState.setTab(1); // Index 1 is Bookings
+          Navigator.of(context).popUntil((route) => route.isFirst);
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(

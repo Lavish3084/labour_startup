@@ -290,8 +290,6 @@ class _HomeScreenState extends State<HomeScreen> {
                           Icons.history_rounded,
                           onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const HistoryScreen())),
                         ),
-                        const SizedBox(width: 12),
-                        _buildCircularAction(Icons.person_outline_rounded),
                       ],
                     ),
                   ),

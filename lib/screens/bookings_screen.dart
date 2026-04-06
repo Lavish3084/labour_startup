@@ -12,6 +12,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:shimmer/shimmer.dart';
 import '../utils/app_theme.dart';
 import '../models/service_category.dart';
+import 'history_screen.dart';
 import 'dart:ui';
 
 class BookingsScreen extends StatefulWidget {
@@ -395,6 +396,17 @@ class _BookingsScreenState extends State<BookingsScreen> {
           IconButton(
             onPressed: () {
               HapticFeedback.mediumImpact();
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const HistoryScreen()),
+              );
+            },
+            icon: const Icon(Icons.history_rounded, color: AppTheme.textPrimary, size: 28),
+            tooltip: 'Booking History',
+          ),
+          IconButton(
+            onPressed: () {
+              HapticFeedback.mediumImpact();
               _refreshBookings();
             },
             icon: const Icon(Icons.refresh_rounded, color: AppTheme.textPrimary, size: 28),
@@ -405,70 +417,16 @@ class _BookingsScreenState extends State<BookingsScreen> {
       ),
       body: Stack(
         children: [
-          // Background Mesh Gradient Effect
-          // Top Right Circle
-          Positioned(
-            top: -100,
-            right: -50,
-            child: Container(
-              width: 300,
-              height: 300,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: AppTheme.saffron.withValues(alpha: 0.15),
-              ),
-            ),
-          ),
-          // Top Left Circle
-          Positioned(
-            top: -50,
-            left: -100,
-            child: Container(
-              width: 400,
-              height: 400,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: AppTheme.primary.withValues(alpha: 0.1),
-              ),
-            ),
-          ),
-          // Middle Right Circle
-          Positioned(
-            top: 400,
-            right: -80,
-            child: Container(
-              width: 250,
-              height: 250,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: AppTheme.primary.withValues(alpha: 0.08),
-              ),
-            ),
-          ),
-          // Bottom Left Circle
-          Positioned(
-            bottom: -50,
-            left: -50,
-            child: Container(
-              width: 350,
-              height: 350,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: AppTheme.saffron.withValues(alpha: 0.1),
-              ),
-            ),
-          ),
-          // Full Background Gradient Overlay
+          // Full Background Orange Gradient
           Positioned.fill(
             child: Container(
-              decoration: BoxDecoration(
+              decoration: const BoxDecoration(
                 gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
                   colors: [
-                    AppTheme.primary.withValues(alpha: 0.05),
-                    AppTheme.scaffoldBg.withValues(alpha: 0.8),
-                    AppTheme.scaffoldBg,
+                    AppTheme.primaryLight,
+                    Colors.white,
                   ],
                 ),
               ),
@@ -590,6 +548,31 @@ class _BookingsScreenState extends State<BookingsScreen> {
                       'Check for updates',
                       style: GoogleFonts.inter(
                         color: AppTheme.saffron,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  TextButton.icon(
+                    onPressed: () {
+                      HapticFeedback.lightImpact();
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const HistoryScreen(),
+                        ),
+                      );
+                    },
+                    icon: const Icon(
+                      Icons.history_rounded,
+                      color: AppTheme.textMuted,
+                      size: 20,
+                    ),
+                    label: Text(
+                      'View Past Bookings',
+                      style: GoogleFonts.inter(
+                        color: AppTheme.textMuted,
                         fontWeight: FontWeight.w700,
                         fontSize: 14,
                       ),
@@ -722,6 +705,10 @@ class _BookingsScreenState extends State<BookingsScreen> {
       case 'confirmed':
         statusColor = Colors.blue;
         statusIcon = Icons.check_circle_rounded;
+        break;
+      case 'arrived':
+        statusColor = Colors.indigo;
+        statusIcon = Icons.engineering_rounded;
         break;
       case 'completed':
         statusColor = AppTheme.success;
@@ -906,6 +893,74 @@ class _BookingsScreenState extends State<BookingsScreen> {
                       ],
                     ),
                     const SizedBox(height: 16),
+                    
+                    // OTP Section
+                    if (status == 'confirmed' || status == 'arrived')
+                      Container(
+                        margin: const EdgeInsets.only(bottom: 16),
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: AppTheme.primaryLight.withValues(alpha: 0.3),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: AppTheme.primary.withValues(alpha: 0.2)),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Icon(
+                                  status == 'confirmed' ? Icons.login_rounded : Icons.task_alt_rounded, 
+                                  size: 16, 
+                                  color: AppTheme.primary
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  status == 'confirmed' ? 'ARRIVAL OTP' : 'COMPLETION OTP',
+                                  style: GoogleFonts.inter(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w800,
+                                    color: AppTheme.primary,
+                                    letterSpacing: 1,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  status == 'confirmed' 
+                                    ? (booking['arrivalOTP'] ?? '----') 
+                                    : (booking['completionOTP'] ?? '----'),
+                                  style: GoogleFonts.inter(
+                                    fontSize: 24,
+                                    fontWeight: FontWeight.w900,
+                                    letterSpacing: 4,
+                                    color: AppTheme.textPrimary,
+                                  ),
+                                ),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Text(
+                                    status == 'confirmed' ? 'Share on Arrival' : 'Share on Completion',
+                                    style: GoogleFonts.inter(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.bold,
+                                      color: AppTheme.textMuted,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
                     if (booking['notes'] != null && booking['notes'].toString().isNotEmpty) ...[
                       _buildDetailRow('NOTES', '${booking['notes']}'),
                       const SizedBox(height: 16),

@@ -31,12 +31,26 @@ const verifyToken = (req, res, next) => {
 };
 
 const { sendNotification, sendBroadcastNotification } = require('../utils/notification');
+const crypto = require('crypto');
+
+// Helper to generate a 4-digit OTP
+const generateOTP = () => {
+    return Math.floor(1000 + Math.random() * 9000).toString();
+};
 
 // @route   POST /api/bookings
 // @desc    Create a new booking
 // @access  Private (User)
 router.post('/', verifyToken, async (req, res) => {
     const { labourerId, category, date, notes, address, houseNumber, landmark, latitude, longitude, bookingMode, numberOfHours, amount, minAmount, maxAmount } = req.body;
+    
+    // Check if the booking date is less than 1 hour away or in the past
+    const bookingDate = new Date(date);
+    const minBookingTime = new Date(Date.now() + 3600000); // Current time + 1 hour
+
+    if (bookingDate < minBookingTime) {
+        return res.status(400).json({ msg: 'Booking must be scheduled at least 1 hour in advance.' });
+    }
 
     try {
         let bookingData = {
@@ -209,6 +223,8 @@ router.put('/:id/claim', verifyToken, async (req, res) => {
 
         booking.labourer = labourer._id;
         booking.status = 'confirmed'; // Auto confirm when claimed
+        booking.arrivalOTP = generateOTP();
+        booking.completionOTP = generateOTP();
         await booking.save();
 
         // Populate user for the response card
@@ -253,7 +269,7 @@ router.put('/:id/status', verifyToken, async (req, res) => {
     const { status } = req.body;
 
     // Validate status
-    const validStatuses = ['pending', 'confirmed', 'completed', 'cancelled'];
+    const validStatuses = ['pending', 'confirmed', 'arrived', 'completed', 'cancelled'];
     if (!validStatuses.includes(status)) {
         return res.status(400).json({ msg: 'Invalid status' });
     }
@@ -279,6 +295,11 @@ router.put('/:id/status', verifyToken, async (req, res) => {
             return res.status(401).json({ msg: 'Not authorized' });
         }
 
+        if (status === 'confirmed' && (!booking.arrivalOTP || !booking.completionOTP)) {
+            booking.arrivalOTP = generateOTP();
+            booking.completionOTP = generateOTP();
+        }
+        
         booking.status = status;
         await booking.save();
 
@@ -411,6 +432,95 @@ router.put('/:id/payout', verifyToken, async (req, res) => {
 
         booking.paymentStatus = 'released';
         await booking.save();
+
+        res.json(booking);
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Server Error');
+    }
+});
+
+// @route   PUT /api/bookings/:id/verify-arrival
+// @desc    Worker verifies arrival with OTP
+// @access  Private (Worker)
+router.put('/:id/verify-arrival', verifyToken, async (req, res) => {
+    const { otp } = req.body;
+    try {
+        let booking = await Booking.findById(req.params.id);
+        if (!booking) return res.status(404).json({ msg: 'Booking not found' });
+
+        const labourer = await Labourer.findOne({ user: req.user.id });
+        if (!labourer || booking.labourer.toString() !== labourer._id.toString()) {
+            return res.status(401).json({ msg: 'Not authorized' });
+        }
+
+        if (booking.arrivalOTP !== otp) {
+            return res.status(400).json({ msg: 'Invalid Arrival OTP' });
+        }
+
+        booking.status = 'arrived';
+        await booking.save();
+
+        // Notify user
+        const user = await User.findById(booking.user);
+        if (user && user.fcmToken) {
+            await sendNotification(user.fcmToken, 'Worker Arrived', 'The worker has arrived and starting the job!');
+        }
+
+        res.json(booking);
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Server Error');
+    }
+});
+
+// @route   PUT /api/bookings/:id/verify-completion
+// @desc    Worker verifies completion with OTP
+// @access  Private (Worker)
+router.put('/:id/verify-completion', verifyToken, async (req, res) => {
+    const { otp } = req.body;
+    try {
+        let booking = await Booking.findById(req.params.id);
+        if (!booking) return res.status(404).json({ msg: 'Booking not found' });
+
+        const labourer = await Labourer.findOne({ user: req.user.id });
+        if (!labourer || booking.labourer.toString() !== labourer._id.toString()) {
+            return res.status(401).json({ msg: 'Not authorized' });
+        }
+
+        if (booking.completionOTP !== otp) {
+            return res.status(400).json({ msg: 'Invalid Completion OTP' });
+        }
+
+        // Logic from confirm-work (commission calculation, status update)
+        let commissionAmount = 0;
+        try {
+            const Category = require('../models/Category');
+            const categoryObj = await Category.findOne({ name: booking.category });
+            if (categoryObj && categoryObj.commissionPercentage) {
+                if (booking.amount) {
+                    commissionAmount = (booking.amount * categoryObj.commissionPercentage) / 100;
+                } else {
+                    commissionAmount = categoryObj.commissionPercentage;
+                }
+            }
+        } catch (err) {
+            console.error("Error fetching category commission:", err);
+        }
+
+        booking.status = 'completed';
+        booking.isWorkConfirmed = true;
+        booking.commissionAmount = commissionAmount;
+        booking.workerPayoutAmount = 0; // Settled directly via cash
+        booking.paymentStatus = 'released';
+
+        await booking.save();
+
+        // Notify user
+        const user = await User.findById(booking.user);
+        if (user && user.fcmToken) {
+            await sendNotification(user.fcmToken, 'Work Completed', 'Job completed successfully! Thank you for using Will.');
+        }
 
         res.json(booking);
     } catch (err) {

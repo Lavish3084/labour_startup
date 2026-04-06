@@ -16,26 +16,26 @@ class AddressSelectionSheet extends StatefulWidget {
 
 class _AddressSelectionSheetState extends State<AddressSelectionSheet> {
   bool _isLoading = false;
+  LocationProvider? _locationProvider;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
-        final locationProvider = context.read<LocationProvider>();
-        locationProvider.loadSavedLocations();
-        locationProvider.addListener(_errorListener);
+        _locationProvider = context.read<LocationProvider>();
+        _locationProvider?.loadSavedLocations();
+        _locationProvider?.addListener(_errorListener);
       }
     });
   }
 
   void _errorListener() {
-    if (!mounted) return;
-    final locationProvider = context.read<LocationProvider>();
-    if (locationProvider.error != null) {
+    if (!mounted || _locationProvider == null) return;
+    if (_locationProvider!.error != null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(locationProvider.error!),
+          content: Text(_locationProvider!.error!),
           backgroundColor: Colors.red.shade800,
           behavior: SnackBarBehavior.floating,
         ),
@@ -45,9 +45,7 @@ class _AddressSelectionSheetState extends State<AddressSelectionSheet> {
 
   @override
   void dispose() {
-    if (mounted) {
-      context.read<LocationProvider>().removeListener(_errorListener);
-    }
+    _locationProvider?.removeListener(_errorListener);
     super.dispose();
   }
 
@@ -79,7 +77,7 @@ class _AddressSelectionSheetState extends State<AddressSelectionSheet> {
       }
 
       if (mounted) {
-        context.read<LocationProvider>().updateCurrentAddress(
+        _locationProvider?.updateCurrentAddress(
           address: address,
           latitude: position.latitude,
           longitude: position.longitude,
@@ -113,15 +111,18 @@ class _AddressSelectionSheetState extends State<AddressSelectionSheet> {
         // Offer to save the address
         final bool? wantToSave = await _showSaveDialog(address);
 
-        if (wantToSave == true) {
+        if (wantToSave == true && mounted) {
           final labelController = TextEditingController();
           final houseController = TextEditingController();
           final landmarkController = TextEditingController();
 
+          // Capture navigator to avoid using 'this.context' after the dialog
+          final navigator = Navigator.of(context);
+
           await showDialog<void>(
             context: context,
             builder:
-                (context) => AlertDialog(
+                (dialogContext) => AlertDialog(
                   title: const Text('Save Address'),
                   content: Column(
                     mainAxisSize: MainAxisSize.min,
@@ -148,13 +149,14 @@ class _AddressSelectionSheetState extends State<AddressSelectionSheet> {
                   ),
                   actions: [
                     TextButton(
-                      onPressed: () => Navigator.pop(context),
+                      onPressed: () => Navigator.pop(dialogContext),
                       child: const Text('Cancel'),
                     ),
                     ElevatedButton(
                       onPressed: () {
                         if (labelController.text.isNotEmpty) {
-                          context.read<LocationProvider>().saveLocation(
+                          // Use the state's stored provider
+                          _locationProvider?.saveLocation(
                             SavedLocation(
                               id:
                                   DateTime.now().millisecondsSinceEpoch
@@ -169,7 +171,7 @@ class _AddressSelectionSheetState extends State<AddressSelectionSheet> {
                           );
 
                           // Also update as current
-                          context.read<LocationProvider>().updateCurrentAddress(
+                          _locationProvider?.updateCurrentAddress(
                             address: address,
                             houseNumber: houseController.text,
                             landmark: landmarkController.text,
@@ -177,8 +179,10 @@ class _AddressSelectionSheetState extends State<AddressSelectionSheet> {
                             longitude: lon,
                           );
 
-                          Navigator.pop(context); // Close save dialog
-                          Navigator.pop(this.context); // Close selection sheet
+                          Navigator.pop(dialogContext); // Close save dialog
+                          if (navigator.canPop()) {
+                            navigator.pop(); // Close selection sheet
+                          }
                         }
                       },
                       child: const Text('Save'),
@@ -186,7 +190,7 @@ class _AddressSelectionSheetState extends State<AddressSelectionSheet> {
                   ],
                 ),
           );
-          return; // Fix blank screen by preventing double pop
+          return;
         }
 
         if (mounted) {
@@ -194,7 +198,7 @@ class _AddressSelectionSheetState extends State<AddressSelectionSheet> {
             address: address,
             latitude: lat,
             longitude: lon,
-            houseNumber: '', // Defaulting for search/GPS if not saved
+            houseNumber: '', 
             landmark: '',
           );
           Navigator.pop(context);
@@ -226,6 +230,7 @@ class _AddressSelectionSheetState extends State<AddressSelectionSheet> {
 
   @override
   Widget build(BuildContext context) {
+    // We can still use context.watch for rebuilds during active state
     final locationProvider = context.watch<LocationProvider>();
     final savedLocations = locationProvider.savedLocations;
     print(
@@ -345,14 +350,16 @@ class _AddressSelectionSheetState extends State<AddressSelectionSheet> {
                       style: GoogleFonts.inter(fontSize: 12),
                     ),
                     onTap: () {
-                      context.read<LocationProvider>().updateCurrentAddress(
+                      _locationProvider?.updateCurrentAddress(
                         address: loc.address,
                         houseNumber: loc.houseNumber,
                         landmark: loc.landmark,
                         latitude: loc.latitude,
                         longitude: loc.longitude,
                       );
-                      Navigator.pop(context);
+                      if (mounted) {
+                        Navigator.pop(context);
+                      }
                     },
                   );
                 },

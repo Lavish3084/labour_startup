@@ -110,28 +110,18 @@ class _HistoryScreenState extends State<HistoryScreen> {
       ),
       body: Stack(
         children: [
-          // Background Mesh (Same as BookingsScreen)
-          Positioned(
-            top: -100,
-            right: -50,
+          // Full Background Orange Gradient
+          Positioned.fill(
             child: Container(
-              width: 300,
-              height: 300,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: AppTheme.saffron.withValues(alpha: 0.1),
-              ),
-            ),
-          ),
-          Positioned(
-            bottom: -50,
-            left: -50,
-            child: Container(
-              width: 350,
-              height: 350,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: AppTheme.primary.withValues(alpha: 0.05),
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    AppTheme.primaryLight,
+                    Colors.white,
+                  ],
+                ),
               ),
             ),
           ),

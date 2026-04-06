@@ -202,6 +202,37 @@ router.post('/worker', verifyToken, async (req, res) => {
     }
 });
 
+// @route   PUT /api/profile
+// @desc    Update user profile (name)
+// @access  Private
+router.put('/', verifyToken, async (req, res) => {
+    const { name } = req.body;
+    if (!name) return res.status(400).json({ msg: 'Name is required' });
+
+    try {
+        let user = await User.findById(req.user.id);
+        if (!user) {
+            return res.status(404).json({ msg: 'User not found' });
+        }
+
+        user.name = name;
+        await user.save();
+
+        // Also update labourer profile if exists to keep names in sync
+        if (user.role === 'worker') {
+            await Labourer.findOneAndUpdate(
+                { user: req.user.id },
+                { $set: { name: name } }
+            );
+        }
+
+        res.json(user);
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Server Error');
+    }
+});
+
 // @route   PUT /api/profile/worker/upi
 // @desc    Update worker UPI ID
 // @access  Private (Worker only)

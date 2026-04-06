@@ -30,9 +30,11 @@ const BookingSchema = new mongoose.Schema({
     },
     status: {
         type: String,
-        enum: ['pending', 'confirmed', 'completed', 'cancelled'],
+        enum: ['pending', 'confirmed', 'arrived', 'completed', 'cancelled'],
         default: 'pending'
     },
+    arrivalOTP: { type: String },
+    completionOTP: { type: String },
     paymentStatus: {
         type: String,
         enum: ['pending', 'paid', 'released', 'refunded'],

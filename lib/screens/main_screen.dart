@@ -1,6 +1,7 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/rendering.dart';
 import 'home_screen.dart';
 import 'bookings_screen.dart';
 import 'profile_screen.dart';
@@ -43,14 +44,35 @@ class _MainScreenState extends State<MainScreen> with SingleTickerProviderStateM
       }
     });
 
+    // Listen for external tab changes
+    appState.addListener(_onAppStateChanged);
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       appState.fetchProfile();
       appState.fetchBookings();
     });
   }
 
+  void _onAppStateChanged() {
+    if (!mounted) return;
+    final appState = Provider.of<AppStateProvider>(context, listen: false);
+    if (appState.selectedTab != _lastTab) {
+      _lastTab = appState.selectedTab;
+      if (_pageController.hasClients) {
+        _pageController.animateToPage(
+          _lastTab,
+          duration: const Duration(milliseconds: 600),
+          curve: Curves.easeOutQuart,
+        );
+      }
+    }
+  }
+
   @override
   void dispose() {
+    // Safely remove the listener
+    final appState = Provider.of<AppStateProvider>(context, listen: false);
+    appState.removeListener(_onAppStateChanged);
     _pageController.dispose();
     _displayPage.dispose();
     _pillAnimationController.dispose();
@@ -71,8 +93,12 @@ class _MainScreenState extends State<MainScreen> with SingleTickerProviderStateM
         controller: _pageController,
         onPageChanged: (index) {
           if (!mounted) return;
-          final appState = Provider.of<AppStateProvider>(context, listen: false);
-          appState.setTab(index);
+          // IMPORTANT: Only update state if the user is physically swiping.
+          // This prevents intermediate crossing signals during animateToPage(0 -> 2).
+          if (_pageController.position.userScrollDirection != ScrollDirection.idle) {
+            final appState = Provider.of<AppStateProvider>(context, listen: false);
+            appState.setTab(index);
+          }
         },
         children: _pages,
       ),
@@ -265,9 +291,12 @@ class _MainScreenState extends State<MainScreen> with SingleTickerProviderStateM
           HapticFeedback.mediumImpact();
           _pageController.animateToPage(
             index, 
-            duration: const Duration(milliseconds: 600), 
+            duration: const Duration(milliseconds: 630), // Slightly longer for a more premium ease-out
             curve: Curves.easeOutQuart,
           );
+          
+          final appState = Provider.of<AppStateProvider>(context, listen: false);
+          appState.setTab(index);
         },
         behavior: HitTestBehavior.opaque,
         child: Column(

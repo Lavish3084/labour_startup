@@ -115,6 +115,84 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
+  Future<void> _showEditNameDialog(String currentName) async {
+    final controller = TextEditingController(text: currentName);
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text(
+          'Edit Full Name',
+          style: GoogleFonts.baloo2(fontWeight: FontWeight.w800),
+        ),
+        content: TextField(
+          controller: controller,
+          decoration: InputDecoration(
+            labelText: 'Full Name',
+            labelStyle: GoogleFonts.inter(color: AppTheme.textMuted),
+            focusedBorder: UnderlineInputBorder(
+              borderSide: BorderSide(color: AppTheme.saffron),
+            ),
+          ),
+          style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+          autofocus: true,
+          textCapitalization: TextCapitalization.words,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text('Cancel', style: GoogleFonts.inter(color: Colors.grey)),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.saffron,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            child: Text(
+              'Save',
+              style: GoogleFonts.inter(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && controller.text.trim().isNotEmpty) {
+      final newName = controller.text.trim();
+      if (newName == currentName) return;
+
+      try {
+        final success = await ApiService.updateProfileName(newName);
+        if (success) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Name updated successfully!')),
+            );
+            await Provider.of<AppStateProvider>(context, listen: false).fetchProfile();
+          }
+        } else {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Failed to update name')),
+            );
+          }
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(ErrorHandler.getErrorMessage(e))),
+          );
+        }
+      }
+    }
+  }
+
   Future<void> _showDeleteAccountDialog(BuildContext context) async {
     final confirmed = await showDialog<bool>(
       context: context,
@@ -244,8 +322,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
           Row(
             children: [
               _buildGhostBackButton(),
-              const Spacer(),
-              _buildModernNotificationIcon(),
             ],
           ),
           const SizedBox(height: 24),
@@ -376,17 +452,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return Divider(height: 24, color: Colors.black.withValues(alpha: 0.05));
   }
 
-  Widget _buildModernNotificationIcon() {
-    return Container(
-      padding: const EdgeInsets.all(10),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.1),
-        shape: BoxShape.circle,
-      ),
-      child: const Icon(Icons.notifications_none_rounded, color: Colors.white, size: 22),
-    );
-  }
-
   Widget _buildGhostBackButton() {
     if (!Navigator.canPop(context)) return const SizedBox(width: 36, height: 36);
     return GestureDetector(
@@ -430,13 +495,27 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
           ),
           const SizedBox(height: 20),
-          _buildDetailRow(Icons.person_outline_rounded, 'FULL NAME', user?['name'] ?? 'Guest User'),
+          _buildDetailRow(
+            Icons.person_outline_rounded,
+            'FULL NAME',
+            user?['name'] ?? 'Guest User',
+            onTap: user != null ? () => _showEditNameDialog(user['name'] ?? '') : null,
+          ),
           _buildDivider(),
-          _buildDetailRow(Icons.email_outlined, 'EMAIL ADDRESS', user?['email'] ?? 'No email set'),
+          _buildDetailRow(
+            Icons.email_outlined,
+            'EMAIL ADDRESS',
+            user?['email'] ?? 'No email set',
+          ),
           _buildDivider(),
-          GestureDetector(
-            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const SavedAddressesScreen())),
-            child: _buildDetailRow(Icons.location_on_outlined, 'SAVED ADDRESSES', 'Manage your locations', onTap: () {}),
+          _buildDetailRow(
+            Icons.location_on_outlined,
+            'SAVED ADDRESSES',
+            'Manage your locations',
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const SavedAddressesScreen()),
+            ),
           ),
         ],
       ),

@@ -207,6 +207,19 @@ class ApiService {
     }
   }
 
+  static Future<bool> updateProfileName(String name) async {
+    final token = await getToken();
+    final response = await http.put(
+      Uri.parse('$baseUrl/profile'),
+      headers: {
+        'Content-Type': 'application/json',
+        'x-auth-token': token ?? '',
+      },
+      body: jsonEncode({'name': name}),
+    );
+    return response.statusCode == 200;
+  }
+
   static Future<bool> updateProfilePicture(String base64Image) async {
     final token = await getToken();
     print('Sending PUT request to $baseUrl/profile/image');
