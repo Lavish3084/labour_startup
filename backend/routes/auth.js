@@ -49,20 +49,10 @@ router.post('/google', async (req, res) => {
         let user = await User.findOne({ email, role });
 
         if (!user) {
-            // Check if user exists with another role to provide better messaging
-            const existingInOtherRole = await User.findOne({ email });
+            // Previously we blocked this with ROLE_MISMATCH, but the user wants 
+            // to allow one email to have both User and Worker roles.
+            // We now seamlessly create the account for the requested role.
             
-            // If action is login, don't auto-create the account
-            if (action === 'login') {
-                if (existingInOtherRole) {
-                     return res.status(400).json({ 
-                        msg: `This email is registered as a ${existingInOtherRole.role}. Please log in as a ${existingInOtherRole.role} or sign up as a ${role}.`,
-                        code: 'ROLE_MISMATCH'
-                    });
-                }
-                return res.status(404).json({ msg: 'Account does not exist. Please sign up first.', code: 'USER_NOT_FOUND' });
-            }
-
             // Create user with a secure random unguessable password
             const randomDummyPassword = await bcrypt.hash(Math.random().toString(36).slice(-10), 10);
             
@@ -211,9 +201,7 @@ router.post('/phone-login', async (req, res) => {
         let user = await User.findOne({ phoneNumber, role });
 
         if (!user) {
-            // Check if phone exists with another role
-            const existingWithOtherRole = await User.findOne({ phoneNumber });
-
+            // Create the account for this role seamlessly
             user = new User({
                 name: 'User ' + phoneNumber.slice(-4),
                 phoneNumber: phoneNumber,
