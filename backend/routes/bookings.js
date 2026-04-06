@@ -454,6 +454,15 @@ router.put('/:id/verify-arrival', verifyToken, async (req, res) => {
             return res.status(401).json({ msg: 'Not authorized' });
         }
 
+        const now = new Date();
+        const scheduled = new Date(booking.date);
+        const start = new Date(scheduled.getTime() - 3600000); // 1 hour before
+        const end = new Date(scheduled.getTime() + 1800000);   // 30 mins after
+
+        if (now < start || now > end) {
+            return res.status(400).json({ msg: 'Arrival verification window expired (Allowed: 1h before to 30m after).' });
+        }
+
         if (booking.arrivalOTP !== otp) {
             return res.status(400).json({ msg: 'Invalid Arrival OTP' });
         }

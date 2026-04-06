@@ -896,70 +896,101 @@ class _BookingsScreenState extends State<BookingsScreen> {
                     
                     // OTP Section
                     if (status == 'confirmed' || status == 'arrived')
-                      Container(
-                        margin: const EdgeInsets.only(bottom: 16),
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: AppTheme.primaryLight.withValues(alpha: 0.3),
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: AppTheme.primary.withValues(alpha: 0.2)),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                Icon(
-                                  status == 'confirmed' ? Icons.login_rounded : Icons.task_alt_rounded, 
-                                  size: 16, 
-                                  color: AppTheme.primary
-                                ),
-                                const SizedBox(width: 8),
-                                Text(
-                                  status == 'confirmed' ? 'ARRIVAL OTP' : 'COMPLETION OTP',
-                                  style: GoogleFonts.inter(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w800,
-                                    color: AppTheme.primary,
-                                    letterSpacing: 1,
-                                  ),
-                                ),
-                              ],
+                      Builder(
+                        builder: (context) {
+                          final now = DateTime.now();
+                          final bookingDate = DateTime.parse(booking['date']);
+                          final startWindow = bookingDate.subtract(const Duration(hours: 1));
+                          final endWindow = bookingDate.add(const Duration(minutes: 30));
+                          
+                          final bool isArrival = (status == 'confirmed');
+                          final bool inWindow = now.isAfter(startWindow) && now.isBefore(endWindow);
+                          final bool isTooEarly = isArrival && now.isBefore(startWindow);
+
+                          return Container(
+                            margin: const EdgeInsets.only(bottom: 16),
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: AppTheme.primaryLight.withValues(alpha: 0.3),
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(color: AppTheme.primary.withValues(alpha: 0.2)),
                             ),
-                            const SizedBox(height: 8),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(
-                                  status == 'confirmed' 
-                                    ? (booking['arrivalOTP'] ?? '----') 
-                                    : (booking['completionOTP'] ?? '----'),
-                                  style: GoogleFonts.inter(
-                                    fontSize: 24,
-                                    fontWeight: FontWeight.w900,
-                                    letterSpacing: 4,
-                                    color: AppTheme.textPrimary,
-                                  ),
+                                Row(
+                                  children: [
+                                    Icon(
+                                      status == 'confirmed' ? Icons.login_rounded : Icons.task_alt_rounded, 
+                                      size: 16, 
+                                      color: AppTheme.primary
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      status == 'confirmed' ? 'ARRIVAL OTP' : 'COMPLETION OTP',
+                                      style: GoogleFonts.inter(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w800,
+                                        color: AppTheme.primary,
+                                        letterSpacing: 1,
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white,
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: Text(
-                                    status == 'confirmed' ? 'Share on Arrival' : 'Share on Completion',
+                                const SizedBox(height: 8),
+                                if (isArrival && !inWindow) ...[
+                                  Text(
+                                    isTooEarly ? 'Available 1h before start' : 'Verification Expired (Late)',
                                     style: GoogleFonts.inter(
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.bold,
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w700,
                                       color: AppTheme.textMuted,
                                     ),
                                   ),
-                                ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    isTooEarly 
+                                      ? 'OTP will appear at ${_formatTime(startWindow)}' 
+                                      : 'Worker arrived too late for OTP verification.',
+                                    style: GoogleFonts.inter(fontSize: 10, color: AppTheme.textLight),
+                                  ),
+                                ] else ...[
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text(
+                                        status == 'confirmed' 
+                                          ? (booking['arrivalOTP'] ?? '----') 
+                                          : (booking['completionOTP'] ?? '----'),
+                                        style: GoogleFonts.inter(
+                                          fontSize: 24,
+                                          fontWeight: FontWeight.w900,
+                                          letterSpacing: 4,
+                                          color: AppTheme.textPrimary,
+                                        ),
+                                      ),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                        decoration: BoxDecoration(
+                                          color: Colors.white,
+                                          borderRadius: BorderRadius.circular(8),
+                                        ),
+                                        child: Text(
+                                          status == 'confirmed' ? 'Share on Arrival' : 'Share on Completion',
+                                          style: GoogleFonts.inter(
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.bold,
+                                            color: AppTheme.textMuted,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
                               ],
                             ),
-                          ],
-                        ),
+                          );
+                        }
                       ),
                     if (booking['notes'] != null && booking['notes'].toString().isNotEmpty) ...[
                       _buildDetailRow('NOTES', '${booking['notes']}'),
@@ -1062,7 +1093,14 @@ class _BookingsScreenState extends State<BookingsScreen> {
     );
   }
 
-  String _getMonthName(int month) => ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][month - 1];
+  String _formatTime(DateTime dateTime) {
+    final hour = dateTime.hour > 12 ? dateTime.hour - 12 : (dateTime.hour == 0 ? 12 : dateTime.hour);
+    final minute = dateTime.minute.toString().padLeft(2, '0');
+    final period = dateTime.hour >= 12 ? 'PM' : 'AM';
+    return '$hour:$minute $period';
+  }
+
+  String _getMonthName(int month) => ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', ' Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][month - 1];
 
   Widget _buildLoadingState() {
     return ListView.builder(
