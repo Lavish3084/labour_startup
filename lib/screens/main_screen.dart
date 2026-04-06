@@ -137,15 +137,15 @@ class _MainScreenState extends State<MainScreen> with SingleTickerProviderStateM
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(32),
                   child: BackdropFilter(
-                    filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12), // Reduced blur for better clarity
+                    filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18), // Increased blur for a deeper glass effect
                     child: Container(
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
                           colors: [
-                            Colors.white.withValues(alpha: 0.06), // Very subtle frost
-                            Colors.white.withValues(alpha: 0.01), // Near fully transparent
+                            Colors.white.withValues(alpha: 0.06), // Reduced frost for higher transparency
+                            AppTheme.saffron.withValues(alpha: 0.03), // Subtle saffron tint kept clear
                           ],
                         ),
                         borderRadius: BorderRadius.circular(32),

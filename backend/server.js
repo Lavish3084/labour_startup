@@ -35,6 +35,22 @@ const PORT = process.env.PORT || 5000;
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 
+// Security Middleware: Block malicious bot scans for sensitive files
+const forbiddenPatterns = [
+    '/.env', '/.git', '/wp-config.php', '/config.php', '/config.js', 
+    '/aws.config.js', '/.env.local', '/.env.bak', '/.env.save',
+    '/node_modules', '/package.json', '/package-lock.json'
+];
+
+app.use((req, res, next) => {
+    const url = req.url.toLowerCase();
+    if (forbiddenPatterns.some(pattern => url.includes(pattern))) {
+        console.warn(`[SECURITY BLOCK] ${new Date().toISOString()} - ${req.method} ${req.url} from ${req.ip}`);
+        return res.status(403).json({ msg: 'Forbidden: Access Denied' });
+    }
+    next();
+});
+
 app.use((req, res, next) => {
     console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`);
     next();

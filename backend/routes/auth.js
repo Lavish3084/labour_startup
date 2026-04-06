@@ -49,8 +49,17 @@ router.post('/google', async (req, res) => {
         let user = await User.findOne({ email, role });
 
         if (!user) {
+            // Check if user exists with another role to provide better messaging
+            const existingInOtherRole = await User.findOne({ email });
+            
             // If action is login, don't auto-create the account
             if (action === 'login') {
+                if (existingInOtherRole) {
+                     return res.status(400).json({ 
+                        msg: `This email is registered as a ${existingInOtherRole.role}. Please log in as a ${existingInOtherRole.role} or sign up as a ${role}.`,
+                        code: 'ROLE_MISMATCH'
+                    });
+                }
                 return res.status(404).json({ msg: 'Account does not exist. Please sign up first.', code: 'USER_NOT_FOUND' });
             }
 
@@ -64,7 +73,15 @@ router.post('/google', async (req, res) => {
                 role: role || 'user',
                 profilePicture: picture || ''
             });
-            await user.save();
+
+            try {
+                await user.save();
+            } catch (saveErr) {
+                if (saveErr.code === 11000) {
+                    return res.status(400).json({ msg: 'This email is already registered. Please login instead.' });
+                }
+                throw saveErr;
+            }
 
             // Create worker profile if requested
             if (user.role === 'worker') {
@@ -194,12 +211,23 @@ router.post('/phone-login', async (req, res) => {
         let user = await User.findOne({ phoneNumber, role });
 
         if (!user) {
+            // Check if phone exists with another role
+            const existingWithOtherRole = await User.findOne({ phoneNumber });
+
             user = new User({
                 name: 'User ' + phoneNumber.slice(-4),
                 phoneNumber: phoneNumber,
                 role: role || 'user',
             });
-            await user.save();
+
+            try {
+                await user.save();
+            } catch (saveErr) {
+                if (saveErr.code === 11000) {
+                    return res.status(400).json({ msg: 'This phone number is already registered with another role.' });
+                }
+                throw saveErr;
+            }
 
             if (user.role === 'worker') {
                 const newLabourer = new Labourer({

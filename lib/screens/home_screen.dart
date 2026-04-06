@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:geolocator/geolocator.dart';
@@ -24,15 +25,40 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   bool _isRefreshing = false;
   AppStateProvider? _appState;
+  
+  // Banner Carousel State
+  late PageController _bannerController;
+  Timer? _bannerTimer;
+  int _currentBannerIndex = 0;
+  final List<String> _bannerImages = [
+    'assets/images/banner.jpeg',
+    'assets/images/banner1.jpeg',
+    // To add more, simply add 'assets/images/banner1.jpeg', etc. below:
+  ];
 
   @override
   void initState() {
     super.initState();
+    _bannerController = PageController(initialPage: 500); // Start in the middle for infinite left/right swiping
+    _startAutoScroll();
+    
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _appState = Provider.of<AppStateProvider>(context, listen: false);
       _appState?.loadCategories();
       _initLocation();
       _appState?.addListener(_errorListener);
+    });
+  }
+
+  void _startAutoScroll() {
+    _bannerTimer?.cancel();
+    _bannerTimer = Timer.periodic(const Duration(seconds: 4), (timer) {
+      if (mounted && _bannerImages.length > 1) {
+        _bannerController.nextPage(
+          duration: const Duration(milliseconds: 800),
+          curve: Curves.easeInOutCubic,
+        );
+      }
     });
   }
 
@@ -51,6 +77,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   void dispose() {
+    _bannerTimer?.cancel();
+    _bannerController.dispose();
     _appState?.removeListener(_errorListener);
     super.dispose();
   }
@@ -160,135 +188,142 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return Container(
       width: double.infinity,
-      padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top + 16, bottom: 40),
+      height: MediaQuery.of(context).padding.top + 300, // Fixed height for carousel area
       decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            AppTheme.saffron,
-            AppTheme.primaryDark,
-          ],
-        ),
         borderRadius: BorderRadius.vertical(bottom: Radius.circular(32)),
       ),
-      child: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: GestureDetector(
-              onTap: _showAddressSelectionBottomSheet,
-              child: Row(
-                children: [
-                const Icon(Icons.location_on_rounded, color: Colors.white, size: 24),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Flexible(
-                            child: Text(
-                              displayAddress.contains(',') ? displayAddress.split(',')[0] : displayAddress,
-                              style: GoogleFonts.baloo2(
-                                fontSize: 20,
-                                fontWeight: FontWeight.w900,
-                                color: Colors.white,
-                                height: 1.1,
-                              ),
-                              overflow: TextOverflow.ellipsis,
-                            ),
+      child: ClipRRect(
+        borderRadius: const BorderRadius.vertical(bottom: Radius.circular(32)),
+        child: Stack(
+          children: [
+            // 1. Background Carousel (Infinite scroll enabled)
+            PageView.builder(
+              controller: _bannerController,
+              onPageChanged: (index) => setState(() => _currentBannerIndex = index % _bannerImages.length),
+              // itemCount is not set, resulting in infinite scrolling
+              itemBuilder: (context, index) {
+                final int realIndex = index % _bannerImages.length;
+                return Image.asset(
+                  _bannerImages[realIndex],
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) {
+                    if (realIndex == 0) {
+                      return Container(
+                        decoration: const BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [AppTheme.saffron, AppTheme.primaryDark],
                           ),
-                          const Icon(Icons.keyboard_arrow_down_rounded, color: Colors.white, size: 20),
-                        ],
-                      ),
-                      Text(
-                        displayAddress,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.inter(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                          color: Colors.white.withValues(alpha: 0.8),
                         ),
-                      ),
+                      );
+                    }
+                    return const SizedBox.shrink();
+                  },
+                );
+              },
+            ),
+
+            // 2. Visual Overlay (IgnorePointer allows swipes to pass through)
+            IgnorePointer(
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Colors.black.withValues(alpha: 0.3),
+                      Colors.transparent,
+                      Colors.black.withValues(alpha: 0.2),
                     ],
                   ),
                 ),
-                _buildCircularAction(
-                  Icons.history_rounded,
-                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const HistoryScreen())),
-                ),
-                const SizedBox(width: 12),
-                _buildCircularAction(Icons.person_outline_rounded),
-              ],
+              ),
             ),
-          ),
-        ),
-          const SizedBox(height: 32),
-          // "Hire a Service Man" Content
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
-            child: Row(
+
+            // 3. Interactive Content (Location Selector)
+            Column(
               children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'HIRE A\nSERVICE MAN',
-                        style: GoogleFonts.baloo2(
-                          fontSize: 36,
-                          fontWeight: FontWeight.w900,
-                          color: Colors.white,
-                          height: 1.0,
-                          letterSpacing: -1.0,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                        decoration: BoxDecoration(
-                          color: Colors.black,
-                          borderRadius: BorderRadius.circular(100),
-                        ),
-                        child: Text(
-                          'BOOK NOW >',
-                          style: GoogleFonts.inter(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w900,
-                            color: Colors.white,
-                            letterSpacing: 0.5,
+                Padding(
+                  padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top + 16, left: 20, right: 20),
+                  child: GestureDetector(
+                    onTap: _showAddressSelectionBottomSheet,
+                    child: Row(
+                      children: [
+                        const Icon(Icons.location_on_rounded, color: Colors.white, size: 24),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Flexible(
+                                    child: Text(
+                                      displayAddress.contains(',') ? displayAddress.split(',')[0] : displayAddress,
+                                      style: GoogleFonts.baloo2(
+                                        fontSize: 20,
+                                        fontWeight: FontWeight.w900,
+                                        color: Colors.white,
+                                        height: 1.1,
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                  const Icon(Icons.keyboard_arrow_down_rounded, color: Colors.white, size: 20),
+                                ],
+                              ),
+                              Text(
+                                displayAddress,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: GoogleFonts.inter(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500,
+                                  color: Colors.white.withValues(alpha: 0.8),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                      ),
-                    ],
-                  ),
-                ),
-                SizedBox(
-                  width: 120,
-                  height: 120,
-                  child: Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      Positioned(
-                        right: 0,
-                        child: Image.asset(
-                          'assets/icons/services.png', // Fallback to icon sheet if no specific asset
-                          width: 100,
-                          height: 100,
-                          fit: BoxFit.contain,
-                          errorBuilder: (c, e, s) => const Icon(Icons.engineering_rounded, size: 80, color: Colors.white30),
+                        _buildCircularAction(
+                          Icons.history_rounded,
+                          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const HistoryScreen())),
                         ),
-                      ),
-                    ],
+                        const SizedBox(width: 12),
+                        _buildCircularAction(Icons.person_outline_rounded),
+                      ],
+                    ),
                   ),
                 ),
               ],
             ),
-          ),
-        ],
+
+            // Dot Indicators
+            if (_bannerImages.length > 1)
+              Positioned(
+                bottom: 20,
+                left: 0,
+                right: 0,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: List.generate(
+                    _bannerImages.length,
+                    (index) => AnimatedContainer(
+                      duration: const Duration(milliseconds: 300),
+                      margin: const EdgeInsets.symmetric(horizontal: 4),
+                      height: 8,
+                      width: _currentBannerIndex == index ? 24 : 8,
+                      decoration: BoxDecoration(
+                        color: _currentBannerIndex == index ? Colors.white : Colors.white.withValues(alpha: 0.4),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }
