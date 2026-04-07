@@ -16,7 +16,8 @@ class MainScreen extends StatefulWidget {
   State<MainScreen> createState() => _MainScreenState();
 }
 
-class _MainScreenState extends State<MainScreen> with SingleTickerProviderStateMixin {
+class _MainScreenState extends State<MainScreen>
+    with SingleTickerProviderStateMixin {
   late PageController _pageController;
   late ValueNotifier<double> _displayPage;
   late AnimationController _pillAnimationController;
@@ -31,7 +32,7 @@ class _MainScreenState extends State<MainScreen> with SingleTickerProviderStateM
     _lastTab = appState.selectedTab;
     _pageController = PageController(initialPage: _lastTab);
     _displayPage = ValueNotifier<double>(_lastTab.toDouble());
-    
+
     _pillAnimationController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 500),
@@ -95,8 +96,12 @@ class _MainScreenState extends State<MainScreen> with SingleTickerProviderStateM
           if (!mounted) return;
           // IMPORTANT: Only update state if the user is physically swiping.
           // This prevents intermediate crossing signals during animateToPage(0 -> 2).
-          if (_pageController.position.userScrollDirection != ScrollDirection.idle) {
-            final appState = Provider.of<AppStateProvider>(context, listen: false);
+          if (_pageController.position.userScrollDirection !=
+              ScrollDirection.idle) {
+            final appState = Provider.of<AppStateProvider>(
+              context,
+              listen: false,
+            );
             appState.setTab(index);
           }
         },
@@ -107,7 +112,7 @@ class _MainScreenState extends State<MainScreen> with SingleTickerProviderStateM
           // Narrower bar width: 75% of screen width
           final double actualWidth = navBarConstraints.maxWidth * 0.75;
           final double sectionWidth = actualWidth / 3;
-          
+
           return GestureDetector(
             onHorizontalDragStart: (_) {
               _isDraggingNavbar = true;
@@ -116,22 +121,26 @@ class _MainScreenState extends State<MainScreen> with SingleTickerProviderStateM
             onHorizontalDragUpdate: (details) {
               if (_pageController.hasClients) {
                 // Move pill independently within the navbar (Independent Grab & Slide)
-                _displayPage.value = (_displayPage.value + details.delta.dx / sectionWidth).clamp(0.0, 2.0);
+                _displayPage.value = (_displayPage.value +
+                        details.delta.dx / sectionWidth)
+                    .clamp(0.0, 2.0);
               }
             },
             onHorizontalDragEnd: (details) {
               if (_pageController.hasClients) {
                 final double startPage = _displayPage.value;
                 final int targetPage = startPage.round().clamp(0, 2);
-                
+
                 // Create a smooth animation for the pill from its release point to the target
                 _pillAnimation = Tween<double>(
                   begin: startPage,
                   end: targetPage.toDouble(),
-                ).animate(CurvedAnimation(
-                  parent: _pillAnimationController,
-                  curve: Curves.easeOutQuart,
-                ));
+                ).animate(
+                  CurvedAnimation(
+                    parent: _pillAnimationController,
+                    curve: Curves.easeOutQuart,
+                  ),
+                );
 
                 void updateDisplayPage() {
                   _displayPage.value = _pillAnimation!.value;
@@ -145,7 +154,7 @@ class _MainScreenState extends State<MainScreen> with SingleTickerProviderStateM
                     _isDraggingNavbar = false;
                   }
                 });
-                
+
                 // Simultaneously animate the PageView (the body)
                 _pageController.animateToPage(
                   targetPage,
@@ -163,15 +172,22 @@ class _MainScreenState extends State<MainScreen> with SingleTickerProviderStateM
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(32),
                   child: BackdropFilter(
-                    filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18), // Increased blur for a deeper glass effect
+                    filter: ImageFilter.blur(
+                      sigmaX: 18,
+                      sigmaY: 18,
+                    ), // Increased blur for a deeper glass effect
                     child: Container(
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                           colors: [
-                            Colors.white.withValues(alpha: 0.06), // Reduced frost for higher transparency
-                            AppTheme.saffron.withValues(alpha: 0.03), // Subtle saffron tint kept clear
+                            Colors.white.withValues(
+                              alpha: 0.06,
+                            ), // Reduced frost for higher transparency
+                            AppTheme.saffron.withValues(
+                              alpha: 0.03,
+                            ), // Subtle saffron tint kept clear
                           ],
                         ),
                         borderRadius: BorderRadius.circular(32),
@@ -195,21 +211,27 @@ class _MainScreenState extends State<MainScreen> with SingleTickerProviderStateM
                               final double width = constraints.maxWidth;
                               final double sectionWidthInner = width / 3;
                               double page = _displayPage.value;
-                              
+
                               double fraction = page % 1.0;
                               if (page < 0) fraction = 0;
                               if (page > 2) fraction = 0;
-                              
-                              double stretchFactor = (0.5 - (fraction - 0.5).abs()) * 2.0;
-                              double stretchMagnitude = sectionWidthInner * 0.55;
+
+                              double stretchFactor =
+                                  (0.5 - (fraction - 0.5).abs()) * 2.0;
+                              double stretchMagnitude =
+                                  sectionWidthInner * 0.55;
                               double basePillWidth = sectionWidthInner * 0.43;
-                              double currentWidth = basePillWidth + (stretchMagnitude * stretchFactor);
-                              
-                            // Dynamic vertical bulge - Scaled for 65px height
-                            double baseHeight = 44;
-                            double currentHeight = baseHeight + (16 * stretchFactor); 
-                              
-                              double centerPos = (page + 0.5) * sectionWidthInner;
+                              double currentWidth =
+                                  basePillWidth +
+                                  (stretchMagnitude * stretchFactor);
+
+                              // Dynamic vertical bulge - Scaled for 65px height
+                              double baseHeight = 44;
+                              double currentHeight =
+                                  baseHeight + (16 * stretchFactor);
+
+                              double centerPos =
+                                  (page + 0.5) * sectionWidthInner;
                               double leftPos = centerPos - (currentWidth / 2);
 
                               return Stack(
@@ -217,16 +239,25 @@ class _MainScreenState extends State<MainScreen> with SingleTickerProviderStateM
                                   // Liquid Stretchy Glass Selection Pill
                                   Positioned(
                                     left: leftPos,
-                                    top: (constraints.maxHeight - currentHeight) / 2,
+                                    top:
+                                        (constraints.maxHeight -
+                                            currentHeight) /
+                                        2,
                                     child: Container(
                                       width: currentWidth,
                                       height: currentHeight,
                                       decoration: BoxDecoration(
                                         gradient: LinearGradient(
                                           colors: [
-                                            Colors.white.withValues(alpha: 0.25),
-                                            AppTheme.saffron.withValues(alpha: 0.45),
-                                            AppTheme.saffron.withValues(alpha: 0.15),
+                                            Colors.white.withValues(
+                                              alpha: 0.25,
+                                            ),
+                                            AppTheme.saffron.withValues(
+                                              alpha: 0.45,
+                                            ),
+                                            AppTheme.saffron.withValues(
+                                              alpha: 0.15,
+                                            ),
                                           ],
                                           begin: Alignment.topLeft,
                                           end: Alignment.bottomRight,
@@ -234,18 +265,24 @@ class _MainScreenState extends State<MainScreen> with SingleTickerProviderStateM
                                         ),
                                         borderRadius: BorderRadius.circular(20),
                                         border: Border.all(
-                                          color: Colors.white.withValues(alpha: 0.4),
+                                          color: Colors.white.withValues(
+                                            alpha: 0.4,
+                                          ),
                                           width: 0.8,
                                         ),
                                         boxShadow: [
                                           BoxShadow(
-                                            color: AppTheme.saffron.withValues(alpha: 0.2),
+                                            color: AppTheme.saffron.withValues(
+                                              alpha: 0.2,
+                                            ),
                                             blurRadius: 15,
                                             spreadRadius: -2,
                                             offset: const Offset(0, 4),
                                           ),
                                           BoxShadow(
-                                            color: Colors.white.withValues(alpha: 0.1),
+                                            color: Colors.white.withValues(
+                                              alpha: 0.1,
+                                            ),
                                             blurRadius: 0,
                                             spreadRadius: 1,
                                             offset: const Offset(0, 0),
@@ -254,13 +291,31 @@ class _MainScreenState extends State<MainScreen> with SingleTickerProviderStateM
                                       ),
                                     ),
                                   ),
-                                  
+
                                   // Nav Items Row
                                   Row(
                                     children: [
-                                      _buildNavItem(0, page, Icons.home_rounded, Icons.home_outlined, 'Home'),
-                                      _buildNavItem(1, page, Icons.calendar_month_rounded, Icons.calendar_month_outlined, 'Booking'),
-                                      _buildNavItem(2, page, Icons.person_rounded, Icons.person_outlined, 'Profile'),
+                                      _buildNavItem(
+                                        0,
+                                        page,
+                                        Icons.home_rounded,
+                                        Icons.home_outlined,
+                                        'Home',
+                                      ),
+                                      _buildNavItem(
+                                        1,
+                                        page,
+                                        Icons.calendar_month_rounded,
+                                        Icons.calendar_month_outlined,
+                                        'Booking',
+                                      ),
+                                      _buildNavItem(
+                                        2,
+                                        page,
+                                        Icons.person_rounded,
+                                        Icons.person_outlined,
+                                        'Profile',
+                                      ),
                                     ],
                                   ),
                                 ],
@@ -280,22 +335,33 @@ class _MainScreenState extends State<MainScreen> with SingleTickerProviderStateM
     );
   }
 
-  Widget _buildNavItem(int index, double page, IconData activeIcon, IconData inactiveIcon, String label) {
+  Widget _buildNavItem(
+    int index,
+    double page,
+    IconData activeIcon,
+    IconData inactiveIcon,
+    String label,
+  ) {
     double pageDelta = (page - index).abs();
     double activeProgress = (1.0 - pageDelta).clamp(0.0, 1.0);
     bool isActive = activeProgress > 0.5;
-    
+
     return Expanded(
       child: GestureDetector(
         onTap: () {
           HapticFeedback.mediumImpact();
           _pageController.animateToPage(
-            index, 
-            duration: const Duration(milliseconds: 630), // Slightly longer for a more premium ease-out
+            index,
+            duration: const Duration(
+              milliseconds: 630,
+            ), // Slightly longer for a more premium ease-out
             curve: Curves.easeOutQuart,
           );
-          
-          final appState = Provider.of<AppStateProvider>(context, listen: false);
+
+          final appState = Provider.of<AppStateProvider>(
+            context,
+            listen: false,
+          );
           appState.setTab(index);
         },
         behavior: HitTestBehavior.opaque,

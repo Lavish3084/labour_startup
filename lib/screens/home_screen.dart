@@ -33,8 +33,9 @@ class _HomeScreenState extends State<HomeScreen> {
   final List<String> _bannerImages = [
     'assets/images/banner.jpeg',
     'assets/images/banner1.jpeg',
-    // To add more, simply add 'assets/images/banner1.jpeg', etc. below:
   ];
+
+  final TextEditingController _searchController = TextEditingController();
 
   @override
   void initState() {
@@ -79,6 +80,7 @@ class _HomeScreenState extends State<HomeScreen> {
   void dispose() {
     _bannerTimer?.cancel();
     _bannerController.dispose();
+    _searchController.dispose();
     _appState?.removeListener(_errorListener);
     super.dispose();
   }
@@ -359,6 +361,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 const SizedBox(width: 12),
                 Expanded(
                   child: TextField(
+                    controller: _searchController,
                     onChanged: (value) => Provider.of<AppStateProvider>(context, listen: false).setSearchQuery(value),
                     style: GoogleFonts.inter(
                       fontSize: 15,
@@ -374,13 +377,10 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                       border: InputBorder.none,
                       isDense: true,
-                      contentPadding: EdgeInsets.zero,
+                      contentPadding: EdgeInsets.all(0),
                     ),
                   ),
                 ),
-                const VerticalDivider(width: 1, indent: 18, endIndent: 18, color: Color(0xFFEEEEEE)),
-                const SizedBox(width: 12),
-                const Icon(Icons.mic_none_rounded, color: AppTheme.saffron, size: 24),
               ],
             ),
           ),

@@ -877,7 +877,7 @@ class _BookingsScreenState extends State<BookingsScreen> {
                     const SizedBox(height: 16),
                     
                     // OTP Section
-                    if (status == 'confirmed' || status == 'arrived')
+                    if ((status == 'confirmed' && booking['paymentStatus'] == 'paid') || status == 'arrived')
                       Builder(
                         builder: (context) {
                           final now = DateTime.now();
@@ -920,21 +920,7 @@ class _BookingsScreenState extends State<BookingsScreen> {
                                   ],
                                 ),
                                 const SizedBox(height: 8),
-                                if (isArrival && booking['paymentStatus'] != 'paid') ...[
-                                  Text(
-                                    'Payment Pending',
-                                    style: GoogleFonts.inter(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w700,
-                                      color: Colors.amber.shade800,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    'Complete payment to reveal Arrival OTP.',
-                                    style: GoogleFonts.inter(fontSize: 10, color: AppTheme.textLight),
-                                  ),
-                                ] else if (isArrival && !inWindow) ...[
+                                if (isArrival && !inWindow) ...[
                                   Text(
                                     isTooEarly ? 'Available 1h before start' : 'Verification Expired (Late)',
                                     style: GoogleFonts.inter(

@@ -125,6 +125,28 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
         minute: roundedMinute % 60
       );
       
+      // Immediate validation: check if time is at least 1 hr in advance
+      final DateTime scheduledTime = DateTime(
+        _selectedDate.year,
+        _selectedDate.month,
+        _selectedDate.day,
+        snappedTime.hour,
+        snappedTime.minute,
+      );
+
+      if (scheduledTime.isBefore(DateTime.now().add(const Duration(hours: 1)))) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Please select a time at least 1 hour from now.'),
+              backgroundColor: AppTheme.error,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+        return; // Don't update state if invalid
+      }
+      
       setState(() {
         _selectedTime = snappedTime;
       });
