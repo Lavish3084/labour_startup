@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../models/service_category.dart';
 import '../services/api_service.dart';
@@ -67,88 +68,19 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
   }
 
   Future<void> _selectTime(BuildContext context) async {
-    // Round current time to nearest 5 mins for initial view
-    final int initialMinute = (_selectedTime.minute / 5).round() * 5;
-    final TimeOfDay initialTime = TimeOfDay(hour: _selectedTime.hour, minute: initialMinute % 60);
-
-    final TimeOfDay? picked = await showTimePicker(
+    final TimeOfDay? picked = await showModalBottomSheet<TimeOfDay>(
       context: context,
-      initialTime: initialTime,
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.light(
-              primary: AppTheme.saffron,
-              onPrimary: Colors.white,
-              onSurface: AppTheme.textPrimary,
-            ),
-            timePickerTheme: TimePickerThemeData(
-              backgroundColor: Colors.white.withValues(alpha: 0.12),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(32),
-                side: BorderSide(
-                  color: Colors.white.withValues(alpha: 0.4),
-                  width: 1.5,
-                ),
-              ),
-              hourMinuteColor: WidgetStateColor.resolveWith((states) => 
-                states.contains(WidgetState.selected) 
-                  ? AppTheme.saffron.withValues(alpha: 0.2) 
-                  : Colors.white.withValues(alpha: 0.1)),
-              hourMinuteTextColor: WidgetStateColor.resolveWith((states) => 
-                states.contains(WidgetState.selected) 
-                  ? AppTheme.saffron 
-                  : AppTheme.textPrimary),
-              dialBackgroundColor: Colors.white.withValues(alpha: 0.1),
-              dialHandColor: AppTheme.saffron,
-              dialTextColor: AppTheme.textPrimary,
-              entryModeIconColor: AppTheme.saffron,
-              dayPeriodColor: WidgetStateColor.resolveWith((states) => 
-                states.contains(WidgetState.selected) 
-                  ? AppTheme.saffron.withValues(alpha: 0.2) 
-                  : Colors.transparent),
-            ),
-          ),
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 12.0, sigmaY: 12.0),
-            child: child!,
-          ),
-        );
-      },
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) => _TimePickerSheet(
+        initialTime: _selectedTime,
+        selectedDate: _selectedDate,
+      ),
     );
-    
-    if (picked != null) {
-      // Snap to nearest 5 minutes
-      final int roundedMinute = (picked.minute / 5).round() * 5;
-      final snappedTime = TimeOfDay(
-        hour: (picked.hour + (roundedMinute >= 60 ? 1 : 0)) % 24,
-        minute: roundedMinute % 60
-      );
-      
-      // Immediate validation: check if time is at least 1 hr in advance
-      final DateTime scheduledTime = DateTime(
-        _selectedDate.year,
-        _selectedDate.month,
-        _selectedDate.day,
-        snappedTime.hour,
-        snappedTime.minute,
-      );
 
-      if (scheduledTime.isBefore(DateTime.now().add(const Duration(hours: 1)))) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Please select a time at least 1 hour from now.'),
-              backgroundColor: AppTheme.error,
-              behavior: SnackBarBehavior.floating,
-            ),
-          );
-        }
-        return; // Don't update state if invalid
-      }
-      
+    if (picked != null) {
       setState(() {
-        _selectedTime = snappedTime;
+        _selectedTime = picked;
       });
     }
   }
@@ -1168,6 +1100,25 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
     );
   }
 
+  void _updateBookingMode(String mode) {
+    setState(() {
+      _selectedBookingMode = mode;
+      
+      if (mode == 'Daily') {
+        // Daily rule: start at 8 AM
+        _selectedTime = const TimeOfDay(hour: 8, minute: 0);
+        
+        // Daily rule: must start from tomorrow
+        final now = DateTime.now();
+        if (_selectedDate.year == now.year && 
+            _selectedDate.month == now.month && 
+            _selectedDate.day == now.day) {
+          _selectedDate = now.add(const Duration(days: 1));
+        }
+      }
+    });
+  }
+
   Widget _buildSectionLabel(String text) {
     return Text(
       text,
@@ -1211,7 +1162,7 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
 
         return Expanded(
           child: GestureDetector(
-            onTap: () => setState(() => _selectedBookingMode = mode),
+            onTap: () => _updateBookingMode(mode),
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 250),
               margin: EdgeInsets.only(
@@ -1400,7 +1351,9 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
         clipBehavior: Clip.none,
         itemCount: 14,
         itemBuilder: (context, index) {
-          final date = DateTime.now().add(Duration(days: index));
+          final date = DateTime.now().add(
+            Duration(days: _selectedBookingMode == 'Daily' ? index + 1 : index),
+          );
           final isSelected =
               _selectedDate.day == date.day &&
               _selectedDate.month == date.month;
@@ -1473,18 +1426,20 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
   Widget _buildTimeCard() {
     final h = _selectedTime.hour;
     final hour = h == 0 ? 12 : (h > 12 ? h - 12 : h);
-    final timeString =
-        "${hour.toString().padLeft(2, '0')}:${_selectedTime.minute.toString().padLeft(2, '0')} ${h >= 12 ? 'PM' : 'AM'}";
+    final isDaily = _selectedBookingMode == 'Daily';
+    final timeString = isDaily
+        ? "08:00 AM - 06:00 PM"
+        : "${hour.toString().padLeft(2, '0')}:${_selectedTime.minute.toString().padLeft(2, '0')} ${h >= 12 ? 'PM' : 'AM'}";
 
     return GestureDetector(
-      onTap: () => _selectTime(context),
+      onTap: isDaily ? null : () => _selectTime(context),
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 20),
         decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.8),
+          color: isDaily ? Colors.white.withValues(alpha: 0.4) : Colors.white.withValues(alpha: 0.8),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(color: AppTheme.divider.withValues(alpha: 0.5)),
-          boxShadow: AppTheme.shadowMd,
+          boxShadow: isDaily ? [] : AppTheme.shadowMd,
         ),
         child: Row(
           children: [
@@ -1504,37 +1459,46 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'Start Time',
-                  style: GoogleFonts.inter(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: AppTheme.textMuted,
-                  ),
+                Row(
+                  children: [
+                    Text(
+                      isDaily ? 'Fixed Working Hours' : 'Start Time',
+                      style: GoogleFonts.inter(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: AppTheme.textMuted,
+                      ),
+                    ),
+                    if (isDaily) ...[
+                      const SizedBox(width: 6),
+                      const Icon(Icons.lock_outline_rounded, size: 12, color: AppTheme.textMuted),
+                    ],
+                  ],
                 ),
                 Text(
                   timeString,
                   style: GoogleFonts.inter(
-                    fontSize: 18,
+                    fontSize: isDaily ? 16 : 18,
                     fontWeight: FontWeight.w800,
-                    color: AppTheme.textPrimary,
+                    color: isDaily ? AppTheme.textSecondary : AppTheme.textPrimary,
                   ),
                 ),
               ],
             ),
             const Spacer(),
-            Container(
-              padding: const EdgeInsets.all(6),
-              decoration: BoxDecoration(
-                color: AppTheme.scaffoldBg,
-                shape: BoxShape.circle,
+            if (!isDaily)
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: AppTheme.scaffoldBg,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.edit_calendar_rounded,
+                  color: AppTheme.textLight,
+                  size: 18,
+                ),
               ),
-              child: const Icon(
-                Icons.edit_calendar_rounded,
-                color: AppTheme.textLight,
-                size: 18,
-              ),
-            ),
           ],
         ),
       ),
@@ -1750,6 +1714,212 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
       default:
         return '';
     }
+  }
+}
+
+class _TimePickerSheet extends StatefulWidget {
+  final TimeOfDay initialTime;
+  final DateTime selectedDate;
+
+  const _TimePickerSheet({
+    required this.initialTime,
+    required this.selectedDate,
+  });
+
+  @override
+  State<_TimePickerSheet> createState() => _TimePickerSheetState();
+}
+
+class _TimePickerSheetState extends State<_TimePickerSheet> {
+  late DateTime _tempDateTime;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _tempDateTime = DateTime(
+      widget.selectedDate.year,
+      widget.selectedDate.month,
+      widget.selectedDate.day,
+      widget.initialTime.hour,
+      widget.initialTime.minute,
+    );
+    _validate(_tempDateTime);
+  }
+
+  void _validate(DateTime dt) {
+    final now = DateTime.now();
+    final minTime = now.add(const Duration(hours: 1));
+    
+    if (dt.isBefore(minTime)) {
+      final hour = minTime.hour == 0 ? 12 : (minTime.hour > 12 ? minTime.hour - 12 : minTime.hour);
+      final ampm = minTime.hour >= 12 ? 'PM' : 'AM';
+      final minute = minTime.minute.toString().padLeft(2, '0');
+      setState(() {
+        _error = 'Please book after $hour:$minute $ampm';
+      });
+    } else {
+      setState(() {
+        _error = null;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppTheme.scaffoldBg,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.2),
+            blurRadius: 20,
+            offset: const Offset(0, -5),
+          ),
+        ],
+      ),
+      child: SafeArea(
+        top: false,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 12),
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: AppTheme.divider,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 24),
+            Text(
+              'Select Start Time',
+              style: AppTheme.heading2.copyWith(fontSize: 18),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Minimum 1 hour notice required',
+              style: AppTheme.bodySmall.copyWith(color: AppTheme.textMuted),
+            ),
+            const SizedBox(height: 32),
+            
+            SizedBox(
+              height: 200,
+              child: CupertinoTheme(
+                data: const CupertinoThemeData(
+                  brightness: Brightness.light,
+                ),
+                child: CupertinoDatePicker(
+                  mode: CupertinoDatePickerMode.time,
+                  initialDateTime: _tempDateTime,
+                  use24hFormat: false,
+                  onDateTimeChanged: (dt) {
+                    // Maintain the selected date part
+                    final updatedDt = DateTime(
+                      widget.selectedDate.year,
+                      widget.selectedDate.month,
+                      widget.selectedDate.day,
+                      dt.hour,
+                      dt.minute,
+                    );
+                    _tempDateTime = updatedDt;
+                    _validate(updatedDt);
+                  },
+                ),
+              ),
+            ),
+            
+            const SizedBox(height: 24),
+            
+            // Error Message
+            AnimatedOpacity(
+              opacity: _error != null ? 1.0 : 0.0,
+              duration: const Duration(milliseconds: 200),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                decoration: BoxDecoration(
+                  color: AppTheme.error.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppTheme.error.withValues(alpha: 0.2)),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.error_outline_rounded, size: 16, color: AppTheme.error),
+                    const SizedBox(width: 8),
+                    Text(
+                      _error ?? '',
+                      style: GoogleFonts.inter(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        color: AppTheme.error,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            
+            const SizedBox(height: 32),
+            
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+              child: Row(
+                children: [
+                   Expanded(
+                    child: TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                      ),
+                      child: Text(
+                        'Cancel',
+                        style: GoogleFonts.inter(
+                          fontWeight: FontWeight.w700,
+                          color: AppTheme.textMuted,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: _error != null 
+                        ? null 
+                        : () => Navigator.pop(context, TimeOfDay.fromDateTime(_tempDateTime)),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppTheme.saffron,
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        disabledBackgroundColor: AppTheme.textMuted.withValues(alpha: 0.1),
+                        disabledForegroundColor: AppTheme.textMuted,
+                      ),
+                      child: Text(
+                        'Confirm',
+                        style: GoogleFonts.inter(
+                          fontWeight: FontWeight.w900,
+                          fontSize: 16,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+          ],
+        ),
+      ),
+    );
   }
 }
 
