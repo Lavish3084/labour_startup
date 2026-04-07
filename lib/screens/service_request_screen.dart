@@ -31,6 +31,7 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
   double? _longitude;
   bool _isLoading = false;
   bool _saveAddress = true;
+  bool _hasAttemptedSubmit = false;
   late String _selectedBookingMode;
   int _numberOfHours = 1;
 
@@ -398,6 +399,11 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
                               label: 'Flat / House No.',
                               hint: 'e.g. 402, 4th Floor',
                               icon: Icons.apartment_rounded,
+                              isRequired: true,
+                              hasError: _hasAttemptedSubmit && _houseController.text.trim().isEmpty,
+                              onChanged: (val) {
+                                if (_hasAttemptedSubmit) setSheetState(() {});
+                              },
                             ),
                           ),
                           const SizedBox(width: 12),
@@ -547,38 +553,58 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
     required String label,
     required String hint,
     required IconData icon,
+    bool isRequired = false,
+    bool hasError = false,
+    Function(String)? onChanged,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          label,
-          style: GoogleFonts.inter(
-            fontSize: 11,
-            fontWeight: FontWeight.w800,
-            color: AppTheme.textMuted,
-            letterSpacing: 0.5,
-          ),
+        Row(
+          children: [
+            Text(
+              label,
+              style: GoogleFonts.inter(
+                fontSize: 11,
+                fontWeight: FontWeight.w800,
+                color: AppTheme.textMuted,
+                letterSpacing: 0.5,
+              ),
+            ),
+            if (isRequired)
+              Padding(
+                padding: const EdgeInsets.only(left: 4),
+                child: Text(
+                  '*',
+                  style: GoogleFonts.inter(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w800,
+                    color: AppTheme.error,
+                  ),
+                ),
+              ),
+          ],
         ),
         const SizedBox(height: 8),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 12),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: hasError ? AppTheme.error.withValues(alpha: 0.05) : Colors.white,
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: AppTheme.divider),
+            border: Border.all(color: hasError ? AppTheme.error : AppTheme.divider),
           ),
           child: TextField(
             controller: controller,
+            onChanged: onChanged,
             style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600),
             decoration: InputDecoration(
               hintText: hint,
               hintStyle: GoogleFonts.inter(
                 fontSize: 12,
-                color: AppTheme.textMuted.withValues(alpha: 0.5),
+                color: hasError ? AppTheme.textMuted : AppTheme.textMuted.withValues(alpha: 0.5),
               ),
               border: InputBorder.none,
-              icon: Icon(icon, size: 16, color: AppTheme.textMuted),
+              icon: Icon(icon, size: 16, color: hasError ? AppTheme.error : AppTheme.textMuted),
             ),
           ),
         ),
@@ -598,10 +624,25 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
   }
 
   Future<void> _submitRequest([StateSetter? setSheetState]) async {
+    if (setSheetState != null) {
+      setSheetState(() {
+        _hasAttemptedSubmit = true;
+      });
+    } else {
+      setState(() {
+        _hasAttemptedSubmit = true;
+      });
+    }
+
     if (_selectedAddress == null) {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(const SnackBar(content: Text('Please select an address')));
+      return;
+    }
+
+    if (_houseController.text.trim().isEmpty) {
+      // Do nothing here, the UI will highlight the field in red
       return;
     }
 

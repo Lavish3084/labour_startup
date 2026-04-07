@@ -31,8 +31,11 @@ class _HomeScreenState extends State<HomeScreen> {
   Timer? _bannerTimer;
   int _currentBannerIndex = 0;
   final List<String> _bannerImages = [
-    'assets/images/banner.jpeg',
-    'assets/images/banner1.jpeg',
+    'assets/images/last4.png',
+    'assets/images/last3.png',
+    'assets/images/last2.png',
+    'assets/images/last1.png',
+    'assets/images/last.png',
   ];
 
   final TextEditingController _searchController = TextEditingController();
