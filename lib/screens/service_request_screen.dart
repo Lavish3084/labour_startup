@@ -30,7 +30,7 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
   double? _latitude;
   double? _longitude;
   bool _isLoading = false;
-  bool _saveAddress = false;
+  bool _saveAddress = true;
   late String _selectedBookingMode;
   int _numberOfHours = 1;
 
