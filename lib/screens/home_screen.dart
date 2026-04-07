@@ -97,6 +97,7 @@ class _HomeScreenState extends State<HomeScreen> {
       await _getCurrentLocation();
     }
   }
+  //ejfs
 
   Future<void> _getCurrentLocation() async {
     bool serviceEnabled;
