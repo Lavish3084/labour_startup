@@ -6,7 +6,7 @@ const admin = require('firebase-admin');
 
 dotenv.config();
 
-// Initialize Firebase Admin
+// Initialize Firebase Admi
 if (!admin.apps.length) {
     try {
         let serviceAccount;
@@ -17,7 +17,7 @@ if (!admin.apps.length) {
             console.log('Firebase Admin: Initializing with service account from file');
             serviceAccount = require('./serviceAccountKey.json');
         }
-        
+
         admin.initializeApp({
             credential: admin.credential.cert(serviceAccount)
         });
@@ -37,7 +37,7 @@ app.use(express.json({ limit: '50mb' }));
 
 // Security Middleware: Block malicious bot scans for sensitive files
 const forbiddenPatterns = [
-    '/.env', '/.git', '/wp-config.php', '/config.php', '/config.js', 
+    '/.env', '/.git', '/wp-config.php', '/config.php', '/config.js',
     '/aws.config.js', '/.env.local', '/.env.bak', '/.env.save',
     '/node_modules', '/package.json', '/package-lock.json'
 ];
