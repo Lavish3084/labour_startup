@@ -178,6 +178,7 @@ class _BookingsScreenState extends State<BookingsScreen> {
   }
 
   final Set<String> _expandedBookingIds = {};
+  final Set<String> _autoExpandedBookingIds = {};
   bool _isRefreshing = false;
 
   Future<void> _refreshBookings() async {
@@ -354,6 +355,17 @@ class _BookingsScreenState extends State<BookingsScreen> {
     final allBookings = appState.bookings;
     final bookings = allBookings.where((b) => !_isHistory(b)).toList();
     final isLoading = appState.isBookingsLoading;
+
+    // Auto-expand actionable bookings
+    for (var b in bookings) {
+      final status = (b['status'] as String).toLowerCase();
+      if (status == 'pending' || (status == 'confirmed' && b['paymentStatus'] != 'paid')) {
+        if (!_autoExpandedBookingIds.contains(b['_id'])) {
+          _expandedBookingIds.add(b['_id']);
+          _autoExpandedBookingIds.add(b['_id']);
+        }
+      }
+    }
 
     return Scaffold(
       backgroundColor: AppTheme.scaffoldBg,
@@ -1072,15 +1084,19 @@ class _BookingsScreenState extends State<BookingsScreen> {
       );
     }
     
-    return Column(
+    return Row(
       children: [
-        _buildActionButton(
-          'VIEW APPLICANTS (${applicants.length})', 
-          AppTheme.primary, 
-          () => _showApplicantsBottomSheet(booking)
+        Expanded(
+          child: _buildActionButton(
+            'VIEW APPLICANTS (${applicants.length})', 
+            AppTheme.primary, 
+            () => _showApplicantsBottomSheet(booking)
+          ),
         ),
-        const SizedBox(height: 12),
-        _buildActionButton('WITHDRAW REQUEST', AppTheme.error, () => _handleCancelWithdraw(booking), isOutlined: true),
+        const SizedBox(width: 8),
+        Expanded(
+          child: _buildActionButton('WITHDRAW', AppTheme.error, () => _handleCancelWithdraw(booking), isOutlined: true),
+        ),
       ],
     );
   }

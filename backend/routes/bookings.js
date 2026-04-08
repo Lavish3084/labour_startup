@@ -38,6 +38,30 @@ const generateOTP = () => {
     return Math.floor(1000 + Math.random() * 9000).toString();
 };
 
+// Helper function to calculate time overlaps for a worker
+async function checkOverlap(labourerId, targetBooking) {
+    const activeCommitments = await Booking.find({
+        labourer: labourerId,
+        $or: [
+            { status: 'confirmed', paymentStatus: 'paid' },
+            { status: 'arrived' }
+        ]
+    });
+
+    const bStart = new Date(targetBooking.date).getTime();
+    const bEnd = bStart + (targetBooking.numberOfHours || 2) * 60 * 60 * 1000;
+
+    for (let active of activeCommitments) {
+        if (active._id.toString() === targetBooking._id.toString()) continue;
+        const aStart = new Date(active.date).getTime();
+        const aEnd = aStart + (active.numberOfHours || 2) * 60 * 60 * 1000;
+        if (bStart < aEnd && bEnd > aStart) {
+            return true; // Overlaps
+        }
+    }
+    return false;
+}
+
 // @route   POST /api/bookings
 // @desc    Create a new booking
 // @access  Private (User)
@@ -202,7 +226,35 @@ router.get('/worker', verifyToken, async (req, res) => {
             .populate('user', 'name email phone') // Populate user details who booked
             .sort({ date: -1 });
 
-        res.json(bookings);
+        const activeCommitments = await Booking.find({
+            labourer: labourer._id,
+            $or: [
+                { status: 'confirmed', paymentStatus: 'paid' },
+                { status: 'arrived' }
+            ]
+        });
+
+        const filteredBookings = bookings.filter(b => {
+            // Keep if already assigned to this worker or if they already applied
+            if (b.labourer && b.labourer.toString() === labourer._id.toString()) return true;
+            if (b.applicants && b.applicants.includes(labourer._id)) return true;
+
+            // Otherwise check overlap
+            const bStart = new Date(b.date).getTime();
+            const bEnd = bStart + (b.numberOfHours || 2) * 60 * 60 * 1000;
+
+            for (let active of activeCommitments) {
+                if (active._id.toString() === b._id.toString()) continue;
+                const aStart = new Date(active.date).getTime();
+                const aEnd = aStart + (active.numberOfHours || 2) * 60 * 60 * 1000;
+                if (bStart < aEnd && bEnd > aStart) {
+                    return false; // Hide overlapping pending job
+                }
+            }
+            return true;
+        });
+
+        res.json(filteredBookings);
     } catch (err) {
         console.error(err.message);
         res.status(500).send('Server Error');
@@ -274,6 +326,13 @@ router.put('/:id/claim', verifyToken, async (req, res) => {
         }
 
         booking.applicants.push(labourer._id);
+        
+        // Final sanity check for overlapping paid bookings
+        const overlaps = await checkOverlap(labourer._id, booking);
+        if (overlaps) {
+            return res.status(400).json({ msg: 'You have a conflicting paid booking at this time' });
+        }
+
         await booking.save();
 
         // Populate user for the response card
@@ -336,6 +395,11 @@ router.put('/:id/accept-worker', verifyToken, async (req, res) => {
 
         if (!booking.applicants.includes(labourerId)) {
             return res.status(400).json({ msg: 'Worker has not applied for this booking' });
+        }
+
+        const overlaps = await checkOverlap(labourerId, booking);
+        if (overlaps) {
+            return res.status(400).json({ msg: 'This worker has a conflicting paid booking at this time' });
         }
 
         booking.labourer = labourerId;
