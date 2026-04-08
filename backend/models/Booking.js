@@ -74,6 +74,10 @@ const BookingSchema = new mongoose.Schema({
     longitude: {
         type: Number
     },
+    isRated: {
+        type: Boolean,
+        default: false
+    },
     createdAt: {
         type: Date,
         default: Date.now

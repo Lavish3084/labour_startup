@@ -17,7 +17,15 @@ const LabourerSchema = new mongoose.Schema({
     latitude: { type: Number },
     longitude: { type: Number },
     skills: { type: [String], default: [] },
-    experienceYears: { type: Number, required: true }
+    experienceYears: { type: Number, required: true },
+    isOnline: { type: Boolean, default: true },
+    reviews: [{
+        user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+        userName: { type: String },
+        rating: { type: Number, required: true },
+        comment: { type: String, default: '' },
+        date: { type: Date, default: Date.now }
+    }]
 });
 
 module.exports = mongoose.model('Labourer', LabourerSchema);

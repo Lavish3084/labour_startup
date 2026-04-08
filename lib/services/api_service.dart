@@ -382,6 +382,27 @@ class ApiService {
     }
   }
 
+  static Future<bool> rateWorker(String bookingId, double rating, String comment) async {
+    try {
+      final token = await getToken();
+      final response = await http.post(
+        Uri.parse('$baseUrl/bookings/$bookingId/rate'),
+        headers: {
+          'Content-Type': 'application/json',
+          'x-auth-token': token ?? '',
+        },
+        body: jsonEncode({
+          'rating': rating,
+          'comment': comment,
+        }),
+      );
+      return response.statusCode == 200;
+    } catch (e) {
+      print('ApiService rateWorker error: $e');
+      return false;
+    }
+  }
+
   // Data
   static Future<Map<String, dynamic>> getSettings() async {
     try {

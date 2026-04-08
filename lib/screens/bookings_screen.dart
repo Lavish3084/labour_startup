@@ -1022,6 +1022,10 @@ class _BookingsScreenState extends State<BookingsScreen> {
                           Expanded(
                             child: _buildActionButton('PAY FEE ₹${calculatedFee.toInt()}', Colors.green, () => _initiatePayment(booking, calculatedFee.toInt())),
                           ),
+                        if (status == 'completed' && booking['isRated'] != true && booking['labourer'] != null)
+                           Expanded(
+                            child: _buildActionButton('RATE WORKER', Colors.amber.shade700, () => _showRatingDialog(booking)),
+                          ),
                         if (status != 'completed' && booking['isWorkConfirmed'] != true && status != 'pending') ...[
                            const SizedBox(width: 8),
                            Expanded(
@@ -1149,14 +1153,17 @@ class _BookingsScreenState extends State<BookingsScreen> {
                         : 'https://randomuser.me/api/portraits/lego/${(index % 9) + 1}.jpg';
                     final rating = worker['rating']?.toDouble() ?? 0.0;
                     
-                    return Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        border: Border.all(color: Colors.grey.shade200),
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: Row(
-                        children: [
+                    return InkWell(
+                      onTap: () => _showWorkerProfile(worker),
+                      borderRadius: BorderRadius.circular(16),
+                      child: Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          border: Border.all(color: Colors.grey.shade200),
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: Row(
+                          children: [
                           CircleAvatar(
                             radius: 28,
                             backgroundImage: NetworkImage(imageUrl),
@@ -1186,32 +1193,246 @@ class _BookingsScreenState extends State<BookingsScreen> {
                                     ),
                                   ],
                                 ),
-                              ],
-                            ),
+                                  ],
+                                ),
+                              ),
+                              ElevatedButton(
+                                onPressed: () async {
+                                  Navigator.pop(context);
+                                  _acceptWorker(booking['_id'], worker['_id']);
+                                },
+                                style: AppTheme.primaryButton.copyWith(
+                                  padding: WidgetStateProperty.all(const EdgeInsets.symmetric(horizontal: 16, vertical: 8)),
+                                  minimumSize: WidgetStateProperty.all(Size.zero),
+                                ),
+                                child: Text('Accept', style: AppTheme.button.copyWith(fontSize: 12)),
+                              ),
+                            ],
                           ),
-                          ElevatedButton(
-                            onPressed: () async {
-                              Navigator.pop(context);
-                              _acceptWorker(booking['_id'], worker['_id']);
-                            },
-                            style: AppTheme.primaryButton.copyWith(
-                              padding: WidgetStateProperty.all(const EdgeInsets.symmetric(horizontal: 16, vertical: 8)),
-                              minimumSize: WidgetStateProperty.all(Size.zero),
-                            ),
-                            child: Text('Accept', style: AppTheme.button.copyWith(fontSize: 12)),
-                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      );
+    }
+  void _showWorkerProfile(dynamic worker) {
+    final reviews = (worker['reviews'] as List<dynamic>?) ?? [];
+    
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return Container(
+          height: MediaQuery.of(context).size.height * 0.85,
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const SizedBox(height: 12),
+              Center(
+                child: Container(
+                  width: 40, height: 4,
+                  decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(4)),
+                ),
+              ),
+              const SizedBox(height: 24),
+              // Header
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Row(
+                  children: [
+                    CircleAvatar(
+                      radius: 36,
+                      backgroundImage: NetworkImage(worker['imageUrl'] ?? 'https://randomuser.me/api/portraits/lego/1.jpg'),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(worker['name'] ?? 'Worker', style: GoogleFonts.baloo2(fontSize: 24, fontWeight: FontWeight.bold, color: AppTheme.textPrimary)),
+                          Text(worker['category'] ?? '', style: GoogleFonts.inter(fontSize: 14, color: AppTheme.primary, fontWeight: FontWeight.w600)),
                         ],
                       ),
-                    );
-                  },
+                    ),
+                  ],
                 ),
+              ),
+              const SizedBox(height: 24),
+              // Stats
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(color: AppTheme.primaryLight, borderRadius: BorderRadius.circular(16)),
+                        child: Column(
+                          children: [
+                            const Icon(Icons.star_rounded, color: Colors.amber, size: 28),
+                            const SizedBox(height: 8),
+                            Text('${(worker['rating']?.toDouble() ?? 0.0).toStringAsFixed(1)}', style: GoogleFonts.inter(fontSize: 20, fontWeight: FontWeight.bold)),
+                            Text('Rating', style: GoogleFonts.inter(fontSize: 12, color: AppTheme.textSecondary)),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(color: Colors.blue.shade50, borderRadius: BorderRadius.circular(16)),
+                        child: Column(
+                          children: [
+                            Icon(Icons.work_rounded, color: Colors.blue.shade700, size: 28),
+                            const SizedBox(height: 8),
+                            Text('${worker['jobsCompleted'] ?? 0}', style: GoogleFonts.inter(fontSize: 20, fontWeight: FontWeight.bold)),
+                            Text('Jobs Done', style: GoogleFonts.inter(fontSize: 12, color: AppTheme.textSecondary)),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 32),
+              // Reviews
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Text('Customer Reviews (${reviews.length})', style: GoogleFonts.baloo2(fontSize: 20, fontWeight: FontWeight.bold)),
+              ),
+              const SizedBox(height: 16),
+              Expanded(
+                child: reviews.isEmpty 
+                  ? Center(child: Text('No reviews yet', style: GoogleFonts.inter(color: AppTheme.textMuted)))
+                  : ListView.separated(
+                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+                      itemCount: reviews.length,
+                      separatorBuilder: (context, index) => const Divider(height: 32),
+                      itemBuilder: (context, index) {
+                        final rev = reviews[index];
+                        final rDate = rev['date'] != null ? DateTime.parse(rev['date']).toLocal() : DateTime.now();
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(rev['userName'] ?? 'Customer', style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 14)),
+                                Text('${rDate.day}/${rDate.month}/${rDate.year}', style: GoogleFonts.inter(fontSize: 12, color: AppTheme.textMuted)),
+                              ],
+                            ),
+                            const SizedBox(height: 4),
+                            Row(
+                              children: List.generate(5, (i) => Icon(
+                                i < (rev['rating'] ?? 0) ? Icons.star_rounded : Icons.star_border_rounded,
+                                size: 14, color: Colors.amber,
+                              )),
+                            ),
+                            if (rev['comment'] != null && rev['comment'].toString().isNotEmpty) ...[
+                              const SizedBox(height: 8),
+                              Text(rev['comment'], style: GoogleFonts.inter(fontSize: 13, color: AppTheme.textSecondary)),
+                            ]
+                          ],
+                        );
+                      },
+                    ),
               ),
             ],
           ),
         );
-      },
+      }
     );
   }
+
+  void _showRatingDialog(dynamic booking) {
+    int _rating = 5;
+    TextEditingController _commentController = TextEditingController();
+    bool _isSubmitting = false;
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return Dialog(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text('Rate Worker', style: AppTheme.heading3),
+                    const SizedBox(height: 16),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: List.generate(5, (index) {
+                        return IconButton(
+                          icon: Icon(
+                            index < _rating ? Icons.star_rounded : Icons.star_border_rounded,
+                            color: Colors.amber,
+                            size: 40,
+                          ),
+                          onPressed: () => setState(() => _rating = index + 1),
+                        );
+                      }),
+                    ),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: _commentController,
+                      maxLines: 3,
+                      decoration: InputDecoration(
+                        hintText: 'Add a comment (optional)...',
+                        hintStyle: GoogleFonts.inter(color: AppTheme.textMuted, fontSize: 14),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
+                        contentPadding: const EdgeInsets.all(16),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    _isSubmitting
+                        ? const CircularProgressIndicator()
+                        : OutlinedButton(
+                            onPressed: () async {
+                              setState(() => _isSubmitting = true);
+                              final success = await ApiService.rateWorker(booking['_id'], _rating.toDouble(), _commentController.text.trim());
+                              if (context.mounted) {
+                                Navigator.pop(context);
+                                if (success) {
+                                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Thank you for rating!')));
+                                  _refreshBookings();
+                                } else {
+                                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Failed to submit rating')));
+                                }
+                              }
+                            },
+                            style: OutlinedButton.styleFrom(
+                              backgroundColor: AppTheme.primary,
+                              foregroundColor: Colors.white,
+                              minimumSize: const Size(double.infinity, 50),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                            ),
+                            child: Text('Submit Review', style: GoogleFonts.inter(fontWeight: FontWeight.w700)),
+                          ),
+                  ],
+                ),
+              ),
+            );
+          }
+        );
+      }
+    );
+  }
+
 
   Future<void> _acceptWorker(String bookingId, String workerId) async {
     try {

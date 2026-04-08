@@ -286,6 +286,26 @@ router.put('/worker/upi', verifyToken, async (req, res) => {
     }
 });
 
+// @route   PUT /api/profile/worker/status
+// @desc    Toggle online status
+// @access  Private (Worker only)
+router.put('/worker/status', verifyToken, async (req, res) => {
+    const { isOnline } = req.body;
+    try {
+        let labourer = await Labourer.findOne({ user: req.user.id });
+        if (!labourer) {
+            return res.status(404).json({ msg: 'Worker profile not found.' });
+        }
+
+        labourer.isOnline = isOnline;
+        await labourer.save();
+        res.json(labourer);
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Server Error');
+    }
+});
+
 // @route   PUT /api/profile/fcm-token
 // @desc    Update FCM Token
 // @access  Private

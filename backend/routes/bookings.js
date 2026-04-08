@@ -184,7 +184,7 @@ router.get('/user', verifyToken, async (req, res) => {
     try {
         const bookings = await Booking.find({ user: req.user.id })
             .populate('labourer', 'name category imageUrl hourlyRate location') // Populate labourer details
-            .populate('applicants', 'name category imageUrl hourlyRate location rating jobsCompleted') // Populate applicants for customer view
+            .populate('applicants', 'name category imageUrl hourlyRate location rating jobsCompleted reviews') // Populate applicants for customer view
             .sort({ date: -1 });
         res.json(bookings);
     } catch (err) {
@@ -211,18 +211,21 @@ router.get('/worker', verifyToken, async (req, res) => {
         
         const expirationTime = new Date(Date.now() - 3 * 60 * 60 * 1000); // 3 hours ago
 
-        const bookings = await Booking.find({
-            $or: [
-                { labourer: labourer._id },
-                { 
-                    labourer: null, 
-                    category: labourer.category, 
-                    status: 'pending',
-                    declinedBy: { $ne: labourer._id },
-                    date: { $gt: expirationTime }
-                }
-            ]
-        })
+        // If worker is online, get their own bookings PLUS broadcast bookings
+        // If offline, ONLY get their own applied/assigned bookings
+        const queryOr = [{ labourer: labourer._id }];
+        
+        if (labourer.isOnline !== false) {
+            queryOr.push({ 
+                labourer: null, 
+                category: labourer.category, 
+                status: 'pending',
+                declinedBy: { $ne: labourer._id },
+                date: { $gt: expirationTime }
+            });
+        }
+
+        const bookings = await Booking.find({ $or: queryOr })
             .populate('user', 'name email phone') // Populate user details who booked
             .sort({ date: -1 });
 
@@ -633,6 +636,11 @@ router.put('/:id/verify-completion', verifyToken, async (req, res) => {
 
         await booking.save();
 
+        // Increment worker's jobsCompleted
+        if (booking.labourer) {
+            await Labourer.findByIdAndUpdate(booking.labourer, { $inc: { jobsCompleted: 1 } });
+        }
+
         // Notify user
         const user = await User.findById(booking.user);
         if (user && user.fcmToken) {
@@ -640,6 +648,73 @@ router.put('/:id/verify-completion', verifyToken, async (req, res) => {
         }
 
         res.json(booking);
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Server Error');
+    }
+});
+
+// @route   POST /api/bookings/:id/rate
+// @desc    Rate a completed booking and the worker
+// @access  Private
+router.post('/:id/rate', verifyToken, async (req, res) => {
+    const { rating, comment } = req.body;
+
+    if (!rating || rating < 1 || rating > 5) {
+        return res.status(400).json({ msg: 'Please provide a valid rating between 1 and 5' });
+    }
+
+    try {
+        let booking = await Booking.findById(req.params.id);
+        if (!booking) return res.status(404).json({ msg: 'Booking not found' });
+
+        // Ensure user owns booking
+        if (booking.user.toString() !== req.user.id) {
+            return res.status(401).json({ msg: 'Not authorized' });
+        }
+
+        // Must be completed
+        if (booking.status !== 'completed') {
+            return res.status(400).json({ msg: 'Can only rate completed jobs' });
+        }
+
+        // Check if already rated
+        if (booking.isRated) {
+            return res.status(400).json({ msg: 'Already rated this booking' });
+        }
+
+        // Grab worker
+        if (!booking.labourer) {
+            return res.status(400).json({ msg: 'No worker assigned to rate' });
+        }
+
+        let labourer = await Labourer.findById(booking.labourer);
+        if (!labourer) {
+            return res.status(404).json({ msg: 'Worker profile no longer exists' });
+        }
+
+        // Grab user name
+        const user = await User.findById(req.user.id);
+
+        const newReview = {
+            user: req.user.id,
+            userName: user ? user.name : 'Customer',
+            rating: Number(rating),
+            comment: comment || ''
+        };
+
+        labourer.reviews.unshift(newReview); // add to top
+
+        // Recalculate average rating
+        const totalRating = labourer.reviews.reduce((acc, curr) => acc + curr.rating, 0);
+        labourer.rating = totalRating / labourer.reviews.length;
+
+        await labourer.save();
+
+        booking.isRated = true;
+        await booking.save();
+
+        res.json({ msg: 'Review submitted successfully!', booking });
     } catch (err) {
         console.error(err.message);
         res.status(500).send('Server Error');
