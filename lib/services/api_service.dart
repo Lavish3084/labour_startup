@@ -362,6 +362,26 @@ class ApiService {
     }
   }
 
+  static Future<bool> acceptWorker(
+    String bookingId,
+    String workerId,
+  ) async {
+    try {
+      final token = await getToken();
+      final response = await http.put(
+        Uri.parse('$baseUrl/bookings/$bookingId/accept-worker'),
+        headers: {
+          'Content-Type': 'application/json',
+          'x-auth-token': token ?? '',
+        },
+        body: jsonEncode({'labourerId': workerId}),
+      );
+      return response.statusCode == 200;
+    } catch (e) {
+      return false;
+    }
+  }
+
   // Data
   static Future<Map<String, dynamic>> getSettings() async {
     try {

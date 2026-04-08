@@ -58,6 +58,10 @@ const BookingSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Labourer'
     }],
+    applicants: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Labourer'
+    }],
     houseNumber: {
         type: String
     },

@@ -160,6 +160,7 @@ router.get('/user', verifyToken, async (req, res) => {
     try {
         const bookings = await Booking.find({ user: req.user.id })
             .populate('labourer', 'name category imageUrl hourlyRate location') // Populate labourer details
+            .populate('applicants', 'name category imageUrl hourlyRate location rating jobsCompleted') // Populate applicants for customer view
             .sort({ date: -1 });
         res.json(bookings);
     } catch (err) {
@@ -242,7 +243,7 @@ router.put('/:id/decline', verifyToken, async (req, res) => {
 });
 
 // @route   PUT /api/bookings/:id/claim
-// @desc    Worker claims an open job request
+// @desc    Worker applies for an open job request
 // @access  Private (Worker)
 router.put('/:id/claim', verifyToken, async (req, res) => {
     try {
@@ -264,10 +265,15 @@ router.put('/:id/claim', verifyToken, async (req, res) => {
             return res.status(403).json({ msg: 'Category mismatch' });
         }
 
-        booking.labourer = labourer._id;
-        booking.status = 'confirmed'; // Auto confirm when claimed
-        booking.arrivalOTP = generateOTP();
-        booking.completionOTP = generateOTP();
+        if (!booking.applicants) {
+            booking.applicants = [];
+        }
+
+        if (booking.applicants.includes(labourer._id)) {
+            return res.status(400).json({ msg: 'Already applied' });
+        }
+
+        booking.applicants.push(labourer._id);
         await booking.save();
 
         // Populate user for the response card
@@ -281,11 +287,71 @@ router.put('/:id/claim', verifyToken, async (req, res) => {
             const workerUser = await User.findById(req.user.id);
 
             if (userToNotify && userToNotify.fcmToken) {
-                console.log(`Sending confirmation notification to user: ${userToNotify._id}`);
+                console.log(`Sending application notification to user: ${userToNotify._id}`);
                 await sendNotification(
                     userToNotify.fcmToken,
-                    'Booking Confirmed!',
-                    `${workerUser.name} has accepted your request for ${labourer.category}.`,
+                    'New Worker Applied!',
+                    `${workerUser.name} has applied for your ${labourer.category} request.`,
+                    { 
+                        type: 'booking',
+                        bookingId: booking._id.toString(), 
+                        status: 'pending' 
+                    }
+                );
+            }
+        } catch (notifyErr) {
+            console.error("Failed to send application notification:", notifyErr);
+        }
+
+        res.json(booking);
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Server Error');
+    }
+});
+
+// @route   PUT /api/bookings/:id/accept-worker
+// @desc    User accepts a worker from applicants
+// @access  Private
+router.put('/:id/accept-worker', verifyToken, async (req, res) => {
+    try {
+        const { labourerId } = req.body;
+        if (!labourerId) {
+            return res.status(400).json({ msg: 'Labourer ID is required' });
+        }
+
+        let booking = await Booking.findById(req.params.id);
+        if (!booking) {
+            return res.status(404).json({ msg: 'Booking not found' });
+        }
+
+        // Only the user who created the booking can accept a worker
+        if (booking.user.toString() !== req.user.id) {
+            return res.status(401).json({ msg: 'Not authorized' });
+        }
+
+        if (booking.labourer) {
+            return res.status(400).json({ msg: 'Worker already assigned to this booking' });
+        }
+
+        if (!booking.applicants.includes(labourerId)) {
+            return res.status(400).json({ msg: 'Worker has not applied for this booking' });
+        }
+
+        booking.labourer = labourerId;
+        booking.status = 'confirmed';
+        booking.arrivalOTP = generateOTP();
+        booking.completionOTP = generateOTP();
+        await booking.save();
+
+        // Notify the accepted worker
+        try {
+            const acceptedWorker = await Labourer.findById(labourerId).populate('user');
+            if (acceptedWorker && acceptedWorker.user && acceptedWorker.user.fcmToken) {
+                await sendNotification(
+                    acceptedWorker.user.fcmToken,
+                    'Application Accepted!',
+                    `Your application for ${booking.category} has been accepted. Job is confirmed!`,
                     { 
                         type: 'booking',
                         bookingId: booking._id.toString(), 
@@ -294,8 +360,7 @@ router.put('/:id/claim', verifyToken, async (req, res) => {
                 );
             }
         } catch (notifyErr) {
-            console.error("Failed to send confirmation notification:", notifyErr);
-            // Don't fail the request if notification fails
+            console.error("Failed to send acceptance notification:", notifyErr);
         }
 
         res.json(booking);
