@@ -49,22 +49,16 @@ class LabourerCard extends StatelessWidget {
                   borderRadius: const BorderRadius.vertical(
                     top: Radius.circular(16),
                   ),
-                  child: Image.network(
-                    labourer.imageUrl,
-                    height: isHorizontal ? 120 : 220,
-                    width: double.infinity,
-                    fit: BoxFit.cover,
-                    errorBuilder:
-                        (context, error, stackTrace) => Container(
+                  child: (labourer.imageUrl.isNotEmpty && labourer.imageUrl.startsWith('http'))
+                      ? Image.network(
+                          labourer.imageUrl,
                           height: isHorizontal ? 120 : 220,
-                          color: Colors.grey[200],
-                          child: Icon(
-                            Icons.person,
-                            size: 50,
-                            color: Colors.grey[400],
-                          ),
-                        ),
-                  ),
+                          width: double.infinity,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) =>
+                              _buildPlaceholder(isHorizontal),
+                        )
+                      : _buildPlaceholder(isHorizontal),
                 ),
                 Positioned(
                   top: 8,
@@ -170,6 +164,20 @@ class LabourerCard extends StatelessWidget {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPlaceholder(bool isHorizontal) {
+    return Container(
+      height: isHorizontal ? 120 : 220,
+      color: Colors.grey[200],
+      child: Center(
+        child: Icon(
+          Icons.person,
+          size: isHorizontal ? 40 : 80,
+          color: Colors.grey[400],
         ),
       ),
     );

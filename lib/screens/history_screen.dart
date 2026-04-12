@@ -297,7 +297,12 @@ class _HistoryScreenState extends State<HistoryScreen> {
                     Row(
                       children: [
                         Expanded(child: _buildDetailRow('BOOKING ID', '#${(bookingId as String).substring(bookingId.length - 6).toUpperCase()}')),
-                        Expanded(child: _buildDetailRow('WORKER', booking['labourer']?['name'] ?? 'Not assigned')),
+                        Expanded(
+                          child: InkWell(
+                            onTap: booking['labourer'] != null ? () => _showWorkerProfile(booking['labourer']) : null,
+                            child: _buildDetailRow('WORKER', booking['labourer']?['name'] ?? 'Not assigned'),
+                          ),
+                        ),
                       ],
                     ),
                     const SizedBox(height: 16),
@@ -323,6 +328,150 @@ class _HistoryScreenState extends State<HistoryScreen> {
           ],
         ),
       ),
+    );
+  }
+
+  void _showWorkerProfile(dynamic worker) {
+    final reviews = (worker['reviews'] as List<dynamic>?) ?? [];
+    
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return Container(
+          height: MediaQuery.of(context).size.height * 0.85,
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const SizedBox(height: 12),
+              Center(
+                child: Container(
+                  width: 40, height: 4,
+                  decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(4)),
+                ),
+              ),
+              const SizedBox(height: 24),
+              // Header
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Row(
+                  children: [
+                    CircleAvatar(
+                      radius: 36,
+                      backgroundImage: NetworkImage(
+                        (worker['imageUrl'] != null && worker['imageUrl'].toString().isNotEmpty)
+                          ? worker['imageUrl']
+                          : 'https://randomuser.me/api/portraits/lego/1.jpg'
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(worker['name'] ?? 'Worker', style: GoogleFonts.baloo2(fontSize: 24, fontWeight: FontWeight.bold, color: AppTheme.textPrimary)),
+                          Text(worker['category'] ?? '', style: GoogleFonts.inter(fontSize: 14, color: AppTheme.primary, fontWeight: FontWeight.w600)),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
+              // Stats
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(color: AppTheme.primaryLight, borderRadius: BorderRadius.circular(16)),
+                        child: Column(
+                          children: [
+                            const Icon(Icons.star_rounded, color: Colors.amber, size: 28),
+                            const SizedBox(height: 8),
+                            Text(
+                              (worker['rating']?.toDouble() ?? 0.0) > 0 
+                                  ? (worker['rating']?.toDouble() ?? 0.0).toStringAsFixed(1) 
+                                  : 'New',
+                              style: GoogleFonts.inter(fontSize: 20, fontWeight: FontWeight.bold),
+                            ),
+                            Text('Rating', style: GoogleFonts.inter(fontSize: 12, color: AppTheme.textSecondary)),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(color: Colors.blue.shade50, borderRadius: BorderRadius.circular(16)),
+                        child: Column(
+                          children: [
+                            Icon(Icons.work_rounded, color: Colors.blue.shade700, size: 28),
+                            const SizedBox(height: 8),
+                            Text('${worker['jobsCompleted'] ?? 0}', style: GoogleFonts.inter(fontSize: 20, fontWeight: FontWeight.bold)),
+                            Text('Jobs Done', style: GoogleFonts.inter(fontSize: 12, color: AppTheme.textSecondary)),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 32),
+              // Reviews
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Text('Customer Reviews (${reviews.length})', style: GoogleFonts.baloo2(fontSize: 20, fontWeight: FontWeight.bold)),
+              ),
+              const SizedBox(height: 16),
+              Expanded(
+                child: reviews.isEmpty 
+                  ? Center(child: Text('No reviews yet', style: GoogleFonts.inter(color: AppTheme.textMuted)))
+                  : ListView.separated(
+                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+                      itemCount: reviews.length,
+                      separatorBuilder: (context, index) => const Divider(height: 32),
+                      itemBuilder: (context, index) {
+                        final rev = reviews[index];
+                        final rDate = rev['date'] != null ? DateTime.parse(rev['date']).toLocal() : DateTime.now();
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(rev['userName'] ?? 'Customer', style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 14)),
+                                Text('${rDate.day}/${rDate.month}/${rDate.year}', style: GoogleFonts.inter(fontSize: 12, color: AppTheme.textMuted)),
+                              ],
+                            ),
+                            const SizedBox(height: 4),
+                            Row(
+                              children: List.generate(5, (i) => Icon(
+                                i < (rev['rating'] ?? 0) ? Icons.star_rounded : Icons.star_border_rounded,
+                                size: 14, color: Colors.amber,
+                              )),
+                            ),
+                            if (rev['comment'] != null && rev['comment'].toString().isNotEmpty) ...[
+                              const SizedBox(height: 8),
+                              Text(rev['comment'], style: GoogleFonts.inter(fontSize: 13, color: AppTheme.textSecondary)),
+                            ]
+                          ],
+                        );
+                      },
+                    ),
+              ),
+            ],
+          ),
+        );
+      }
     );
   }
 

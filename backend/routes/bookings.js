@@ -183,7 +183,7 @@ router.post('/', verifyToken, async (req, res) => {
 router.get('/user', verifyToken, async (req, res) => {
     try {
         const bookings = await Booking.find({ user: req.user.id })
-            .populate('labourer', 'name category imageUrl hourlyRate location') // Populate labourer details
+            .populate('labourer', 'name category imageUrl hourlyRate location rating jobsCompleted reviews') // Populate full labourer details
             .populate('applicants', 'name category imageUrl hourlyRate location rating jobsCompleted reviews') // Populate applicants for customer view
             .sort({ date: -1 });
         res.json(bookings);

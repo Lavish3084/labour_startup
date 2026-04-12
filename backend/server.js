@@ -6,7 +6,7 @@ const admin = require('firebase-admin');
 
 dotenv.config();
 
-// Initialize Firebase Admi
+// Initialize Firebase Adminn
 if (!admin.apps.length) {
     try {
         let serviceAccount;

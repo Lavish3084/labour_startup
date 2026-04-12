@@ -748,47 +748,54 @@ class _BookingsScreenState extends State<BookingsScreen> {
                     padding: const EdgeInsets.all(20),
                     child: Row(
                       children: [
-                        Container(
-                          width: 60,
-                          height: 60,
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(18),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.1),
-                                blurRadius: 10,
-                                offset: const Offset(0, 4),
+                        GestureDetector(
+                          onTap: labourer != null ? () => _showWorkerProfile(labourer) : null,
+                          child: Container(
+                            width: 60,
+                            height: 60,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(18),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.1),
+                                  blurRadius: 10,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
+                              image: DecorationImage(
+                                image: NetworkImage(imageUrl),
+                                fit: BoxFit.cover,
                               ),
-                            ],
-                            image: DecorationImage(
-                              image: NetworkImage(imageUrl),
-                              fit: BoxFit.cover,
                             ),
                           ),
                         ),
                   const SizedBox(width: 14),
                   Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          name,
-                          style: GoogleFonts.baloo2(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w800,
-                            color: AppTheme.textPrimary,
-                            height: 1.2,
+                    child: GestureDetector(
+                      onTap: labourer != null ? () => _showWorkerProfile(labourer) : null,
+                      behavior: HitTestBehavior.opaque,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            name,
+                            style: GoogleFonts.baloo2(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w800,
+                              color: AppTheme.textPrimary,
+                              height: 1.2,
+                            ),
                           ),
-                        ),
-                        Text(
-                          category,
-                          style: GoogleFonts.inter(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            color: AppTheme.textMuted,
+                          Text(
+                            category,
+                            style: GoogleFonts.inter(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: AppTheme.textMuted,
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                   Container(
@@ -1252,7 +1259,11 @@ class _BookingsScreenState extends State<BookingsScreen> {
                   children: [
                     CircleAvatar(
                       radius: 36,
-                      backgroundImage: NetworkImage(worker['imageUrl'] ?? 'https://randomuser.me/api/portraits/lego/1.jpg'),
+                      backgroundImage: NetworkImage(
+                        (worker['imageUrl'] != null && worker['imageUrl'].toString().isNotEmpty)
+                          ? worker['imageUrl']
+                          : 'https://randomuser.me/api/portraits/lego/1.jpg'
+                      ),
                     ),
                     const SizedBox(width: 16),
                     Expanded(
@@ -1281,7 +1292,12 @@ class _BookingsScreenState extends State<BookingsScreen> {
                           children: [
                             const Icon(Icons.star_rounded, color: Colors.amber, size: 28),
                             const SizedBox(height: 8),
-                            Text('${(worker['rating']?.toDouble() ?? 0.0).toStringAsFixed(1)}', style: GoogleFonts.inter(fontSize: 20, fontWeight: FontWeight.bold)),
+                            Text(
+                              (worker['rating']?.toDouble() ?? 0.0) > 0 
+                                  ? (worker['rating']?.toDouble() ?? 0.0).toStringAsFixed(1) 
+                                  : 'New',
+                              style: GoogleFonts.inter(fontSize: 20, fontWeight: FontWeight.bold),
+                            ),
                             Text('Rating', style: GoogleFonts.inter(fontSize: 12, color: AppTheme.textSecondary)),
                           ],
                         ),

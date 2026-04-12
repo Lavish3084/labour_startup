@@ -389,21 +389,13 @@ class _LabourerDetailScreenState extends State<LabourerDetailScreen> {
                 pinned: true,
                 backgroundColor: AppTheme.primary,
                 flexibleSpace: FlexibleSpaceBar(
-                  background: Image.network(
-                    widget.labourer.imageUrl,
-                    fit: BoxFit.cover,
-                    errorBuilder:
-                        (context, error, stackTrace) => Container(
-                          color: Colors.grey[300],
-                          child: const Center(
-                            child: Icon(
-                              Icons.person,
-                              size: 100,
-                              color: Colors.grey,
-                            ),
-                          ),
-                        ),
-                  ),
+                  background: (widget.labourer.imageUrl.isNotEmpty && widget.labourer.imageUrl.startsWith('http'))
+                    ? Image.network(
+                        widget.labourer.imageUrl,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) => _buildPlaceholder(),
+                      )
+                    : _buildPlaceholder(),
                 ),
                 leading: IconButton(
                   icon: Container(
@@ -734,6 +726,19 @@ class _LabourerDetailScreenState extends State<LabourerDetailScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildPlaceholder() {
+    return Container(
+      color: Colors.grey[300],
+      child: const Center(
+        child: Icon(
+          Icons.person,
+          size: 100,
+          color: Colors.grey,
+        ),
       ),
     );
   }

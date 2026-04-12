@@ -24,8 +24,8 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
   final TextEditingController _notesController = TextEditingController();
   final _houseController = TextEditingController();
   final _landmarkController = TextEditingController();
-  DateTime _selectedDate = DateTime.now();
-  TimeOfDay _selectedTime = TimeOfDay.now();
+  DateTime _selectedDate = DateTime.now().add(const Duration(minutes: 65));
+  late TimeOfDay _selectedTime = TimeOfDay.fromDateTime(_selectedDate);
   String? _selectedAddress;
   double? _latitude;
   double? _longitude;
@@ -779,11 +779,11 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
         _selectedTime.minute,
       );
 
-      // Validation: Must be at least 1 hour in advance
-      if (scheduledDateTime.isBefore(DateTime.now().add(const Duration(hours: 1)))) {
+      // Validation: Must be at least 1 hour and 5 minutes in advance
+      if (scheduledDateTime.isBefore(DateTime.now().add(const Duration(minutes: 65)))) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Booking must be scheduled at least 1 hour in advance.'),
+            content: Text('Booking must be scheduled at least 1 hour and 5 minutes in advance.'),
             backgroundColor: AppTheme.error,
           ),
         );
@@ -1790,7 +1790,7 @@ class _TimePickerSheetState extends State<_TimePickerSheet> {
 
   void _validate(DateTime dt) {
     final now = DateTime.now();
-    final minTime = now.add(const Duration(hours: 1));
+    final minTime = now.add(const Duration(minutes: 65));
     
     if (dt.isBefore(minTime)) {
       final hour = minTime.hour == 0 ? 12 : (minTime.hour > 12 ? minTime.hour - 12 : minTime.hour);
@@ -1841,7 +1841,7 @@ class _TimePickerSheetState extends State<_TimePickerSheet> {
             ),
             const SizedBox(height: 8),
             Text(
-              'Minimum 1 hour notice required',
+              'Minimum 1 hour 5 mins notice required',
               style: AppTheme.bodySmall.copyWith(color: AppTheme.textMuted),
             ),
             const SizedBox(height: 32),

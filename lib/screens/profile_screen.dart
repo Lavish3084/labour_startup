@@ -646,6 +646,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> _launchURL(String urlString) async {
+    if (urlString.isEmpty) return;
     final Uri url = Uri.parse(urlString);
     try {
       if (await url_launcher.canLaunchUrl(url)) {
