@@ -82,7 +82,7 @@ mongoose.connect(process.env.MONGO_URI)
     .catch(err => console.log(err));
 
 app.get('/', (req, res) => {
-    res.send('Labour Market Backend is running');
+    res.send('Labour Market Backending is running');
 });
 
 app.listen(PORT, () => {
