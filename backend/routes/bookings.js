@@ -192,46 +192,9 @@ router.get('/user', verifyToken, async (req, res) => {
         res.status(500).send('Server Error');
     }
 });
-// @route   GET /api/bookings/:id
-// @desc    Get a single booking by ID
-// @access  Private
-router.get('/:id', verifyToken, async (req, res) => {
-    try {
-        const booking = await Booking.findById(req.params.id)
-            .populate('labourer', 'name category imageUrl hourlyRate location rating jobsCompleted reviews')
-            .populate('applicants', 'name category imageUrl hourlyRate location rating jobsCompleted reviews');
-        
-        if (!booking) {
-            return res.status(404).json({ msg: 'Booking not found' });
-        }
-
-        // Check if user has access to this booking
-        const isOwner = booking.user.toString() === req.user.id;
-        
-        // If it's a worker, they should only see it if they are the assigned labourer 
-        // OR if it's a broadcast unassigned job
-        const labourer = await Labourer.findOne({ user: req.user.id });
-        const isLabourer = labourer && (
-            (booking.labourer && booking.labourer.toString() === labourer._id.toString()) ||
-            (!booking.labourer && booking.status === 'pending' && booking.category === labourer.category)
-        );
-
-        if (!isOwner && !isLabourer) {
-             return res.status(401).json({ msg: 'Unauthorized to view this booking' });
-        }
-
-        res.json(booking);
-    } catch (err) {
-        console.error(err.message);
-        if (err.kind === 'ObjectId') {
-            return res.status(404).json({ msg: 'Booking not found' });
-        }
-        res.status(500).send('Server Error');
-    }
-});
 
 // @route   GET /api/bookings/worker
-// @desc    Get all bookings received by current worker
+// @desc    Get all bookings relevant to the logged-in worker
 // @access  Private (Worker)
 router.get('/worker', verifyToken, async (req, res) => {
     try {
@@ -300,6 +263,45 @@ router.get('/worker', verifyToken, async (req, res) => {
         res.status(500).send('Server Error');
     }
 });
+
+// @route   GET /api/bookings/:id
+// @desc    Get a single booking by ID
+// @access  Private
+router.get('/:id', verifyToken, async (req, res) => {
+    try {
+        const booking = await Booking.findById(req.params.id)
+            .populate('labourer', 'name category imageUrl hourlyRate location rating jobsCompleted reviews')
+            .populate('applicants', 'name category imageUrl hourlyRate location rating jobsCompleted reviews');
+        
+        if (!booking) {
+            return res.status(404).json({ msg: 'Booking not found' });
+        }
+
+        // Check if user has access to this booking
+        const isOwner = booking.user.toString() === req.user.id;
+        
+        // If it's a worker, they should only see it if they are the assigned labourer 
+        // OR if it's a broadcast unassigned job
+        const labourer = await Labourer.findOne({ user: req.user.id });
+        const isLabourer = labourer && (
+            (booking.labourer && booking.labourer.toString() === labourer._id.toString()) ||
+            (!booking.labourer && booking.status === 'pending' && booking.category === labourer.category)
+        );
+
+        if (!isOwner && !isLabourer) {
+             return res.status(401).json({ msg: 'Unauthorized to view this booking' });
+        }
+
+        res.json(booking);
+    } catch (err) {
+        console.error(err.message);
+        if (err.kind === 'ObjectId') {
+            return res.status(404).json({ msg: 'Booking not found' });
+        }
+        res.status(500).send('Server Error');
+    }
+});
+
 
 // @route   PUT /api/bookings/:id/decline
 // @desc    Worker declines an open job request
