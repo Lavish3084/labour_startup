@@ -311,10 +311,10 @@ class ApiService {
         }),
       );
 
-      if (response.statusCode != 200) {
-        return {'success': false, 'message': 'Something went wrong'};
+      if (response.statusCode == 200) {
+        return {'success': true, 'data': jsonDecode(response.body)};
       }
-      return {'success': true};
+      return {'success': false, 'message': 'Something went wrong'};
     } catch (e) {
       return {'success': false, 'message': ErrorHandler.getErrorMessage(e)};
     }
@@ -335,6 +335,26 @@ class ApiService {
         throw Exception('Unauthorized');
       } else {
         throw Exception('Data error');
+      }
+    } catch (e) {
+      throw Exception(ErrorHandler.getErrorMessage(e));
+    }
+  }
+
+  static Future<Map<String, dynamic>> getBooking(String bookingId) async {
+    try {
+      final token = await getToken();
+      final response = await http.get(
+        Uri.parse('$baseUrl/bookings/$bookingId'),
+        headers: {'x-auth-token': token ?? ''},
+      );
+
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      } else if (response.statusCode == 404) {
+        throw Exception('Booking not found');
+      } else {
+        throw Exception('Failed to fetch booking: ${response.statusCode}');
       }
     } catch (e) {
       throw Exception(ErrorHandler.getErrorMessage(e));

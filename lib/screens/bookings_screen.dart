@@ -1043,7 +1043,26 @@ class _BookingsScreenState extends State<BookingsScreen> {
                     ),
                     if (status == 'pending') ...[
                       const SizedBox(height: 12),
-                      _buildApplicantsSection(booking),
+                      Column(
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const SizedBox(
+                                width: 16, height: 16, 
+                                child: CircularProgressIndicator(strokeWidth: 2, color: AppTheme.primary)
+                              ),
+                              const SizedBox(width: 12),
+                              Text(
+                                'Searching for workers...',
+                                style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.textMuted),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+                          _buildActionButton('WITHDRAW REQUEST', AppTheme.error, () => _handleCancelWithdraw(booking), isOutlined: true),
+                        ],
+                      ),
                     ],
                   ],
                 ),
@@ -1069,164 +1088,6 @@ class _BookingsScreenState extends State<BookingsScreen> {
     );
   }
 
-  Widget _buildApplicantsSection(dynamic booking) {
-    final applicants = (booking['applicants'] as List<dynamic>?) ?? [];
-    
-    if (applicants.isEmpty) {
-      return Column(
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const SizedBox(
-                width: 16, height: 16, 
-                child: CircularProgressIndicator(strokeWidth: 2, color: AppTheme.primary)
-              ),
-              const SizedBox(width: 12),
-              Text(
-                'Searching for workers...',
-                style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.textMuted),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          _buildActionButton('WITHDRAW REQUEST', AppTheme.error, () => _handleCancelWithdraw(booking), isOutlined: true),
-        ],
-      );
-    }
-    
-    return Row(
-      children: [
-        Expanded(
-          child: _buildActionButton(
-            'VIEW APPLICANTS (${applicants.length})', 
-            AppTheme.primary, 
-            () => _showApplicantsBottomSheet(booking)
-          ),
-        ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: _buildActionButton('WITHDRAW', AppTheme.error, () => _handleCancelWithdraw(booking), isOutlined: true),
-        ),
-      ],
-    );
-  }
-
-  void _showApplicantsBottomSheet(dynamic booking) {
-    final applicants = (booking['applicants'] as List<dynamic>?) ?? [];
-    
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) {
-        return Container(
-          height: MediaQuery.of(context).size.height * 0.7,
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const SizedBox(height: 12),
-              Center(
-                child: Container(
-                  width: 40, height: 4,
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade300,
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: Text(
-                  'Workers Available',
-                  style: GoogleFonts.baloo2(fontSize: 22, fontWeight: FontWeight.w800, color: AppTheme.textPrimary),
-                ),
-              ),
-              const SizedBox(height: 8),
-              Expanded(
-                child: ListView.separated(
-                  padding: const EdgeInsets.all(24),
-                  itemCount: applicants.length,
-                  separatorBuilder: (context, index) => const SizedBox(height: 16),
-                  itemBuilder: (context, index) {
-                    final worker = applicants[index];
-                    final imageUrl = (worker['imageUrl'] != null && worker['imageUrl'].toString().isNotEmpty) 
-                        ? worker['imageUrl'] 
-                        : 'https://randomuser.me/api/portraits/lego/${(index % 9) + 1}.jpg';
-                    final rating = worker['rating']?.toDouble() ?? 0.0;
-                    
-                    return InkWell(
-                      onTap: () => _showWorkerProfile(worker),
-                      borderRadius: BorderRadius.circular(16),
-                      child: Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          border: Border.all(color: Colors.grey.shade200),
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        child: Row(
-                          children: [
-                          CircleAvatar(
-                            radius: 28,
-                            backgroundImage: NetworkImage(imageUrl),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  worker['name'] ?? 'Worker',
-                                  style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.bold),
-                                ),
-                                const SizedBox(height: 4),
-                                Row(
-                                  children: [
-                                    const Icon(Icons.star_rounded, size: 14, color: Colors.amber),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      rating > 0 ? rating.toStringAsFixed(1) : 'New',
-                                      style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.textSecondary),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Text(
-                                      '• ${worker['jobsCompleted'] ?? 0} jobs',
-                                      style: GoogleFonts.inter(fontSize: 12, color: AppTheme.textMuted),
-                                    ),
-                                  ],
-                                ),
-                                  ],
-                                ),
-                              ),
-                              ElevatedButton(
-                                onPressed: () async {
-                                  Navigator.pop(context);
-                                  _acceptWorker(booking['_id'], worker['_id']);
-                                },
-                                style: AppTheme.primaryButton.copyWith(
-                                  padding: WidgetStateProperty.all(const EdgeInsets.symmetric(horizontal: 16, vertical: 8)),
-                                  minimumSize: WidgetStateProperty.all(Size.zero),
-                                ),
-                                child: Text('Accept', style: AppTheme.button.copyWith(fontSize: 12)),
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-              ],
-            ),
-          );
-        },
-      );
-    }
   void _showWorkerProfile(dynamic worker) {
     final reviews = (worker['reviews'] as List<dynamic>?) ?? [];
     
@@ -1450,31 +1311,6 @@ class _BookingsScreenState extends State<BookingsScreen> {
   }
 
 
-  Future<void> _acceptWorker(String bookingId, String workerId) async {
-    try {
-      final success = await ApiService.acceptWorker(bookingId, workerId);
-      if (success) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Worker accepted successfully!')),
-          );
-          _refreshBookings();
-        }
-      } else {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Failed to accept worker')),
-          );
-        }
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(ErrorHandler.getErrorMessage(e))),
-        );
-      }
-    }
-  }
 
   Widget _buildDetailRow(String label, String value) {
     return Column(

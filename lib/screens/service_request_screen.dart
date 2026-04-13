@@ -10,6 +10,7 @@ import 'location_search_screen.dart';
 import 'package:provider/provider.dart';
 import '../providers/location_provider.dart';
 import '../providers/app_state_provider.dart';
+import 'searching_worker_screen.dart';
 
 class ServiceRequestScreen extends StatefulWidget {
   final ServiceCategory category;
@@ -106,13 +107,16 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder:
-          (context) => StatefulBuilder(
-            builder: (context, setSheetState) {
-              return Container(
-                padding: EdgeInsets.only(
-                  bottom: MediaQuery.of(context).viewInsets.bottom,
-                ),
+      builder: (context) {
+        String? sheetError;
+        return StatefulBuilder(
+          builder: (context, setSheetState) {
+            bool isLoading = false;
+
+            return Container(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(context).viewInsets.bottom,
+              ),
                 decoration: const BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.only(
@@ -193,6 +197,37 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
                         padding: EdgeInsets.symmetric(vertical: 20),
                         child: Divider(),
                       ),
+
+                      if (sheetError != null)
+                        AnimatedOpacity(
+                          opacity: sheetError != null ? 1.0 : 0.0,
+                          duration: const Duration(milliseconds: 200),
+                          child: Container(
+                            margin: const EdgeInsets.only(bottom: 24),
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                            decoration: BoxDecoration(
+                              color: AppTheme.error.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: AppTheme.error.withValues(alpha: 0.2)),
+                            ),
+                            child: Row(
+                              children: [
+                                const Icon(Icons.error_outline_rounded, size: 20, color: AppTheme.error),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Text(
+                                    sheetError!,
+                                    style: GoogleFonts.inter(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w700,
+                                      color: AppTheme.error,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
 
                       Text(
                         'Where should we arrive?',
@@ -457,7 +492,35 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
                         ),
                       ),
 
-                      const SizedBox(height: 32),
+                      const SizedBox(height: 16),
+
+                      // Error Message if any
+                      if (sheetError != null)
+                        Container(
+                          margin: const EdgeInsets.only(bottom: 24),
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                          decoration: BoxDecoration(
+                            color: AppTheme.error.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: AppTheme.error.withValues(alpha: 0.2)),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.error_outline_rounded, size: 20, color: AppTheme.error),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Text(
+                                  sheetError!,
+                                  style: GoogleFonts.inter(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                    color: AppTheme.error,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
 
                       // Final Receipt & Button
                       Container(
@@ -500,7 +563,11 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
                                 onPressed:
                                     _isLoading
                                         ? null
-                                        : () => _submitRequest(setSheetState),
+                                        : () => _submitRequest(setSheetState, (error) {
+                                            setSheetState(() {
+                                              sheetError = error;
+                                            });
+                                          }),
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: AppTheme.saffron,
                                   foregroundColor: Colors.white,
@@ -544,7 +611,8 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
                 ),
               );
             },
-          ),
+          );
+        },
     );
   }
 
@@ -623,10 +691,11 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
     }
   }
 
-  Future<void> _submitRequest([StateSetter? setSheetState]) async {
+  Future<void> _submitRequest([StateSetter? setSheetState, Function(String?)? onError]) async {
     if (setSheetState != null) {
       setSheetState(() {
         _hasAttemptedSubmit = true;
+        if (onError != null) onError(null); // Clear previous errors
       });
     } else {
       setState(() {
@@ -635,9 +704,13 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
     }
 
     if (_selectedAddress == null) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Please select an address')));
+      if (onError != null) {
+        onError('Please select an address');
+      } else {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Please select an address')));
+      }
       return;
     }
 
@@ -779,27 +852,34 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
         _selectedTime.minute,
       );
 
-      // Validation: Must be at least 1 hour and 5 minutes in advance
-      if (scheduledDateTime.isBefore(DateTime.now().add(const Duration(minutes: 65)))) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Booking must be scheduled at least 1 hour and 5 minutes in advance.'),
-            backgroundColor: AppTheme.error,
-          ),
-        );
+      // Validation: Must be at least 1 hour in advance
+      if (scheduledDateTime.isBefore(DateTime.now().add(const Duration(minutes: 60)))) {
+        final errorMsg = 'Booking must be scheduled at least 1 hour in advance.';
+        if (setSheetState != null) setSheetState(() => _isLoading = false);
+        setState(() => _isLoading = false);
+
+        if (onError != null) {
+          onError(errorMsg);
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(errorMsg),
+              backgroundColor: AppTheme.error,
+            ),
+          );
+        }
         return;
       }
 
       final result = await ApiService.createBooking(
-        labourerId: null, // Broadcast request
         category: widget.category.name,
-        date: scheduledDateTime.toUtc(),
-        bookingMode: _selectedBookingMode,
-        numberOfHours: _selectedBookingMode == 'Hourly' ? _numberOfHours : null,
+        date: scheduledDateTime,
         notes: _notesController.text,
-        address: _selectedAddress,
+        address: _selectedAddress!,
         houseNumber: _houseController.text,
         landmark: _landmarkController.text,
+        bookingMode: _selectedBookingMode,
+        numberOfHours: _numberOfHours,
         latitude: _latitude,
         longitude: _longitude,
         amount: _calculateTotalPrice(),
@@ -848,37 +928,49 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
             }
           }
 
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Service request sent to all nearby workers!'),
-              backgroundColor: AppTheme.success,
-              behavior: SnackBarBehavior.floating,
+          // Navigate to Searching Screen
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => SearchingWorkerScreen(
+                category: widget.category,
+                address: _selectedAddress ?? 'Unknown Location',
+                scheduledTime: scheduledDateTime,
+                bookingData: result['data'],
+              ),
             ),
           );
-
-          // Return to main screen and switch to bookings tab
-          final appState = Provider.of<AppStateProvider>(context, listen: false);
-          appState.setTab(1); // Index 1 is Bookings
-          Navigator.of(context).popUntil((route) => route.isFirst);
+        } else {
+          final errorMsg = result['message'] ?? 'Something went wrong';
+          if (onError != null) {
+            onError(errorMsg);
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(errorMsg),
+                backgroundColor: AppTheme.error,
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
+          }
+        }
+      }
+    } catch (e) {
+      if (!mounted) return;
+      debugPrint(ErrorHandler.getErrorMessage(e, action: 'Location fetch failed'));
+      final errorMsg = ErrorHandler.getErrorMessage(e);
+      if (mounted) {
+        if (onError != null) {
+          onError(errorMsg);
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(result['message'] ?? 'Something went wrong'),
-              backgroundColor: Colors.red.shade800,
+              content: Text(errorMsg),
+              backgroundColor: AppTheme.error,
               behavior: SnackBarBehavior.floating,
             ),
           );
         }
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(ErrorHandler.getErrorMessage(e)),
-            backgroundColor: Colors.red.shade800,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
       }
     } finally {
       if (mounted) {
@@ -1790,7 +1882,7 @@ class _TimePickerSheetState extends State<_TimePickerSheet> {
 
   void _validate(DateTime dt) {
     final now = DateTime.now();
-    final minTime = now.add(const Duration(minutes: 65));
+    final minTime = now.add(const Duration(minutes: 60));
     
     if (dt.isBefore(minTime)) {
       final hour = minTime.hour == 0 ? 12 : (minTime.hour > 12 ? minTime.hour - 12 : minTime.hour);
@@ -1841,7 +1933,7 @@ class _TimePickerSheetState extends State<_TimePickerSheet> {
             ),
             const SizedBox(height: 8),
             Text(
-              'Minimum 1 hour 5 mins notice required',
+              'Minimum 1 hour notice required',
               style: AppTheme.bodySmall.copyWith(color: AppTheme.textMuted),
             ),
             const SizedBox(height: 32),

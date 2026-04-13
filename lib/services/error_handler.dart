@@ -20,7 +20,10 @@ class ErrorHandler {
         error.toString().contains('Internet error')) {
       message = 'Internet error';
     } else {
-      message = 'Something went wrong';
+      message = error.toString().replaceAll('Exception: ', '');
+      if (message.isEmpty || message == 'null') {
+        message = 'Something went wrong';
+      }
     }
 
     if (action != null && action.isNotEmpty) {

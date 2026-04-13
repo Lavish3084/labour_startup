@@ -10,7 +10,8 @@ import '../providers/app_state_provider.dart';
 import '../utils/app_theme.dart';
 
 class MainScreen extends StatefulWidget {
-  const MainScreen({super.key});
+  final int? initialIndex;
+  const MainScreen({super.key, this.initialIndex});
 
   @override
   State<MainScreen> createState() => _MainScreenState();
@@ -29,6 +30,11 @@ class _MainScreenState extends State<MainScreen>
   void initState() {
     super.initState();
     final appState = Provider.of<AppStateProvider>(context, listen: false);
+    
+    if (widget.initialIndex != null) {
+      appState.setTab(widget.initialIndex!);
+    }
+    
     _lastTab = appState.selectedTab;
     _pageController = PageController(initialPage: _lastTab);
     _displayPage = ValueNotifier<double>(_lastTab.toDouble());
@@ -88,8 +94,13 @@ class _MainScreenState extends State<MainScreen>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      extendBody: true,
+    return GestureDetector(
+      onTap: () {
+        FocusManager.instance.primaryFocus?.unfocus();
+      },
+      behavior: HitTestBehavior.opaque,
+      child: Scaffold(
+        extendBody: true,
       body: PageView(
         controller: _pageController,
         onPageChanged: (index) {
@@ -332,6 +343,7 @@ class _MainScreenState extends State<MainScreen>
           );
         },
       ),
+    ),
     );
   }
 

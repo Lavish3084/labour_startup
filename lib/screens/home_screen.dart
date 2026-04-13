@@ -151,37 +151,42 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppTheme.scaffoldBg,
-      body: RefreshIndicator(
-        onRefresh: () async {
-          setState(() => _isRefreshing = true);
-          final appState = Provider.of<AppStateProvider>(context, listen: false);
-          await appState.fetchCategories();
-          if (mounted) setState(() => _isRefreshing = false);
-        },
-        child: SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildModernHero(),
-              _buildSearchSection(),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(24, 4, 24, 0),
-                child: Text(
-                  'Services we offer',
-                  style: GoogleFonts.baloo2(
-                    fontSize: 22,
-                    fontWeight: FontWeight.w800,
-                    color: AppTheme.textPrimary,
-                    letterSpacing: -0.5,
+    return GestureDetector(
+      onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
+      behavior: HitTestBehavior.opaque,
+      child: Scaffold(
+        backgroundColor: AppTheme.scaffoldBg,
+        body: RefreshIndicator(
+          onRefresh: () async {
+            setState(() => _isRefreshing = true);
+            final appState = Provider.of<AppStateProvider>(context, listen: false);
+            await appState.fetchCategories();
+            if (mounted) setState(() => _isRefreshing = false);
+          },
+          child: SingleChildScrollView(
+            keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+            physics: const AlwaysScrollableScrollPhysics(),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildModernHero(),
+                _buildSearchSection(),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 4, 24, 0),
+                  child: Text(
+                    'Services we offer',
+                    style: GoogleFonts.baloo2(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w800,
+                      color: AppTheme.textPrimary,
+                      letterSpacing: -0.5,
+                    ),
                   ),
                 ),
-              ),
-              _buildAllServicesGrid(),
-              const SizedBox(height: 100),
-            ],
+                _buildAllServicesGrid(),
+                const SizedBox(height: 100),
+              ],
+            ),
           ),
         ),
       ),
@@ -366,12 +371,17 @@ class _HomeScreenState extends State<HomeScreen> {
                 Expanded(
                   child: TextField(
                     controller: _searchController,
+                    textInputAction: TextInputAction.search,
+                    onSubmitted: (_) => FocusManager.instance.primaryFocus?.unfocus(),
                     onChanged: (value) => Provider.of<AppStateProvider>(context, listen: false).setSearchQuery(value),
                     style: GoogleFonts.inter(
                       fontSize: 15,
                       color: AppTheme.textPrimary,
                       fontWeight: FontWeight.w500,
                     ),
+                    onTapOutside: (event) {
+                      FocusManager.instance.primaryFocus?.unfocus();
+                    },
                     decoration: InputDecoration(
                       hintText: 'Search "Electrician"',
                       hintStyle: GoogleFonts.inter(
