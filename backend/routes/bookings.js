@@ -201,8 +201,11 @@ router.get('/worker', verifyToken, async (req, res) => {
         // First find the labourer profile associated with this user
         const labourer = await Labourer.findOne({ user: req.user.id });
         if (!labourer) {
+            console.log(`GET /worker: Labourer profile not found for user ${req.user.id}`);
             return res.status(404).json({ msg: 'Labourer profile not found' });
         }
+
+        console.log(`GET /worker: Token user ${req.user.id} matched labourer ${labourer._id} (${labourer.name}), category: ${labourer.category}, isOnline: ${labourer.isOnline}`);
 
         // Fetch bookings:
         // 1. Assigned to this labourer
@@ -225,9 +228,13 @@ router.get('/worker', verifyToken, async (req, res) => {
             });
         }
 
+        console.log(`GET /worker: Querying with $or: ${JSON.stringify(queryOr)}`);
+
         const bookings = await Booking.find({ $or: queryOr })
             .populate('user', 'name email phone') // Populate user details who booked
             .sort({ date: -1 });
+
+        console.log(`GET /worker: Found ${bookings.length} potential bookings before filtering.`);
 
         const activeCommitments = await Booking.find({
             labourer: labourer._id,
@@ -251,15 +258,17 @@ router.get('/worker', verifyToken, async (req, res) => {
                 const aStart = new Date(active.date).getTime();
                 const aEnd = aStart + (active.numberOfHours || 2) * 60 * 60 * 1000;
                 if (bStart < aEnd && bEnd > aStart) {
+                    console.log(`GET /worker: Hiding booking ${b._id} due to overlap with active job ${active._id}`);
                     return false; // Hide overlapping pending job
                 }
             }
             return true;
         });
 
+        console.log(`GET /worker: Returning ${filteredBookings.length} filtered bookings.`);
         res.json(filteredBookings);
     } catch (err) {
-        console.error(err.message);
+        console.error('GET /worker Error:', err.message);
         res.status(500).send('Server Error');
     }
 });

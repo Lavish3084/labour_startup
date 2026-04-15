@@ -212,9 +212,14 @@ router.post('/phone-login', async (req, res) => {
                 await user.save();
             } catch (saveErr) {
                 if (saveErr.code === 11000) {
-                    return res.status(400).json({ msg: 'This phone number is already registered with another role.' });
+                    // Duplicate key — the account already exists for this role, just log them in
+                    user = await User.findOne({ phoneNumber, role });
+                    if (!user) {
+                        return res.status(400).json({ msg: 'Authentication failed. Please try again.' });
+                    }
+                } else {
+                    throw saveErr;
                 }
-                throw saveErr;
             }
 
             if (user.role === 'worker') {
@@ -281,6 +286,40 @@ router.put('/phone', verifyToken, async (req, res) => {
     } catch (err) {
         console.error('Phone Update Error:', err.message);
         res.status(500).json({ msg: 'Failed to update phone number' });
+    }
+});
+
+// GET /api/auth/check-other-role
+// Returns whether the authenticated user has an account in the opposite role.
+// Used by each app to show a "Linked Account" section on the profile screen.
+router.get('/check-other-role', verifyToken, async (req, res) => {
+    try {
+        const currentUser = await User.findById(req.user.id);
+        if (!currentUser) return res.status(404).json({ msg: 'User not found' });
+
+        const otherRole = currentUser.role === 'worker' ? 'user' : 'worker';
+
+        // Try matching by email first, then phone
+        let otherUser = null;
+        if (currentUser.email) {
+            otherUser = await User.findOne({ email: currentUser.email, role: otherRole });
+        }
+        if (!otherUser && currentUser.phoneNumber) {
+            otherUser = await User.findOne({ phoneNumber: currentUser.phoneNumber, role: otherRole });
+        }
+
+        res.json({
+            hasOtherAccount: !!otherUser,
+            otherRole,
+            otherUser: otherUser ? {
+                id: otherUser._id,
+                name: otherUser.name,
+                role: otherUser.role,
+            } : null,
+        });
+    } catch (err) {
+        console.error('check-other-role error:', err.message);
+        res.status(500).json({ msg: 'Server error' });
     }
 });
 

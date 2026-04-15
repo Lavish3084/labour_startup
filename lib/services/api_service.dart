@@ -559,6 +559,24 @@ class ApiService {
     }
   }
 
+  /// Checks if the currently logged-in user also has an account in the
+  /// opposite role (worker ↔ user). Returns the raw JSON map from the server.
+  static Future<Map<String, dynamic>> checkOtherRole() async {
+    try {
+      final token = await getToken();
+      final response = await http.get(
+        Uri.parse('$baseUrl/auth/check-other-role'),
+        headers: {'x-auth-token': token ?? ''},
+      );
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      }
+      return {'hasOtherAccount': false};
+    } catch (e) {
+      return {'hasOtherAccount': false};
+    }
+  }
+
   static Future<bool> deleteAccount() async {
     try {
       final token = await getToken();
