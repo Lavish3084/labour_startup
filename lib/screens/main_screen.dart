@@ -1,10 +1,12 @@
 import 'dart:ui';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/rendering.dart';
 import 'home_screen.dart';
 import 'bookings_screen.dart';
 import 'profile_screen.dart';
+import 'wallet_screen.dart';
 import 'package:provider/provider.dart';
 import '../providers/app_state_provider.dart';
 import '../utils/app_theme.dart';
@@ -87,6 +89,7 @@ class _MainScreenState extends State<MainScreen>
   static const List<Widget> _pages = <Widget>[
     HomeScreen(),
     BookingsScreen(),
+    WalletScreen(),
     ProfileScreen(),
   ];
 
@@ -114,9 +117,10 @@ class _MainScreenState extends State<MainScreen>
       ),
       bottomNavigationBar: LayoutBuilder(
         builder: (context, navBarConstraints) {
-          // Narrower bar width: 75% of screen width
-          final double actualWidth = navBarConstraints.maxWidth * 0.75;
-          final double sectionWidth = actualWidth / 3;
+          // Slightly wider for 4 items: 90% of screen width
+          // Figma reference: 88% width (left: 24 on 402px)
+          final double actualWidth = navBarConstraints.maxWidth * 0.88;
+          final double sectionWidth = actualWidth / 4;
 
           return GestureDetector(
             onHorizontalDragStart: (_) {
@@ -128,13 +132,13 @@ class _MainScreenState extends State<MainScreen>
                 // Move pill independently within the navbar (Independent Grab & Slide)
                 _displayPage.value = (_displayPage.value +
                         details.delta.dx / sectionWidth)
-                    .clamp(0.0, 2.0);
+                    .clamp(0.0, 3.0);
               }
             },
             onHorizontalDragEnd: (details) {
               if (_pageController.hasClients) {
                 final double startPage = _displayPage.value;
-                final int targetPage = startPage.round().clamp(0, 2);
+                final int targetPage = startPage.round().clamp(0, 3);
 
                 // Create a smooth animation for the pill from its release point to the target
                 _pillAnimation = Tween<double>(
@@ -171,40 +175,29 @@ class _MainScreenState extends State<MainScreen>
             child: Align(
               alignment: Alignment.bottomCenter,
               child: Container(
-                height: 65,
+                height: 75,
                 width: actualWidth,
                 margin: const EdgeInsets.only(bottom: 30),
                 child: ClipRRect(
-                  borderRadius: BorderRadius.circular(32),
+                  borderRadius: BorderRadius.circular(16),
                   child: BackdropFilter(
                     filter: ImageFilter.blur(
                       sigmaX: 18,
                       sigmaY: 18,
                     ), // Increased blur for a deeper glass effect
                     child: Container(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: [
-                            Colors.white.withValues(
-                              alpha: 0.06,
-                            ), // Reduced frost for higher transparency
-                            AppTheme.saffron.withValues(
-                              alpha: 0.03,
-                            ), // Subtle saffron tint kept clear
-                          ],
-                        ),
-                        borderRadius: BorderRadius.circular(32),
+                        decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
                         border: Border.all(
-                          color: Colors.white.withValues(alpha: 0.35),
-                          width: 1.2,
+                          color: Colors.black.withValues(alpha: 0.05),
+                          width: 1.0,
                         ),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.15),
-                            blurRadius: 30,
-                            offset: const Offset(0, 10),
+                            color: Colors.black.withValues(alpha: 0.08),
+                            blurRadius: 20,
+                            offset: const Offset(0, 4),
                           ),
                         ],
                       ),
@@ -214,116 +207,37 @@ class _MainScreenState extends State<MainScreen>
                             listenable: _displayPage,
                             builder: (context, _) {
                               final double width = constraints.maxWidth;
-                              final double sectionWidthInner = width / 3;
+                              // Uniform padding for perfect symmetry
+                              const double horizontalPadding = 24;
+                              final double sectionWidthInner = (width - (horizontalPadding * 2)) / 4;
                               double page = _displayPage.value;
 
-                              double fraction = page % 1.0;
+                              // Advanced stretching pill logic
+                              double fraction = (page % 1.0).abs();
+                              // Correctly handle the edges
                               if (page < 0) fraction = 0;
-                              if (page > 2) fraction = 0;
+                              if (page > 3) fraction = 0;
 
-                              double stretchFactor =
-                                  (0.5 - (fraction - 0.5).abs()) * 2.0;
-                              double stretchMagnitude =
-                                  sectionWidthInner * 0.55;
-                              double basePillWidth = sectionWidthInner * 0.43;
-                              double currentWidth =
-                                  basePillWidth +
-                                  (stretchMagnitude * stretchFactor);
+                              double stretchFactor = (0.5 - (fraction - 0.5).abs()) * 2.0;
+                              double basePillWidth = 14;
+                              // The pill stretches significantly when moving between tabs
+                              double stretchMax = sectionWidthInner * 0.7;
+                              double currentWidth = basePillWidth + (stretchMax * stretchFactor);
 
-                              // Dynamic vertical bulge - Scaled for 65px height
-                              double baseHeight = 44;
-                              double currentHeight =
-                                  baseHeight + (16 * stretchFactor);
+                              // Calculate center position relative to the row items
+                              double centerX = horizontalPadding + (page + 0.5) * sectionWidthInner;
+                              double leftPos = centerX - (currentWidth / 2);
 
-                              double centerPos =
-                                  (page + 0.5) * sectionWidthInner;
-                              double leftPos = centerPos - (currentWidth / 2);
-
-                              return Stack(
-                                children: [
-                                  // Liquid Stretchy Glass Selection Pill
-                                  Positioned(
-                                    left: leftPos,
-                                    top:
-                                        (constraints.maxHeight -
-                                            currentHeight) /
-                                        2,
-                                    child: Container(
-                                      width: currentWidth,
-                                      height: currentHeight,
-                                      decoration: BoxDecoration(
-                                        gradient: LinearGradient(
-                                          colors: [
-                                            Colors.white.withValues(
-                                              alpha: 0.25,
-                                            ),
-                                            AppTheme.saffron.withValues(
-                                              alpha: 0.45,
-                                            ),
-                                            AppTheme.saffron.withValues(
-                                              alpha: 0.15,
-                                            ),
-                                          ],
-                                          begin: Alignment.topLeft,
-                                          end: Alignment.bottomRight,
-                                          stops: const [0.0, 0.4, 1.0],
-                                        ),
-                                        borderRadius: BorderRadius.circular(20),
-                                        border: Border.all(
-                                          color: Colors.white.withValues(
-                                            alpha: 0.4,
-                                          ),
-                                          width: 0.8,
-                                        ),
-                                        boxShadow: [
-                                          BoxShadow(
-                                            color: AppTheme.saffron.withValues(
-                                              alpha: 0.2,
-                                            ),
-                                            blurRadius: 15,
-                                            spreadRadius: -2,
-                                            offset: const Offset(0, 4),
-                                          ),
-                                          BoxShadow(
-                                            color: Colors.white.withValues(
-                                              alpha: 0.1,
-                                            ),
-                                            blurRadius: 0,
-                                            spreadRadius: 1,
-                                            offset: const Offset(0, 0),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-
-                                  // Nav Items Row
-                                  Row(
-                                    children: [
-                                      _buildNavItem(
-                                        0,
-                                        page,
-                                        Icons.home_rounded,
-                                        Icons.home_outlined,
-                                        'Home',
-                                      ),
-                                      _buildNavItem(
-                                        1,
-                                        page,
-                                        Icons.calendar_month_rounded,
-                                        Icons.calendar_month_outlined,
-                                        'Booking',
-                                      ),
-                                      _buildNavItem(
-                                        2,
-                                        page,
-                                        Icons.person_rounded,
-                                        Icons.person_outlined,
-                                        'Profile',
-                                      ),
-                                    ],
-                                  ),
-                                ],
+                              return Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: horizontalPadding),
+                                child: Row(
+                                  children: [
+                                    _buildNavItem(0, page, Icons.home_rounded, Icons.home_outlined, 'Home'),
+                                    _buildNavItem(1, page, Icons.assignment_rounded, Icons.assignment_outlined, 'Bookings'),
+                                    _buildNavItem(2, page, Icons.account_balance_wallet_rounded, Icons.account_balance_wallet_outlined, 'Wallet'),
+                                    _buildNavItem(3, page, Icons.person_rounded, Icons.person_outlined, 'Profile'),
+                                  ],
+                                ),
                               );
                             },
                           );
@@ -360,44 +274,38 @@ class _MainScreenState extends State<MainScreen>
             index,
             duration: const Duration(
               milliseconds: 630,
-            ), // Slightly longer for a more premium ease-out
+            ),
             curve: Curves.easeOutQuart,
           );
 
           _appState.setTab(index);
         },
         behavior: HitTestBehavior.opaque,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Transform.translate(
-              offset: Offset(0, -2 * activeProgress),
-              child: Transform.scale(
-                scale: 1.0 + (0.15 * activeProgress),
+        child: Container(
+          color: Colors.transparent,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Transform.scale(
+                scale: 1.0 + (0.1 * activeProgress),
                 child: Icon(
-                  isActive ? activeIcon : inactiveIcon,
-                  color: Color.lerp(
-                    AppTheme.textMuted.withValues(alpha: 0.6),
-                    AppTheme.saffron,
-                    activeProgress,
-                  ),
-                  size: 26,
+                  activeIcon, // Always filled icons
+                  color: isActive ? AppTheme.brandGreenMain : AppTheme.textMuted.withValues(alpha: 0.5),
+                  size: 33, // Slightly larger
                 ),
               ),
-            ),
-            const SizedBox(height: 4),
-            Opacity(
-              opacity: activeProgress,
-              child: Container(
-                width: 5,
-                height: 5,
-                decoration: const BoxDecoration(
-                  color: AppTheme.saffron,
-                  shape: BoxShape.circle,
+              const SizedBox(height: 4),
+              Text(
+                label,
+                style: GoogleFonts.inter(
+                  fontSize: 10,
+                  fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
+                  color: isActive ? const Color(0xFF4A9782) : AppTheme.textMuted,
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

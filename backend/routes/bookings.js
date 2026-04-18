@@ -66,7 +66,7 @@ async function checkOverlap(labourerId, targetBooking) {
 // @desc    Create a new booking
 // @access  Private (User)
 router.post('/', verifyToken, async (req, res) => {
-    const { labourerId, category, date, notes, address, houseNumber, landmark, latitude, longitude, bookingMode, numberOfHours, amount, minAmount, maxAmount } = req.body;
+    const { labourerId, category, date, notes, problemTitle, address, houseNumber, landmark, latitude, longitude, bookingMode, numberOfHours, amount, minAmount, maxAmount, numberOfWorkers, workType, taskImage } = req.body;
     
     // Check if the booking date is less than 1 hour away or in the past
     const bookingDate = new Date(date);
@@ -80,6 +80,8 @@ router.post('/', verifyToken, async (req, res) => {
         let bookingData = {
             user: req.user.id,
             date,
+            problemTitle,
+            taskImage,
             notes,
             category,
             address,
@@ -91,7 +93,9 @@ router.post('/', verifyToken, async (req, res) => {
             numberOfHours,
             amount,
             minAmount,
-            maxAmount
+            maxAmount,
+            numberOfWorkers: numberOfWorkers || 1,
+            workType
         };
 
         const priceDisplay = (minAmount && maxAmount)
@@ -132,8 +136,16 @@ router.post('/', verifyToken, async (req, res) => {
             return res.status(400).json({ msg: 'Category is required for broadcast requests' });
         } else {
             // Broadcast Request
-            const newBooking = new Booking(bookingData);
-            const booking = await newBooking.save();
+            const num = bookingData.numberOfWorkers || 1;
+            let firstBooking = null;
+
+            for (let i = 0; i < num; i++) {
+                const newBooking = new Booking(bookingData);
+                const savedBooking = await newBooking.save();
+                if (i === 0) firstBooking = savedBooking;
+            }
+
+            const booking = firstBooking; // Use the first one for the response
 
             // Find all workers in this category
             const workers = await Labourer.find({ category: category }).populate('user');

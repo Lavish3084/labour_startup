@@ -6,6 +6,7 @@ import 'package:geocoding/geocoding.dart';
 import 'package:shimmer/shimmer.dart';
 import '../models/service_category.dart';
 import 'service_request_screen.dart';
+import 'service_detail_screen.dart';
 import 'history_screen.dart';
 import '../providers/location_provider.dart';
 import 'package:provider/provider.dart';
@@ -25,44 +26,19 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   bool _isRefreshing = false;
   AppStateProvider? _appState;
+  bool _showAllCategories = false;
   
-  // Banner Carousel State
-  late PageController _bannerController;
-  Timer? _bannerTimer;
-  int _currentBannerIndex = 0;
-  final List<String> _bannerImages = [
-    'assets/images/last4.png',
-    'assets/images/last3.png',
-    'assets/images/last2.png',
-    'assets/images/last1.png',
-    'assets/images/last.png',
-  ];
-
   final TextEditingController _searchController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
-    _bannerController = PageController(initialPage: 500); // Start in the middle for infinite left/right swiping
-    _startAutoScroll();
-    
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _appState = Provider.of<AppStateProvider>(context, listen: false);
       _appState?.loadCategories();
+      _appState?.fetchBookings(); // Load bookings for active card
       _initLocation();
       _appState?.addListener(_errorListener);
-    });
-  }
-
-  void _startAutoScroll() {
-    _bannerTimer?.cancel();
-    _bannerTimer = Timer.periodic(const Duration(seconds: 4), (timer) {
-      if (mounted && _bannerImages.length > 1) {
-        _bannerController.nextPage(
-          duration: const Duration(milliseconds: 800),
-          curve: Curves.easeInOutCubic,
-        );
-      }
     });
   }
 
@@ -81,8 +57,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   void dispose() {
-    _bannerTimer?.cancel();
-    _bannerController.dispose();
     _searchController.dispose();
     _appState?.removeListener(_errorListener);
     super.dispose();
@@ -169,22 +143,28 @@ class _HomeScreenState extends State<HomeScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildModernHero(),
-                _buildSearchSection(),
+                _buildGreenHeader(),
+                const SizedBox(height: 32),
+                _buildActiveBookingSection(),
+                const SizedBox(height: 32),
+                _buildCategoriesSection(),
+                const SizedBox(height: 32),
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(24, 4, 24, 0),
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
                   child: Text(
-                    'Services we offer',
-                    style: GoogleFonts.baloo2(
-                      fontSize: 22,
-                      fontWeight: FontWeight.w800,
-                      color: AppTheme.textPrimary,
-                      letterSpacing: -0.5,
+                    'Top Reasons to Choose',
+                    style: GoogleFonts.roboto(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.black,
+                      height: 1.5, // 24px line-height
+                      letterSpacing: 0.5,
                     ),
                   ),
                 ),
-                _buildAllServicesGrid(),
-                const SizedBox(height: 100),
+                const SizedBox(height: 12),
+                _buildTrustBanner(),
+                const SizedBox(height: 120),
               ],
             ),
           ),
@@ -193,209 +173,336 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildModernHero() {
+  Widget _buildGreenHeader() {
     final locationProvider = Provider.of<LocationProvider>(context);
-    final String displayAddress = locationProvider.currentAddress ?? 'Choose your location...';
+    final String displayAddress = locationProvider.currentAddress ?? 'Enable location';
 
     return Container(
       width: double.infinity,
-      height: MediaQuery.of(context).padding.top + 300, // Fixed height for carousel area
+      height: 220,
       decoration: const BoxDecoration(
-        borderRadius: BorderRadius.vertical(bottom: Radius.circular(32)),
+        gradient: AppTheme.headerGradientGreen,
+        borderRadius: BorderRadius.vertical(bottom: Radius.circular(24)),
       ),
-      child: ClipRRect(
-        borderRadius: const BorderRadius.vertical(bottom: Radius.circular(32)),
-        child: Stack(
-          children: [
-            // 1. Background Carousel (Infinite scroll enabled)
-            PageView.builder(
-              controller: _bannerController,
-              onPageChanged: (index) => setState(() => _currentBannerIndex = index % _bannerImages.length),
-              // itemCount is not set, resulting in infinite scrolling
-              itemBuilder: (context, index) {
-                final int realIndex = index % _bannerImages.length;
-                return Image.asset(
-                  _bannerImages[realIndex],
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) {
-                    if (realIndex == 0) {
-                      return Container(
-                        decoration: const BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
-                            colors: [AppTheme.saffron, AppTheme.primaryDark],
-                          ),
-                        ),
-                      );
-                    }
-                    return const SizedBox.shrink();
-                  },
-                );
-              },
-            ),
-
-            // 2. Visual Overlay (IgnorePointer allows swipes to pass through)
-            IgnorePointer(
-              child: Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      Colors.black.withValues(alpha: 0.3),
-                      Colors.transparent,
-                      Colors.black.withValues(alpha: 0.2),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-
-            // 3. Interactive Content (Location Selector)
-            Column(
-              children: [
-                Padding(
-                  padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top + 16, left: 20, right: 20),
-                  child: GestureDetector(
-                    onTap: _showAddressSelectionBottomSheet,
-                    child: Row(
-                      children: [
-                        const Icon(Icons.location_on_rounded, color: Colors.white, size: 24),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  Flexible(
-                                    child: Text(
-                                      displayAddress.contains(',') ? displayAddress.split(',')[0] : displayAddress,
-                                      style: GoogleFonts.baloo2(
-                                        fontSize: 20,
-                                        fontWeight: FontWeight.w900,
-                                        color: Colors.white,
-                                        height: 1.1,
-                                      ),
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ),
-                                  const Icon(Icons.keyboard_arrow_down_rounded, color: Colors.white, size: 20),
-                                ],
-                              ),
-                              Text(
-                                displayAddress,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: GoogleFonts.inter(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w500,
-                                  color: Colors.white.withValues(alpha: 0.8),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        _buildCircularAction(
-                          Icons.history_rounded,
-                          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const HistoryScreen())),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-
-            // Dot Indicators
-            if (_bannerImages.length > 1)
-              Positioned(
-                bottom: 20,
-                left: 0,
-                right: 0,
+      padding: EdgeInsets.fromLTRB(20, MediaQuery.of(context).padding.top + 8, 20, 24),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              GestureDetector(
+                onTap: _showAddressSelectionBottomSheet,
+                behavior: HitTestBehavior.opaque,
                 child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: List.generate(
-                    _bannerImages.length,
-                    (index) => AnimatedContainer(
-                      duration: const Duration(milliseconds: 300),
-                      margin: const EdgeInsets.symmetric(horizontal: 4),
-                      height: 8,
-                      width: _currentBannerIndex == index ? 24 : 8,
-                      decoration: BoxDecoration(
-                        color: _currentBannerIndex == index ? Colors.white : Colors.white.withValues(alpha: 0.4),
-                        borderRadius: BorderRadius.circular(4),
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.location_on_rounded, color: AppTheme.brandYellow, size: 24),
+                    const SizedBox(width: 6),
+                    Flexible(
+                      child: Text(
+                        displayAddress,
+                        style: GoogleFonts.inter(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                        ),
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
-                  ),
+                    const SizedBox(width: 4),
+                    const Icon(Icons.keyboard_arrow_down_rounded, color: Colors.white, size: 20),
+                  ],
                 ),
               ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildCircularAction(IconData icon, {VoidCallback? onTap}) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(10),
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.2),
-          shape: BoxShape.circle,
-        ),
-        child: Icon(icon, color: Colors.white, size: 20),
-      ),
-    );
-  }
-
-  Widget _buildSearchSection() {
-    return Transform.translate(
-      offset: const Offset(0, -28),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20),
-        child: GlassCard(
-          radius: 16,
-          blur: 15,
-          opacity: 0.7,
-          borderColor: Colors.white.withValues(alpha: 0.5),
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: SizedBox(
-            height: 56,
+              const Spacer(),
+              const Icon(Icons.notifications_none_rounded, color: Colors.white, size: 24),
+              const SizedBox(width: 16),
+              const Icon(Icons.settings_outlined, color: Colors.white, size: 24),
+            ],
+          ),
+          const SizedBox(height: 32),
+          Container(
+            height: 56, // Matching Figma
+            decoration: BoxDecoration(
+              color: AppTheme.surfaceContainerHigh,
+              borderRadius: BorderRadius.circular(28),
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 20),
             child: Row(
               children: [
-                const Icon(Icons.search, color: AppTheme.saffron, size: 24),
-                const SizedBox(width: 12),
                 Expanded(
                   child: TextField(
                     controller: _searchController,
-                    textInputAction: TextInputAction.search,
-                    onSubmitted: (_) => FocusManager.instance.primaryFocus?.unfocus(),
                     onChanged: (value) => Provider.of<AppStateProvider>(context, listen: false).setSearchQuery(value),
-                    style: GoogleFonts.inter(
-                      fontSize: 15,
-                      color: AppTheme.textPrimary,
-                      fontWeight: FontWeight.w500,
-                    ),
-                    onTapOutside: (event) {
-                      FocusManager.instance.primaryFocus?.unfocus();
-                    },
                     decoration: InputDecoration(
-                      hintText: 'Search "Electrician"',
+                      hintText: 'Explore Services',
                       hintStyle: GoogleFonts.inter(
-                        fontSize: 15,
-                        color: AppTheme.textMuted,
-                        fontWeight: FontWeight.w500,
+                        color: const Color(0xFF49454F),
+                        fontSize: 16,
+                        fontWeight: FontWeight.w400,
                       ),
                       border: InputBorder.none,
-                      isDense: true,
-                      contentPadding: EdgeInsets.all(0),
                     ),
                   ),
                 ),
+                const Icon(Icons.search, color: Color(0xFF49454F)),
               ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildActiveBookingSection() {
+    return Consumer<AppStateProvider>(
+      builder: (context, appState, _) {
+        final activeBookings = appState.bookings.where((b) => b['status'] == 'confirmed' || b['status'] == 'pending').toList();
+        
+        if (activeBookings.isEmpty) return const SizedBox.shrink();
+
+        final booking = activeBookings.first;
+        final dynamic categoryData = booking['category'];
+        final String serviceName = categoryData is Map ? (categoryData['name'] ?? 'Service') : (categoryData?.toString() ?? 'Service');
+        
+        String dateStr = 'Upcoming';
+        if (booking['date'] != null) {
+          try {
+            final DateTime dt = DateTime.parse(booking['date'].toString()).toLocal();
+            dateStr = "${dt.day} ${_getMonthName(dt.month)} at ${dt.hour % 12 == 0 ? 12 : dt.hour % 12}:${dt.minute.toString().padLeft(2, '0')} ${dt.hour >= 12 ? 'PM' : 'AM'}";
+          } catch (_) {
+            dateStr = booking['date'].toString();
+          }
+        }
+
+        return Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                decoration: BoxDecoration(
+                  color: AppTheme.activeCardBg,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: AppTheme.activeCardBorder, width: 1),
+                  boxShadow: AppTheme.figmaCardShadow,
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text.rich(
+                        TextSpan(
+                          children: [
+                            TextSpan(
+                              text: 'Active Booking :\n',
+                              style: GoogleFonts.inter(
+                                fontSize: 16,
+                                color: Colors.black,
+                                fontWeight: FontWeight.w400,
+                                height: 1.5,
+                              ),
+                            ),
+                            TextSpan(
+                              text: '$serviceName - $dateStr',
+                              style: GoogleFonts.inter(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w700,
+                                color: Colors.black,
+                                height: 1.5,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const Icon(Icons.arrow_forward_ios_rounded, size: 16, color: AppTheme.activeCardBorder),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                _buildDot(true),
+                const SizedBox(width: 21),
+                _buildDot(false),
+                const SizedBox(width: 21),
+                _buildDot(false),
+              ],
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  String _getMonthName(int month) {
+    const months = [
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+    ];
+    return (month >= 1 && month <= 12) ? months[month - 1] : '';
+  }
+
+  Widget _buildDot(bool active) {
+    return Container(
+      width: 9,
+      height: 9,
+      decoration: ShapeDecoration(
+        color: active ? AppTheme.primaryStatusGreen : AppTheme.grayPagination,
+        shape: const OvalBorder(),
+      ),
+    );
+  }
+
+  Widget _buildCategoriesSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Categories',
+                style: GoogleFonts.inter(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w400,
+                  color: Colors.black,
+                  letterSpacing: 0.5,
+                ),
+              ),
+              GestureDetector(
+                onTap: () => setState(() => _showAllCategories = !_showAllCategories),
+                child: Text(
+                  _showAllCategories ? 'See Less' : 'See All',
+                  style: GoogleFonts.inter(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                    color: AppTheme.activeCardBorder,
+                    letterSpacing: 0.4,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 28),
+        Consumer<AppStateProvider>(
+          builder: (context, appState, _) {
+            final allCategories = appState.categories;
+            if (allCategories.isEmpty) return const SizedBox.shrink();
+
+            final categoriesToShow = _showAllCategories ? allCategories : allCategories.take(4).toList();
+
+            if (_showAllCategories) {
+              return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 10),
+                child: GridView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: categoriesToShow.length,
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 4,
+                    mainAxisSpacing: 20,
+                    crossAxisSpacing: 0,
+                    childAspectRatio: 0.82,
+                  ),
+                  itemBuilder: (context, index) => _buildCategoryItem(categoriesToShow[index]),
+                ),
+              );
+            }
+
+            return Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 10),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: categoriesToShow.map((cat) => _buildCategoryItem(cat)).toList(),
+              ),
+            );
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCategoryItem(ServiceCategory category) {
+    IconData icon;
+    String name = category.name.toLowerCase();
+    if (name.contains('mason')) icon = Icons.construction_rounded;
+    else if (name.contains('clean')) icon = Icons.cleaning_services_rounded;
+    else if (name.contains('plumb')) icon = Icons.plumbing_rounded;
+    else if (name.contains('elect')) icon = Icons.electric_bolt_rounded;
+    else if (name.contains('paint')) icon = Icons.format_paint_rounded;
+    else if (name.contains('carpent')) icon = Icons.carpenter_rounded;
+    else if (name.contains('garden')) icon = Icons.yard_rounded;
+    else if (name.contains('ac') || name.contains('repair')) icon = Icons.handyman_rounded;
+    else icon = Icons.miscellaneous_services_rounded;
+
+    return GestureDetector(
+      onTap: () => _navigateToRequest(category),
+      child: Column(
+        children: [
+          Container(
+            width: 76,
+            height: 76,
+            decoration: const ShapeDecoration(
+              color: AppTheme.graySurface,
+              shape: OvalBorder(),
+            ),
+            child: Icon(icon, color: AppTheme.figmaHeaderEnd, size: 32),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            category.name,
+            textAlign: TextAlign.center,
+            style: GoogleFonts.inter(
+              fontSize: 12,
+              fontWeight: FontWeight.w400,
+              color: Colors.black,
+              letterSpacing: 0.4,
+              height: 1.33,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTrustBanner() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Container(
+        width: double.infinity,
+        height: 135,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.12),
+              blurRadius: 20,
+              offset: const Offset(0, 10),
+              spreadRadius: -2,
+            ),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(20),
+          clipBehavior: Clip.antiAliasWithSaveLayer,
+          child: Transform.scale(
+            scale: 1.05, // Slight zoom to crop out edge artifacts
+            child: Image.asset(
+              'assets/images/branding_banner.png',
+              fit: BoxFit.cover,
+              errorBuilder: (context, error, stackTrace) {
+                return Container(
+                  color: AppTheme.primaryGreen.withOpacity(0.1),
+                  child: const Center(
+                    child: Icon(Icons.broken_image_rounded, color: AppTheme.primaryGreen),
+                  ),
+                );
+              },
             ),
           ),
         ),
@@ -642,7 +749,7 @@ class _HomeScreenState extends State<HomeScreen> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => ServiceRequestScreen(category: category),
+        builder: (context) => ServiceDetailScreen(category: category),
       ),
     );
   }

@@ -276,6 +276,8 @@ class ApiService {
     required String bookingMode,
     int? numberOfHours,
     String? notes,
+    String? problemTitle,
+    String? taskImage,
     String? address,
     String? houseNumber,
     String? landmark,
@@ -284,6 +286,8 @@ class ApiService {
     double? amount,
     double? minAmount,
     double? maxAmount,
+    int numberOfWorkers = 1,
+    String? workType,
   }) async {
     try {
       final token = await getToken();
@@ -300,6 +304,8 @@ class ApiService {
           'bookingMode': bookingMode,
           'numberOfHours': numberOfHours,
           'notes': notes,
+          'problemTitle': problemTitle,
+          'taskImage': taskImage,
           'address': address,
           'houseNumber': houseNumber,
           'landmark': landmark,
@@ -308,6 +314,8 @@ class ApiService {
           'amount': amount,
           'minAmount': minAmount,
           'maxAmount': maxAmount,
+          'numberOfWorkers': numberOfWorkers,
+          'workType': workType,
         }),
       );
 

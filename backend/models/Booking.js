@@ -24,6 +24,13 @@ const BookingSchema = new mongoose.Schema({
         required: true,
         enum: ['Hourly', 'Daily', 'Task-based']
     },
+    numberOfWorkers: {
+        type: Number,
+        default: 1
+    },
+    workType: {
+        type: String
+    },
     numberOfHours: {
         type: Number,
         required: false
@@ -48,6 +55,12 @@ const BookingSchema = new mongoose.Schema({
     isWorkConfirmed: { type: Boolean, default: false },
     minAmount: { type: Number },
     maxAmount: { type: Number },
+    problemTitle: {
+        type: String
+    },
+    taskImage: {
+        type: String
+    },
     notes: {
         type: String
     },

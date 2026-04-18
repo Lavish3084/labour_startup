@@ -10,16 +10,35 @@ class AppTheme {
   static const Color primary = Color(0xFFFF6B00);        // Saffron primary
   static const Color primaryDark = Color(0xFFE65100);
   static const Color primaryLight = Color(0xFFFFF4EB);
+  static const Color primaryStatusGreen = Color(0xFF2E876E);
+  static const Color brandGreenMain = Color(0xFF4A9782);
+  static const Color brandYellow = Color(0xFFFCD541);
+  static const Color grayBgSubtle = Color(0xFFF7F7F7);
+  static const Color graySurface = Color(0xFFF0F0F0);
+  static const Color grayLightest = Color(0xFFE8E8E8);
+  static const Color grayPagination = Color(0xFFD9D9D9);
+  static const Color grayBorder = Color(0xFFCFCFCF);
+  static const Color black = Colors.black;
+  static const Color white = Colors.white;
 
   static const Color accent = Color(0xFF2952CC);          // Vibrant blue
   static const Color accentLight = Color(0xFFEEF2FF);
-  static const Color scaffoldBg = Color(0xFFFFFAF5);
+  static const Color scaffoldBg = Color(0xFFF8F9FA); // Slightly cooler white
+  static const Color surfaceLight = Color(0xFFF3F4F6);
+  static const Color primaryGreen = Color(0xFF006D44); // Dark Green for Header
   static const Color saffron = Color(0xFFFF6B00);
   static const Color paleSaffron = Color(0xFFFFF5EE);
   static const Color successGreen = Color(0xFF10B981);
   static const Color offWhite = Color(0xFFFFFAF5);
 
   static const Color highlight = Color(0xFF0D9488);       // Teal — actions/CTAs
+  
+  // ─── Figma / Refined UI Colors ───────────────────────────────
+  static const Color figmaHeaderStart = Color(0xFF06644A);
+  static const Color figmaHeaderEnd = Color(0xFF4A9782);
+  static const Color surfaceContainerHigh = Color(0xFFECE6F0);
+  static const Color activeCardBg = Color(0xFFF7F7F7);
+  static const Color activeCardBorder = Color(0xFF4A9782);
 
   // ─── Neutral / Surface ────────────────────────────────────────
   static const Color cardBg = Colors.white;
@@ -67,6 +86,12 @@ class AppTheme {
     begin: Alignment.topCenter,
     end: Alignment.bottomCenter,
     colors: [Color(0xFFFFF1E6), Color(0xFFFFFAF5)],
+  );
+
+  static const LinearGradient headerGradientGreen = LinearGradient(
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
+    colors: [figmaHeaderStart, figmaHeaderEnd],
   );
 
   static const LinearGradient glassGradient = LinearGradient(
@@ -121,6 +146,14 @@ class AppTheme {
       color: const Color(0xFF111827).withValues(alpha: 0.08),
       blurRadius: 24,
       offset: const Offset(0, 8),
+    ),
+  ];
+
+  static List<BoxShadow> get figmaCardShadow => [
+    BoxShadow(
+      color: const Color(0x14000000),
+      blurRadius: 16,
+      offset: const Offset(0, 2),
     ),
   ];
 
