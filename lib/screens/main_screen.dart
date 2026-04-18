@@ -24,18 +24,19 @@ class _MainScreenState extends State<MainScreen>
   late AnimationController _pillAnimationController;
   Animation<double>? _pillAnimation;
   bool _isDraggingNavbar = false;
+  late AppStateProvider _appState;
   int _lastTab = 0;
 
   @override
   void initState() {
     super.initState();
-    final appState = Provider.of<AppStateProvider>(context, listen: false);
+    _appState = Provider.of<AppStateProvider>(context, listen: false);
     
     if (widget.initialIndex != null) {
-      appState.setTab(widget.initialIndex!);
+      _appState.setTab(widget.initialIndex!);
     }
     
-    _lastTab = appState.selectedTab;
+    _lastTab = _appState.selectedTab;
     _pageController = PageController(initialPage: _lastTab);
     _displayPage = ValueNotifier<double>(_lastTab.toDouble());
 
@@ -52,19 +53,18 @@ class _MainScreenState extends State<MainScreen>
     });
 
     // Listen for external tab changes
-    appState.addListener(_onAppStateChanged);
+    _appState.addListener(_onAppStateChanged);
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      appState.fetchProfile();
-      appState.fetchBookings();
+      _appState.fetchProfile();
+      _appState.fetchBookings();
     });
   }
 
   void _onAppStateChanged() {
     if (!mounted) return;
-    final appState = Provider.of<AppStateProvider>(context, listen: false);
-    if (appState.selectedTab != _lastTab) {
-      _lastTab = appState.selectedTab;
+    if (_appState.selectedTab != _lastTab) {
+      _lastTab = _appState.selectedTab;
       if (_pageController.hasClients) {
         _pageController.animateToPage(
           _lastTab,
@@ -77,9 +77,7 @@ class _MainScreenState extends State<MainScreen>
 
   @override
   void dispose() {
-    // Safely remove the listener
-    final appState = Provider.of<AppStateProvider>(context, listen: false);
-    appState.removeListener(_onAppStateChanged);
+    _appState.removeListener(_onAppStateChanged);
     _pageController.dispose();
     _displayPage.dispose();
     _pillAnimationController.dispose();
@@ -109,11 +107,7 @@ class _MainScreenState extends State<MainScreen>
           // This prevents intermediate crossing signals during animateToPage(0 -> 2).
           if (_pageController.position.userScrollDirection !=
               ScrollDirection.idle) {
-            final appState = Provider.of<AppStateProvider>(
-              context,
-              listen: false,
-            );
-            appState.setTab(index);
+            _appState.setTab(index);
           }
         },
         children: _pages,
@@ -370,11 +364,7 @@ class _MainScreenState extends State<MainScreen>
             curve: Curves.easeOutQuart,
           );
 
-          final appState = Provider.of<AppStateProvider>(
-            context,
-            listen: false,
-          );
-          appState.setTab(index);
+          _appState.setTab(index);
         },
         behavior: HitTestBehavior.opaque,
         child: Column(

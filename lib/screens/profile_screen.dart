@@ -34,7 +34,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       if (!mounted) return;
       _appState = Provider.of<AppStateProvider>(context, listen: false);
       _appState?.fetchProfile();
-      
+
       // Listen for profile errors
       _appState?.addListener(_errorListener);
     });
@@ -96,17 +96,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
           }
         } catch (e) {
           if (mounted) {
-            ScaffoldMessenger.of(
-              context,
-            ).showSnackBar(SnackBar(content: Text(ErrorHandler.getErrorMessage(e, action: 'Update failed'))));
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  ErrorHandler.getErrorMessage(e, action: 'Update failed'),
+                ),
+              ),
+            );
           }
         }
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(ErrorHandler.getErrorMessage(e, action: 'Error picking image'))));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              ErrorHandler.getErrorMessage(e, action: 'Error picking image'),
+            ),
+          ),
+        );
       }
     } finally {
       if (mounted) {
@@ -119,48 +127,54 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final controller = TextEditingController(text: currentName);
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text(
-          'Edit Full Name',
-          style: GoogleFonts.baloo2(fontWeight: FontWeight.w800),
-        ),
-        content: TextField(
-          controller: controller,
-          decoration: InputDecoration(
-            labelText: 'Full Name',
-            labelStyle: GoogleFonts.inter(color: AppTheme.textMuted),
-            focusedBorder: UnderlineInputBorder(
-              borderSide: BorderSide(color: AppTheme.saffron),
+      builder:
+          (context) => AlertDialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
             ),
-          ),
-          style: GoogleFonts.inter(fontWeight: FontWeight.w600),
-          autofocus: true,
-          textCapitalization: TextCapitalization.words,
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: Text('Cancel', style: GoogleFonts.inter(color: Colors.grey)),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.saffron,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+            title: Text(
+              'Edit Full Name',
+              style: GoogleFonts.baloo2(fontWeight: FontWeight.w800),
+            ),
+            content: TextField(
+              controller: controller,
+              decoration: InputDecoration(
+                labelText: 'Full Name',
+                labelStyle: GoogleFonts.inter(color: AppTheme.textMuted),
+                focusedBorder: UnderlineInputBorder(
+                  borderSide: BorderSide(color: AppTheme.saffron),
+                ),
               ),
+              style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+              autofocus: true,
+              textCapitalization: TextCapitalization.words,
             ),
-            child: Text(
-              'Save',
-              style: GoogleFonts.inter(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: Text(
+                  'Cancel',
+                  style: GoogleFonts.inter(color: Colors.grey),
+                ),
               ),
-            ),
+              ElevatedButton(
+                onPressed: () => Navigator.pop(context, true),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.saffron,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: Text(
+                  'Save',
+                  style: GoogleFonts.inter(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
     );
 
     if (confirmed == true && controller.text.trim().isNotEmpty) {
@@ -174,7 +188,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(content: Text('Name updated successfully!')),
             );
-            await Provider.of<AppStateProvider>(context, listen: false).fetchProfile();
+            await Provider.of<AppStateProvider>(
+              context,
+              listen: false,
+            ).fetchProfile();
           }
         } else {
           if (mounted) {
@@ -196,37 +213,41 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Future<void> _showDeleteAccountDialog(BuildContext context) async {
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text(
-          'Delete Account?',
-          style: GoogleFonts.inter(fontWeight: FontWeight.bold),
-        ),
-        content: Text(
-          'This action is permanent and cannot be undone. All your data will be permanently removed.',
-          style: GoogleFonts.inter(),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: Text('Cancel', style: GoogleFonts.inter(color: Colors.grey)),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: Text(
-              'Delete',
-              style: GoogleFonts.inter(
-                color: Colors.redAccent,
-                fontWeight: FontWeight.bold,
-              ),
+      builder:
+          (context) => AlertDialog(
+            title: Text(
+              'Delete Account?',
+              style: GoogleFonts.inter(fontWeight: FontWeight.bold),
             ),
+            content: Text(
+              'This action is permanent and cannot be undone. All your data will be permanently removed.',
+              style: GoogleFonts.inter(),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: Text(
+                  'Cancel',
+                  style: GoogleFonts.inter(color: Colors.grey),
+                ),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: Text(
+                  'Delete',
+                  style: GoogleFonts.inter(
+                    color: Colors.redAccent,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
     );
 
     if (confirmed == true) {
       if (!mounted) return;
-      
+
       showDialog(
         context: context,
         barrierDismissible: false,
@@ -254,9 +275,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
       } catch (e) {
         if (!context.mounted) return;
         Navigator.pop(context); // Close loading
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(ErrorHandler.getErrorMessage(e, action: 'Delete failed'))));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              ErrorHandler.getErrorMessage(e, action: 'Delete failed'),
+            ),
+          ),
+        );
       }
     }
   }
@@ -320,11 +345,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       padding: const EdgeInsets.fromLTRB(20, 64, 20, 48),
       child: Column(
         children: [
-          Row(
-            children: [
-              _buildGhostBackButton(),
-            ],
-          ),
+          Row(children: [_buildGhostBackButton()]),
           const SizedBox(height: 24),
           // Avatar with premium border
           Stack(
@@ -334,7 +355,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 height: 110,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  border: Border.all(color: Colors.white.withValues(alpha: 0.2), width: 1),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.2),
+                    width: 1,
+                  ),
                   boxShadow: [
                     BoxShadow(
                       color: Colors.black.withValues(alpha: 0.3),
@@ -351,9 +375,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       border: Border.all(color: AppTheme.saffron, width: 3),
                       image: _getProfileImage(user),
                     ),
-                    child: user?['profilePicture'] == null || user['profilePicture'].toString().isEmpty
-                        ? const Icon(Icons.person_rounded, size: 54, color: Colors.white70)
-                        : null,
+                    child:
+                        user?['profilePicture'] == null ||
+                                user['profilePicture'].toString().isEmpty
+                            ? const Icon(
+                              Icons.person_rounded,
+                              size: 54,
+                              color: Colors.white70,
+                            )
+                            : null,
                   ),
                 ),
               ),
@@ -367,7 +397,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     decoration: BoxDecoration(
                       color: AppTheme.saffron,
                       shape: BoxShape.circle,
-                      border: Border.all(color: const Color(0xFF1A1A1A), width: 3),
+                      border: Border.all(
+                        color: const Color(0xFF1A1A1A),
+                        width: 3,
+                      ),
                       boxShadow: [
                         BoxShadow(
                           color: Colors.black.withValues(alpha: 0.2),
@@ -376,7 +409,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ),
                       ],
                     ),
-                    child: const Icon(Icons.camera_alt_rounded, color: Colors.white, size: 16),
+                    child: const Icon(
+                      Icons.camera_alt_rounded,
+                      color: Colors.white,
+                      size: 16,
+                    ),
                   ),
                 ),
               ),
@@ -399,7 +436,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildDetailRow(IconData icon, String label, String value, {VoidCallback? onTap}) {
+  Widget _buildDetailRow(
+    IconData icon,
+    String label,
+    String value, {
+    VoidCallback? onTap,
+  }) {
     return GestureDetector(
       onTap: onTap,
       child: Padding(
@@ -413,7 +455,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 color: AppTheme.scaffoldBg,
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: Icon(icon, color: AppTheme.textPrimary.withValues(alpha: 0.7), size: 20),
+              child: Icon(
+                icon,
+                color: AppTheme.textPrimary.withValues(alpha: 0.7),
+                size: 20,
+              ),
             ),
             const SizedBox(width: 14),
             Expanded(
@@ -442,7 +488,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
             ),
             if (onTap != null)
-              Icon(Icons.edit_rounded, color: AppTheme.saffron.withValues(alpha: 0.5), size: 16),
+              Icon(
+                Icons.edit_rounded,
+                color: AppTheme.saffron.withValues(alpha: 0.5),
+                size: 16,
+              ),
           ],
         ),
       ),
@@ -454,7 +504,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget _buildGhostBackButton() {
-    if (!Navigator.canPop(context)) return const SizedBox(width: 36, height: 36);
+    if (!Navigator.canPop(context))
+      return const SizedBox(width: 36, height: 36);
     return GestureDetector(
       onTap: () => Navigator.pop(context),
       child: Container(
@@ -463,7 +514,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
           color: Colors.white.withValues(alpha: 0.1),
           shape: BoxShape.circle,
         ),
-        child: const Icon(Icons.arrow_back_rounded, color: Colors.white, size: 20),
+        child: const Icon(
+          Icons.arrow_back_rounded,
+          color: Colors.white,
+          size: 20,
+        ),
       ),
     );
   }
@@ -500,7 +555,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
             Icons.person_outline_rounded,
             'FULL NAME',
             user?['name'] ?? 'Guest User',
-            onTap: user != null ? () => _showEditNameDialog(user['name'] ?? '') : null,
+            onTap:
+                user != null
+                    ? () => _showEditNameDialog(user['name'] ?? '')
+                    : null,
           ),
           _buildDivider(),
           _buildDetailRow(
@@ -513,10 +571,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
             Icons.location_on_outlined,
             'SAVED ADDRESSES',
             'Manage your locations',
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const SavedAddressesScreen()),
-            ),
+            onTap:
+                () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const SavedAddressesScreen(),
+                  ),
+                ),
           ),
         ],
       ),
@@ -557,7 +618,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       color: Colors.white.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: const Icon(Icons.swap_horiz_rounded, color: Colors.white, size: 20),
+                    child: const Icon(
+                      Icons.swap_horiz_rounded,
+                      color: Colors.white,
+                      size: 20,
+                    ),
                   ),
                   const SizedBox(width: 12),
                   Text(
@@ -570,11 +635,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                   const Spacer(),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
-                      color: hasOther
-                          ? Colors.greenAccent.withValues(alpha: 0.2)
-                          : Colors.white.withValues(alpha: 0.08),
+                      color:
+                          hasOther
+                              ? Colors.greenAccent.withValues(alpha: 0.2)
+                              : Colors.white.withValues(alpha: 0.08),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
@@ -592,8 +661,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
               const SizedBox(height: 14),
               Text(
                 hasOther
-                    ? 'You already have a worker account with this email. Open the Sevak Worker App to accept jobs.'
-                    : 'Earn money by offering your skills! Download the Sevak Worker App and register with the same email.',
+                    ? 'You already have a worker account with this email. Open the WILL Worker App to accept jobs.'
+                    : 'Earn money by offering your skills! Download the WILL Worker App and register.',
                 style: GoogleFonts.inter(
                   fontSize: 13,
                   color: Colors.white.withValues(alpha: 0.7),
@@ -615,12 +684,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     );
                   },
                   icon: Icon(
-                    hasOther ? Icons.open_in_new_rounded : Icons.download_rounded,
+                    hasOther
+                        ? Icons.open_in_new_rounded
+                        : Icons.download_rounded,
                     size: 16,
                   ),
                   label: Text(
                     hasOther ? 'Open Worker App' : 'Get Worker App',
-                    style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 13),
+                    style: GoogleFonts.inter(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 13,
+                    ),
                   ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppTheme.saffron,
@@ -668,17 +742,35 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
           ),
           const SizedBox(height: 20),
-          _buildSettingItem(Icons.privacy_tip_outlined, 'Privacy Policy', onTap: () => _launchURL('https://justlavish.tech/privacy-policy')),
+          _buildSettingItem(
+            Icons.privacy_tip_outlined,
+            'Privacy Policy',
+            onTap: () => _launchURL('https://justlavish.tech/privacy-policy'),
+          ),
           _buildDivider(),
-          _buildSettingItem(Icons.description_outlined, 'Terms of Service', onTap: () => _launchURL('https://justlavish.tech/terms')),
+          _buildSettingItem(
+            Icons.description_outlined,
+            'Terms of Service',
+            onTap: () => _launchURL('https://justlavish.tech/terms'),
+          ),
           _buildDivider(),
-          _buildSettingItem(Icons.delete_outline_rounded, 'Delete Account', isDestructive: true, onTap: () => _showDeleteAccountDialog(context)),
+          _buildSettingItem(
+            Icons.delete_outline_rounded,
+            'Delete Account',
+            isDestructive: true,
+            onTap: () => _showDeleteAccountDialog(context),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildSettingItem(IconData icon, String title, {VoidCallback? onTap, bool isDestructive = false}) {
+  Widget _buildSettingItem(
+    IconData icon,
+    String title, {
+    VoidCallback? onTap,
+    bool isDestructive = false,
+  }) {
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
@@ -686,7 +778,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
         padding: const EdgeInsets.symmetric(vertical: 12),
         child: Row(
           children: [
-            Icon(icon, color: isDestructive ? AppTheme.error : AppTheme.textPrimary.withValues(alpha: 0.7), size: 22),
+            Icon(
+              icon,
+              color:
+                  isDestructive
+                      ? AppTheme.error
+                      : AppTheme.textPrimary.withValues(alpha: 0.7),
+              size: 22,
+            ),
             const SizedBox(width: 14),
             Text(
               title,
@@ -697,7 +796,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
             ),
             const Spacer(),
-            Icon(Icons.chevron_right_rounded, color: AppTheme.divider, size: 20),
+            Icon(
+              Icons.chevron_right_rounded,
+              color: AppTheme.divider,
+              size: 20,
+            ),
           ],
         ),
       ),
@@ -711,8 +814,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
       margin: const EdgeInsets.only(top: 12),
       child: ElevatedButton(
         onPressed: () async {
-          final stateProvider = Provider.of<AppStateProvider>(context, listen: false);
-          final locationProvider = Provider.of<LocationProvider>(context, listen: false);
+          final stateProvider = Provider.of<AppStateProvider>(
+            context,
+            listen: false,
+          );
+          final locationProvider = Provider.of<LocationProvider>(
+            context,
+            listen: false,
+          );
 
           stateProvider.clearData();
           locationProvider.clearData();
@@ -730,7 +839,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
           backgroundColor: AppTheme.error.withValues(alpha: 0.1),
           foregroundColor: AppTheme.error,
           elevation: 0,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
+          ),
         ),
         child: Text(
           'LOG OUT',
@@ -745,7 +856,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   DecorationImage? _getProfileImage(dynamic user) {
-    if (user?['profilePicture'] == null || user!['profilePicture'].toString().isEmpty) {
+    if (user?['profilePicture'] == null ||
+        user!['profilePicture'].toString().isEmpty) {
       return null;
     }
     final String pic = user['profilePicture'].toString();
@@ -768,7 +880,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final Uri url = Uri.parse(urlString);
     try {
       if (await url_launcher.canLaunchUrl(url)) {
-        await url_launcher.launchUrl(url, mode: url_launcher.LaunchMode.externalApplication);
+        await url_launcher.launchUrl(
+          url,
+          mode: url_launcher.LaunchMode.externalApplication,
+        );
       } else {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -779,7 +894,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(ErrorHandler.getErrorMessage(e, action: 'Launch failed'))),
+          SnackBar(
+            content: Text(
+              ErrorHandler.getErrorMessage(e, action: 'Launch failed'),
+            ),
+          ),
         );
       }
     }
