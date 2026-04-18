@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:image_picker/image_picker.dart';
 import 'package:record/record.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:audioplayers/audioplayers.dart';
 import '../models/service_category.dart';
 import 'service_request_screen.dart';
 
@@ -27,41 +28,119 @@ class _TaskInstructionsScreenState extends State<TaskInstructionsScreen> {
     'Periodic Checkup',
     'Other (please specify)'
   ];
-  String? _taskImageBase64;
+  List<String> _taskImagesBase64 = [];
   String? _taskAudioBase64;
   final ImagePicker _picker = ImagePicker();
   
   // Audio state
   final AudioRecorder _audioRecorder = AudioRecorder();
+  final AudioPlayer _audioPlayer = AudioPlayer();
   bool _isRecording = false;
+  bool _isPlaying = false;
   
   // Message state
   bool _showMessageField = false;
   final TextEditingController _msgController = TextEditingController();
 
   @override
+  void initState() {
+    super.initState();
+    _audioPlayer.onPlayerStateChanged.listen((state) {
+      if (mounted) {
+        setState(() {
+          _isPlaying = state == PlayerState.playing;
+        });
+      }
+    });
+  }
+
+  @override
   void dispose() {
     _audioRecorder.dispose();
+    _audioPlayer.dispose();
     _msgController.dispose();
     super.dispose();
   }
 
-  Future<void> _pickImage() async {
+  Future<void> _showImagePickerBottomSheet() async {
+    if (_taskImagesBase64.length >= 5) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Maximum 5 images allowed')),
+      );
+      return;
+    }
+
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => SafeArea(
+        child: Wrap(
+          children: [
+            ListTile(
+              leading: const Icon(Icons.camera_alt, color: Color(0xFF4A9782)),
+              title: Text('Take a Photo', style: GoogleFonts.inter()),
+              onTap: () {
+                Navigator.pop(context);
+                _pickImage(ImageSource.camera);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.photo_library, color: Color(0xFF4A9782)),
+              title: Text('Choose from Gallery', style: GoogleFonts.inter()),
+              onTap: () {
+                Navigator.pop(context);
+                _pickImage(ImageSource.gallery);
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _pickImage(ImageSource source) async {
     final XFile? image = await _picker.pickImage(
-      source: ImageSource.gallery,
+      source: source,
       imageQuality: 50, // Compress image to save bandwidth/storage
     );
 
     if (image != null) {
       final bytes = await File(image.path).readAsBytes();
       setState(() {
-        _taskImageBase64 = 'data:image/jpeg;base64,${base64Encode(bytes)}';
+        _taskImagesBase64.add('data:image/jpeg;base64,${base64Encode(bytes)}');
       });
     }
   }
 
-  Future<void> _toggleRecording() async {
+  void _previewImage(String imgBase64) {
+    final bytes = base64Decode(imgBase64.split(',').last);
+    
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(20),
+          child: Image.memory(bytes, fit: BoxFit.contain),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _toggleAudioAction() async {
     try {
+      if (_taskAudioBase64 != null) {
+        if (_isPlaying) {
+          await _audioPlayer.stop();
+        } else {
+          _showAudioOptionsBottomSheet();
+        }
+        return;
+      }
+
+      // Recording logic
       if (_isRecording) {
         final path = await _audioRecorder.stop();
         setState(() => _isRecording = false);
@@ -94,6 +173,44 @@ class _TaskInstructionsScreenState extends State<TaskInstructionsScreen> {
     }
   }
 
+  void _showAudioOptionsBottomSheet() {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => SafeArea(
+        child: Wrap(
+          children: [
+            ListTile(
+              leading: const Icon(Icons.play_arrow, color: Color(0xFF4A9782)),
+              title: Text('Play Audio', style: GoogleFonts.inter()),
+              onTap: () async {
+                Navigator.pop(context);
+                final bytes = base64Decode(_taskAudioBase64!.split(',').last);
+                await _audioPlayer.stop();
+                await _audioPlayer.release();
+                await _audioPlayer.play(BytesSource(bytes));
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.delete_outline, color: Colors.redAccent),
+              title: Text('Delete & Re-record', style: GoogleFonts.inter(color: Colors.redAccent)),
+              onTap: () {
+                Navigator.pop(context);
+                setState(() {
+                  _taskAudioBase64 = null;
+                  _isPlaying = false;
+                });
+                _audioPlayer.stop();
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   void _incrementWorkers() {
     setState(() => _workerCount++);
   }
@@ -119,6 +236,7 @@ class _TaskInstructionsScreenState extends State<TaskInstructionsScreen> {
                   const SizedBox(height: 40),
                   _buildWorkTypeDropdown(),
                   const SizedBox(height: 40),
+                  if (_taskImagesBase64.isNotEmpty) _buildImageThumbnails(),
                   _buildActionButtons(),
                   if (_showMessageField) _buildMessageField(),
                   const SizedBox(height: 40),
@@ -232,17 +350,69 @@ class _TaskInstructionsScreenState extends State<TaskInstructionsScreen> {
     );
   }
 
+  Widget _buildImageThumbnails() {
+    return Container(
+      height: 80,
+      margin: const EdgeInsets.only(bottom: 20),
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        itemCount: _taskImagesBase64.length,
+        itemBuilder: (context, index) {
+          final imgBase64 = _taskImagesBase64[index];
+          final bytes = base64Decode(imgBase64.split(',').last);
+          return Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8.0),
+            child: Stack(
+              children: [
+                GestureDetector(
+                  onTap: () => _previewImage(imgBase64),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(10),
+                    child: Image.memory(
+                      bytes,
+                      width: 80,
+                      height: 80,
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                ),
+                Positioned(
+                  top: 2,
+                  right: 2,
+                  child: GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        _taskImagesBase64.removeAt(index);
+                      });
+                    },
+                    child: Container(
+                      decoration: const BoxDecoration(
+                        color: Colors.black54,
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.close, color: Colors.white, size: 18),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
   Widget _buildActionButtons() {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         GestureDetector(
-          onTap: _pickImage,
+          onTap: _showImagePickerBottomSheet,
           child: _buildMediaButton(
-            label: _taskImageBase64 != null ? 'Image added' : 'Upload image',
-            icon: _taskImageBase64 != null ? Icons.check_circle : Icons.unarchive_outlined,
+            label: _taskImagesBase64.length >= 5 ? 'Max images (5/5)' : 'Upload image (${_taskImagesBase64.length}/5)',
+            icon: Icons.unarchive_outlined,
             isWide: true,
-            isSuccess: _taskImageBase64 != null,
+            isSuccess: _taskImagesBase64.isNotEmpty,
           ),
         ),
         const SizedBox(width: 15),
@@ -255,9 +425,13 @@ class _TaskInstructionsScreenState extends State<TaskInstructionsScreen> {
         ),
         const SizedBox(width: 15),
         GestureDetector(
-          onTap: _toggleRecording,
+          onTap: _toggleAudioAction,
           child: _buildRoundButton(
-            _isRecording ? Icons.stop : (_taskAudioBase64 != null ? Icons.check : Icons.mic_none_outlined),
+            _isRecording 
+                ? Icons.stop 
+                : (_taskAudioBase64 != null 
+                    ? (_isPlaying ? Icons.pause : Icons.play_arrow) 
+                    : Icons.mic_none_outlined),
             isActive: _isRecording,
             isSuccess: _taskAudioBase64 != null && !_isRecording,
           ),
@@ -418,6 +592,10 @@ class _TaskInstructionsScreenState extends State<TaskInstructionsScreen> {
             return;
           }
 
+          if (_isPlaying) {
+            _audioPlayer.stop();
+          }
+
           Navigator.push(
             context,
             MaterialPageRoute(
@@ -425,7 +603,7 @@ class _TaskInstructionsScreenState extends State<TaskInstructionsScreen> {
                 category: widget.category,
                 numberOfWorkers: _workerCount,
                 workType: _selectedWorkType!,
-                taskImageBase64: _taskImageBase64,
+                taskImagesBase64: _taskImagesBase64.isNotEmpty ? _taskImagesBase64 : null,
                 taskAudioBase64: _taskAudioBase64,
                 taskNotes: _msgController.text.isNotEmpty ? _msgController.text : null,
               ),

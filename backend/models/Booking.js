@@ -58,9 +58,9 @@ const BookingSchema = new mongoose.Schema({
     problemTitle: {
         type: String
     },
-    taskImage: {
+    taskImages: [{
         type: String
-    },
+    }],
     taskAudio: {
         type: String
     },

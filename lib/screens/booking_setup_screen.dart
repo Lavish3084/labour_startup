@@ -15,7 +15,7 @@ class BookingSetupScreen extends StatefulWidget {
   final double amount;
   final int numberOfWorkers;
   final String workType;
-  final String? taskImageBase64;
+  final List<String>? taskImagesBase64;
   final String? taskAudioBase64;
   final String? taskNotes;
 
@@ -31,7 +31,7 @@ class BookingSetupScreen extends StatefulWidget {
     required this.amount,
     this.numberOfWorkers = 1,
     this.workType = '',
-    this.taskImageBase64,
+    this.taskImagesBase64,
     this.taskAudioBase64,
     this.taskNotes,
   });
@@ -81,7 +81,7 @@ class _BookingSetupScreenState extends State<BookingSetupScreen> {
         landmark: _landmarkController.text,
         numberOfWorkers: widget.numberOfWorkers,
         workType: widget.workType,
-        taskImage: widget.taskImageBase64,
+        taskImages: widget.taskImagesBase64,
         taskAudio: widget.taskAudioBase64,
       );
 

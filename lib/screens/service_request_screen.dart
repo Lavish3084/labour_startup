@@ -18,7 +18,7 @@ class ServiceRequestScreen extends StatefulWidget {
   final ServiceCategory category;
   final int numberOfWorkers;
   final String workType;
-  final String? taskImageBase64;
+  final List<String>? taskImagesBase64;
   final String? taskAudioBase64;
   final String? taskNotes;
 
@@ -27,7 +27,7 @@ class ServiceRequestScreen extends StatefulWidget {
     required this.category,
     this.numberOfWorkers = 1,
     this.workType = '',
-    this.taskImageBase64,
+    this.taskImagesBase64,
     this.taskAudioBase64,
     this.taskNotes,
   });
@@ -785,7 +785,7 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
                       amount: totalPrice,
                       numberOfWorkers: widget.numberOfWorkers,
                       workType: widget.workType,
-                      taskImageBase64: widget.taskImageBase64,
+                      taskImagesBase64: widget.taskImagesBase64,
                       taskAudioBase64: widget.taskAudioBase64,
                       taskNotes: widget.taskNotes,
                     ),
