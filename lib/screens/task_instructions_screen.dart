@@ -3,6 +3,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'dart:convert';
 import 'dart:io';
 import 'package:image_picker/image_picker.dart';
+import 'package:record/record.dart';
+import 'package:path_provider/path_provider.dart';
 import '../models/service_category.dart';
 import 'service_request_screen.dart';
 
@@ -23,10 +25,26 @@ class _TaskInstructionsScreenState extends State<TaskInstructionsScreen> {
     'Standard Maintenance',
     'New Installation',
     'Periodic Checkup',
-    'Other'
+    'Other (please specify)'
   ];
   String? _taskImageBase64;
+  String? _taskAudioBase64;
   final ImagePicker _picker = ImagePicker();
+  
+  // Audio state
+  final AudioRecorder _audioRecorder = AudioRecorder();
+  bool _isRecording = false;
+  
+  // Message state
+  bool _showMessageField = false;
+  final TextEditingController _msgController = TextEditingController();
+
+  @override
+  void dispose() {
+    _audioRecorder.dispose();
+    _msgController.dispose();
+    super.dispose();
+  }
 
   Future<void> _pickImage() async {
     final XFile? image = await _picker.pickImage(
@@ -39,6 +57,40 @@ class _TaskInstructionsScreenState extends State<TaskInstructionsScreen> {
       setState(() {
         _taskImageBase64 = 'data:image/jpeg;base64,${base64Encode(bytes)}';
       });
+    }
+  }
+
+  Future<void> _toggleRecording() async {
+    try {
+      if (_isRecording) {
+        final path = await _audioRecorder.stop();
+        setState(() => _isRecording = false);
+        if (path != null) {
+          final bytes = await File(path).readAsBytes();
+          setState(() {
+            _taskAudioBase64 = 'data:audio/m4a;base64,${base64Encode(bytes)}';
+          });
+        }
+      } else {
+        if (await _audioRecorder.hasPermission()) {
+          final tempDir = await getTemporaryDirectory();
+          final path = '${tempDir.path}/task_audio_${DateTime.now().millisecondsSinceEpoch}.m4a';
+          await _audioRecorder.start(
+            const RecordConfig(encoder: AudioEncoder.aacLc),
+            path: path,
+          );
+          setState(() => _isRecording = true);
+        } else {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Microphone permission required')),
+            );
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('Audio recording error: $e');
+      setState(() => _isRecording = false);
     }
   }
 
@@ -68,6 +120,7 @@ class _TaskInstructionsScreenState extends State<TaskInstructionsScreen> {
                   _buildWorkTypeDropdown(),
                   const SizedBox(height: 40),
                   _buildActionButtons(),
+                  if (_showMessageField) _buildMessageField(),
                   const SizedBox(height: 40),
                   _buildWorkerSelector(),
                   const Spacer(),
@@ -193,10 +246,47 @@ class _TaskInstructionsScreenState extends State<TaskInstructionsScreen> {
           ),
         ),
         const SizedBox(width: 15),
-        _buildRoundButton(Icons.comment_outlined),
+        GestureDetector(
+          onTap: () => setState(() => _showMessageField = !_showMessageField),
+          child: _buildRoundButton(
+            Icons.comment_outlined, 
+            isActive: _showMessageField || _msgController.text.isNotEmpty,
+          ),
+        ),
         const SizedBox(width: 15),
-        _buildRoundButton(Icons.mic_none_outlined),
+        GestureDetector(
+          onTap: _toggleRecording,
+          child: _buildRoundButton(
+            _isRecording ? Icons.stop : (_taskAudioBase64 != null ? Icons.check : Icons.mic_none_outlined),
+            isActive: _isRecording,
+            isSuccess: _taskAudioBase64 != null && !_isRecording,
+          ),
+        ),
       ],
+    );
+  }
+
+  Widget _buildMessageField() {
+    return Padding(
+      padding: const EdgeInsets.only(top: 20),
+      child: Container(
+        decoration: BoxDecoration(
+          color: const Color(0xFFF8F8F8),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: const Color(0xFFEEEEEE)),
+        ),
+        child: TextField(
+          controller: _msgController,
+          maxLines: 3,
+          style: GoogleFonts.roboto(fontSize: 14),
+          decoration: InputDecoration(
+            hintText: 'Describe the issue or add instructions...',
+            hintStyle: GoogleFonts.roboto(color: Colors.grey[400], fontSize: 14),
+            border: InputBorder.none,
+            contentPadding: const EdgeInsets.all(16),
+          ),
+        ),
+      ),
     );
   }
 
@@ -227,13 +317,18 @@ class _TaskInstructionsScreenState extends State<TaskInstructionsScreen> {
     );
   }
 
-  Widget _buildRoundButton(IconData icon) {
+  Widget _buildRoundButton(IconData icon, {bool isActive = false, bool isSuccess = false}) {
+    Color bgColor = const Color(0xFF519482);
+    if (isActive) bgColor = Colors.redAccent;
+    if (isSuccess) bgColor = const Color(0xFF2E876E);
+
     return Container(
       height: 50,
       width: 50,
       decoration: BoxDecoration(
-        color: const Color(0xFF519482),
+        color: bgColor,
         borderRadius: BorderRadius.circular(15),
+        border: isSuccess ? Border.all(color: Colors.white, width: 2) : null,
       ),
       child: Icon(icon, color: Colors.white, size: 24),
     );
@@ -310,6 +405,19 @@ class _TaskInstructionsScreenState extends State<TaskInstructionsScreen> {
             );
             return;
           }
+          if (_selectedWorkType == 'Other (please specify)' && _msgController.text.trim().isEmpty) {
+             ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Please use the message button to specify the work type')),
+            );
+            return;
+          }
+          if (_isRecording) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Please stop recording your voice note first')),
+            );
+            return;
+          }
+
           Navigator.push(
             context,
             MaterialPageRoute(
@@ -318,6 +426,8 @@ class _TaskInstructionsScreenState extends State<TaskInstructionsScreen> {
                 numberOfWorkers: _workerCount,
                 workType: _selectedWorkType!,
                 taskImageBase64: _taskImageBase64,
+                taskAudioBase64: _taskAudioBase64,
+                taskNotes: _msgController.text.isNotEmpty ? _msgController.text : null,
               ),
             ),
           );

@@ -61,6 +61,9 @@ const BookingSchema = new mongoose.Schema({
     taskImage: {
         type: String
     },
+    taskAudio: {
+        type: String
+    },
     notes: {
         type: String
     },

@@ -19,6 +19,8 @@ class ServiceRequestScreen extends StatefulWidget {
   final int numberOfWorkers;
   final String workType;
   final String? taskImageBase64;
+  final String? taskAudioBase64;
+  final String? taskNotes;
 
   const ServiceRequestScreen({
     super.key,
@@ -26,6 +28,8 @@ class ServiceRequestScreen extends StatefulWidget {
     this.numberOfWorkers = 1,
     this.workType = '',
     this.taskImageBase64,
+    this.taskAudioBase64,
+    this.taskNotes,
   });
 
   @override
@@ -782,6 +786,8 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
                       numberOfWorkers: widget.numberOfWorkers,
                       workType: widget.workType,
                       taskImageBase64: widget.taskImageBase64,
+                      taskAudioBase64: widget.taskAudioBase64,
+                      taskNotes: widget.taskNotes,
                     ),
                   ),
                 );

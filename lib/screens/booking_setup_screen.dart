@@ -16,6 +16,8 @@ class BookingSetupScreen extends StatefulWidget {
   final int numberOfWorkers;
   final String workType;
   final String? taskImageBase64;
+  final String? taskAudioBase64;
+  final String? taskNotes;
 
   const BookingSetupScreen({
     super.key,
@@ -30,6 +32,8 @@ class BookingSetupScreen extends StatefulWidget {
     this.numberOfWorkers = 1,
     this.workType = '',
     this.taskImageBase64,
+    this.taskAudioBase64,
+    this.taskNotes,
   });
 
   @override
@@ -42,6 +46,14 @@ class _BookingSetupScreenState extends State<BookingSetupScreen> {
   final TextEditingController _houseController = TextEditingController();
   final TextEditingController _landmarkController = TextEditingController();
   bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.taskNotes != null && widget.taskNotes!.isNotEmpty) {
+      _problemDescriptionController.text = widget.taskNotes!;
+    }
+  }
 
   Future<void> _handleBookNow() async {
     if (_problemTitleController.text.isEmpty || _houseController.text.isEmpty) {
@@ -70,6 +82,7 @@ class _BookingSetupScreenState extends State<BookingSetupScreen> {
         numberOfWorkers: widget.numberOfWorkers,
         workType: widget.workType,
         taskImage: widget.taskImageBase64,
+        taskAudio: widget.taskAudioBase64,
       );
 
       if (mounted) {

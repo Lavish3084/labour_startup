@@ -66,7 +66,7 @@ async function checkOverlap(labourerId, targetBooking) {
 // @desc    Create a new booking
 // @access  Private (User)
 router.post('/', verifyToken, async (req, res) => {
-    const { labourerId, category, date, notes, problemTitle, address, houseNumber, landmark, latitude, longitude, bookingMode, numberOfHours, amount, minAmount, maxAmount, numberOfWorkers, workType, taskImage } = req.body;
+    const { labourerId, category, date, notes, problemTitle, address, houseNumber, landmark, latitude, longitude, bookingMode, numberOfHours, amount, minAmount, maxAmount, numberOfWorkers, workType, taskImage, taskAudio } = req.body;
     
     // Check if the booking date is less than 1 hour away or in the past
     const bookingDate = new Date(date);
@@ -82,6 +82,7 @@ router.post('/', verifyToken, async (req, res) => {
             date,
             problemTitle,
             taskImage,
+            taskAudio,
             notes,
             category,
             address,
