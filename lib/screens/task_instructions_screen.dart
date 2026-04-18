@@ -266,17 +266,6 @@ class _TaskInstructionsScreenState extends State<TaskInstructionsScreen> {
       ),
       child: Stack(
         children: [
-          // Pattern overlay (subtle dots)
-          Positioned.fill(
-            child: Opacity(
-              opacity: 0.1,
-              child: Image.asset(
-                'assets/images/branding_banner.png', // Fallback to branding banner or similar
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) => Container(),
-              ),
-            ),
-          ),
           SafeArea(
             child: Padding(
               padding: const EdgeInsets.all(20),
@@ -511,21 +500,22 @@ class _TaskInstructionsScreenState extends State<TaskInstructionsScreen> {
   Widget _buildWorkerSelector() {
     return Row(
       children: [
-        Icon(Icons.person_outline, color: Colors.black.withOpacity(0.7), size: 32),
+        const Icon(Icons.engineering, color: Colors.black, size: 36),
         const SizedBox(width: 15),
         Expanded(
           child: Text(
-            'Select the number of Worker',
+            'Select the number\nof Worker',
             style: GoogleFonts.inter(
               fontSize: 14,
               fontWeight: FontWeight.w600,
               color: Colors.black,
+              height: 1.3,
             ),
           ),
         ),
         Row(
           children: [
-            _buildCounterButton(Icons.remove, _decrementWorkers),
+            _buildCounterButton(Icons.remove, _decrementWorkers, isAdd: false),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 15),
               child: Text(
@@ -536,14 +526,14 @@ class _TaskInstructionsScreenState extends State<TaskInstructionsScreen> {
                 ),
               ),
             ),
-            _buildCounterButton(Icons.add, _incrementWorkers),
+            _buildCounterButton(Icons.add, _incrementWorkers, isAdd: true),
           ],
         ),
       ],
     );
   }
 
-  Widget _buildCounterButton(IconData icon, VoidCallback onTap) {
+  Widget _buildCounterButton(IconData icon, VoidCallback onTap, {required bool isAdd}) {
     bool isPressed = false;
     return StatefulBuilder(
       builder: (context, setStateLocal) {

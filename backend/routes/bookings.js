@@ -62,6 +62,49 @@ async function checkOverlap(labourerId, targetBooking) {
     return false;
 }
 
+// Helper to broadcast a booking to all workers in category
+const broadcastBooking = async (booking) => {
+    try {
+        const category = booking.category;
+        const minAmount = booking.minAmount;
+        const maxAmount = booking.maxAmount;
+        const amount = booking.amount;
+        
+        const priceDisplay = (minAmount && maxAmount)
+            ? `₹${minAmount}-₹${maxAmount}`
+            : `₹${amount || 'Negotiable'}`;
+
+        // Find all workers in this category
+        const workers = await Labourer.find({ category: category }).populate('user');
+        console.log(`[Broadcast] Found ${workers.length} workers in category: ${category}`);
+
+        const tokens = workers
+            .map(w => (w.user && w.user.fcmToken) ? w.user.fcmToken : null)
+            .filter(t => t);
+
+        if (tokens.length > 0) {
+            console.log(`[Broadcast] Sending to ${tokens.length} workers for Booking: ${booking._id}`);
+            await sendBroadcastNotification(
+                tokens,
+                'New Job Opportunity',
+                `A new ${category} job is available nearby! Price: ${priceDisplay}`,
+                { 
+                    type: 'booking',
+                    bookingId: booking._id.toString(),
+                    status: 'pending'
+                }
+            );
+            return true;
+        } else {
+            console.log(`[Broadcast] No valid FCM tokens found for category: ${category}`);
+            return false;
+        }
+    } catch (err) {
+        console.error('[Broadcast] Error:', err.message);
+        return false;
+    }
+};
+
 // @route   POST /api/bookings
 // @desc    Create a new booking
 // @access  Private (User)
@@ -146,40 +189,14 @@ router.post('/', verifyToken, async (req, res) => {
                 if (i === 0) firstBooking = savedBooking;
             }
 
-            const booking = firstBooking; // Use the first one for the response
+            const booking = firstBooking; 
 
-            // Find all workers in this category
-            const workers = await Labourer.find({ category: category }).populate('user');
-            console.log(`Found ${workers.length} workers in category: ${category}`);
-
-            const tokens = workers
-                .map(w => {
-                    if (w.user && w.user.fcmToken) {
-                        return w.user.fcmToken;
-                    }
-                    if (w.user) {
-                        console.log(`Worker User ${w.user._id} (${w.user.name}) has no FCM token.`);
-                    } else {
-                        console.log(`Labourer ${w._id} has no associated user.`);
-                    }
-                    return null;
-                })
-                .filter(t => t); // Filter out nulls/empty
-
-            if (tokens.length > 0) {
-                console.log(`Sending broadcast to ${tokens.length} workers: ${tokens.map(t => t.substring(0, 10) + '...').join(', ')}`);
-                await sendBroadcastNotification(
-                    tokens,
-                    'New Job Opportunity',
-                    `A new ${category} job is available nearby! Price: ${priceDisplay}`,
-                    { 
-                        type: 'booking',
-                        bookingId: booking._id.toString(),
-                        status: 'pending'
-                    }
-                );
+            // GATE: Only broadcast immediately if labourerId was provided (direct booking)
+            // For broadcast requests, we wait until payment is verified in payments.js
+            if (labourerId) {
+                // Already handled above for direct booking
             } else {
-                console.log(`No valid FCM tokens found for category: ${category}. Category count: ${workers.length}`);
+                console.log(`[Booking] Created broadcast booking ${booking._id}. Awaiting payment before broadcast.`);
             }
 
             res.json(booking);
@@ -236,6 +253,7 @@ router.get('/worker', verifyToken, async (req, res) => {
                 labourer: null, 
                 category: labourer.category, 
                 status: 'pending',
+                paymentStatus: 'paid', // GATE: Only show paid broadcast jobs
                 declinedBy: { $ne: labourer._id },
                 date: { $gt: expirationTime }
             });
@@ -307,7 +325,7 @@ router.get('/:id', verifyToken, async (req, res) => {
         const labourer = await Labourer.findOne({ user: req.user.id });
         const isLabourer = labourer && (
             (booking.labourer && booking.labourer.toString() === labourer._id.toString()) ||
-            (!booking.labourer && booking.status === 'pending' && booking.category === labourer.category)
+            (!booking.labourer && booking.status === 'pending' && booking.paymentStatus === 'paid' && booking.category === labourer.category)
         );
 
         if (!isOwner && !isLabourer) {
@@ -776,4 +794,5 @@ router.post('/:id/rate', verifyToken, async (req, res) => {
     }
 });
 
+router.broadcastBooking = broadcastBooking;
 module.exports = router;

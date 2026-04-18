@@ -139,49 +139,60 @@ router.post('/verify-payment', verifyToken, async (req, res) => {
         // Notify the worker and remove them from overlapping pending jobs
         try {
             const booking = await Booking.findById(bookingId).populate('labourer');
-            if (booking && booking.labourer) {
-                // 1) Remove worker from applicants of other overlapping pending bookings
-                const labourerId = booking.labourer._id;
-                const bStart = new Date(booking.date).getTime();
-                const bEnd = bStart + (booking.numberOfHours || 2) * 60 * 60 * 1000;
+            if (booking) {
+                if (booking.labourer) {
+                    // 1) Remove worker from applicants of other overlapping pending bookings
+                    const labourerId = booking.labourer._id;
+                    const bStart = new Date(booking.date).getTime();
+                    const bEnd = bStart + (booking.numberOfHours || 2) * 60 * 60 * 1000;
 
-                const pendingBookings = await Booking.find({
-                    status: 'pending',
-                    applicants: labourerId
-                });
+                    const pendingBookings = await Booking.find({
+                        status: 'pending',
+                        applicants: labourerId
+                    });
 
-                for (let pBooking of pendingBookings) {
-                    if (pBooking._id.toString() === bookingId.toString()) continue;
-                    
-                    const pStart = new Date(pBooking.date).getTime();
-                    const pEnd = pStart + (pBooking.numberOfHours || 2) * 60 * 60 * 1000;
-                    
-                    // If times overlap, remove worker from this pending job's applicants
-                    if (bStart < pEnd && bEnd > pStart) {
-                        pBooking.applicants = pBooking.applicants.filter(
-                            id => id.toString() !== labourerId.toString()
-                        );
-                        await pBooking.save();
-                    }
-                }
-
-                // 2) Send Notification
-                const labourer = await Labourer.findById(labourerId).populate('user');
-                if (labourer && labourer.user && labourer.user.fcmToken) {
-                    await sendNotification(
-                        labourer.user.fcmToken,
-                        'Payment Received',
-                        'The platform fee for your current job has been paid.',
-                        { 
-                            type: 'booking',
-                            bookingId: bookingId.toString(),
-                            status: booking.status
+                    for (let pBooking of pendingBookings) {
+                        if (pBooking._id.toString() === bookingId.toString()) continue;
+                        
+                        const pStart = new Date(pBooking.date).getTime();
+                        const pEnd = pStart + (pBooking.numberOfHours || 2) * 60 * 60 * 1000;
+                        
+                        // If times overlap, remove worker from this pending job's applicants
+                        if (bStart < pEnd && bEnd > pStart) {
+                            pBooking.applicants = pBooking.applicants.filter(
+                                id => id.toString() !== labourerId.toString()
+                            );
+                            await pBooking.save();
                         }
-                    );
+                    }
+
+                    // 2) Send Notification
+                    const Labourer = require('../models/Labourer');
+                    const labourer = await Labourer.findById(labourerId).populate('user');
+                    if (labourer && labourer.user && labourer.user.fcmToken) {
+                        await sendNotification(
+                            labourer.user.fcmToken,
+                            'Payment Received',
+                            'The platform fee for your current job has been paid.',
+                            { 
+                                type: 'booking',
+                                bookingId: bookingId.toString(),
+                                status: booking.status
+                            }
+                        );
+                    }
+                } else {
+                    // This is a broadcast booking (no specific labourer yet)
+                    // Trigger the broadcast now that it's paid
+                    console.log(`[Payment] Verification success for broadcast booking ${bookingId}. Launching broadcast...`);
+                    const bookingsRouter = require('./bookings');
+                    if (bookingsRouter.broadcastBooking) {
+                        await bookingsRouter.broadcastBooking(booking);
+                    }
                 }
             }
         } catch (notifyErr) {
-            console.error("Failed to send payment notification:", notifyErr);
+            console.error("Failed to process post-payment logic:", notifyErr);
         }
 
         res.json({
