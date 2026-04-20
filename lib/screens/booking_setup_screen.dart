@@ -5,6 +5,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import '../models/service_category.dart';
 import '../services/api_service.dart';
 import 'searching_worker_screen.dart';
+import 'booking_accepted_screen.dart';
 import '../services/payment_service.dart';
 import 'package:razorpay_flutter/razorpay_flutter.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -125,17 +126,34 @@ class _BookingSetupScreenState extends State<BookingSetupScreen> {
 
       if (success) {
         if (!mounted) return;
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (context) => SearchingWorkerScreen(
-              category: widget.category,
-              address: widget.address,
-              scheduledTime: widget.scheduledTime,
-              bookingData: {'_id': _currentBookingId}, // Minimum required for the screen to poll
+
+        final hoursDifference = widget.scheduledTime.difference(DateTime.now()).inHours;
+        
+        if (hoursDifference <= 12) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) => SearchingWorkerScreen(
+                category: widget.category,
+                address: widget.address,
+                scheduledTime: widget.scheduledTime,
+                bookingData: {'_id': _currentBookingId}, 
+              ),
             ),
-          ),
-        );
+          );
+        } else {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) => BookingAcceptedScreen(
+                category: widget.category,
+                address: widget.address,
+                scheduledTime: widget.scheduledTime,
+                bookingData: {'_id': _currentBookingId}, 
+              ),
+            ),
+          );
+        }
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Payment verification failed. Please contact support.')),

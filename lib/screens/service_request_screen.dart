@@ -111,8 +111,9 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
     if (result != null && result is Map<String, dynamic>) {
       setState(() {
         _selectedAddress = result['address'];
-        _latitude = result['lat'];
-        _longitude = result['lng'];
+        // Use 'latitude' and 'longitude' keys as returned by LocationSearchScreen
+        _latitude = result['latitude'];
+        _longitude = result['longitude'];
       });
     }
   }
@@ -701,20 +702,65 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
             ],
           ),
         ),
-        GestureDetector(
-          onTap: _pickAddress,
-          child: Text(
-            'Change',
-            style: GoogleFonts.roboto(
-              fontSize: 12,
-              fontWeight: FontWeight.w400,
-              height: 1.33,
-              letterSpacing: 0.40,
-              color: const Color(0xFF4A9782),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            GestureDetector(
+              onTap: _pickAddress,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'Change',
+                    style: GoogleFonts.roboto(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w400,
+                      height: 1.33,
+                      letterSpacing: 0.40,
+                      color: const Color(0xFF4A9782),
+                    ),
+                  ),
+                  const Icon(Icons.keyboard_arrow_down,
+                      color: Color(0xFF4A9782), size: 20),
+                ],
+              ),
             ),
-          ),
+            const SizedBox(height: 4),
+            GestureDetector(
+              onTap: () => setState(() => _saveAddress = !_saveAddress),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Transform.scale(
+                    scale: 0.7,
+                    child: SizedBox(
+                      height: 20,
+                      width: 20,
+                      child: Checkbox(
+                        value: _saveAddress,
+                        onChanged: (val) =>
+                            setState(() => _saveAddress = val ?? false),
+                        activeColor: const Color(0xFF4A9782),
+                        side: const BorderSide(
+                            color: Color(0xFF4A9782), width: 1.5),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(4)),
+                      ),
+                    ),
+                  ),
+                  Text(
+                    'Save for future',
+                    style: GoogleFonts.roboto(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w500,
+                      color: const Color(0xFF636363),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
-        const Icon(Icons.keyboard_arrow_down, color: Color(0xFF4A9782), size: 20),
       ],
     );
   }
@@ -759,12 +805,25 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
             height: 41,
             child: ElevatedButton(
               onPressed: () {
-                if (_selectedAddress == null) {
+                if (_selectedAddress == null || _latitude == null || _longitude == null) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Please select a location first')),
+                    const SnackBar(content: Text('Please select a valid location first')),
                   );
                   return;
                 }
+
+                // Call address saving in background if enabled
+                if (_saveAddress) {
+                  ApiService.addSavedAddress({
+                    'address': _selectedAddress,
+                    'latitude': _latitude,
+                    'longitude': _longitude,
+                    'houseNumber': _houseController.text,
+                    'landmark': _landmarkController.text,
+                    'name': 'Saved Location',
+                  });
+                }
+
                 Navigator.push(
                   context,
                   MaterialPageRoute(
