@@ -69,24 +69,26 @@ router.post('/create-order', verifyToken, async (req, res) => {
         let feeAmount = 20; // Default fallback
         try {
             const categoryObj = await Category.findOne({ name: booking.category });
-            if (categoryObj && categoryObj.commissionPercentage) {
-                // If it's a percentage, we might need the job amount to calculate the fee.
-                // However, the user said "make it clear how much commission we want to take".
-                // If it's a fixed amount entered as "percentage" in admin panel, or a real percentage?
-                // The user said "enter percentage of commision".
-                // Usually commission is a percentage of the total amount.
-                // But if amount is negotiable or not yet finalized, 
-                // we might want to take a fixed fee or calculate it if amount exists.
-                
-                if (booking.amount) {
-                    feeAmount = (booking.amount * categoryObj.commissionPercentage) / 100;
-                } else if (categoryObj.commissionPercentage > 0) {
-                    // Fallback to a minimum or the percentage of some base rate
-                    feeAmount = categoryObj.commissionPercentage; // Or keep it simple if it's meant to be a fixed amount for now
+            if (categoryObj) {
+                const commission = categoryObj.commissionPercentage || 0;
+                // For broadcast bookings, use the minAmount as a reference if available
+                const referenceAmount = booking.amount || booking.minAmount || 0;
+
+                if (referenceAmount > 0 && commission > 0) {
+                    feeAmount = (referenceAmount * commission) / 100;
+                } else if (commission > 0) {
+                    // If no amount is set yet, use the commission percentage value as a flat fee,
+                    // but ensure it's at least as much as our default 20 INR.
+                    feeAmount = Math.max(commission, 20);
                 }
             }
         } catch (err) {
             console.error("Error fetching category commission:", err);
+        }
+
+        // Razorpay Safety: Ensure the amount is at least 1 INR (100 paise)
+        if (feeAmount < 1) {
+            feeAmount = 1;
         }
 
         const options = {
