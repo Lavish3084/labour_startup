@@ -110,7 +110,10 @@ router.post('/create-order', verifyToken, async (req, res) => {
         res.json(order);
     } catch (err) {
         console.error("Razorpay Error:", err);
-        res.status(500).send("Error creating order");
+        res.status(500).json({ 
+            msg: "Error creating order", 
+            detail: err.description || err.message || "Server error"
+        });
     }
 });
 

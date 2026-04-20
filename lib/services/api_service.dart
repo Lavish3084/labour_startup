@@ -496,11 +496,24 @@ class ApiService {
       if (response.statusCode == 200) {
         return jsonDecode(response.body);
       } else {
-        final errorData = jsonDecode(response.body);
-        if (errorData['code'] == 'ALREADY_PAID') {
+        dynamic errorData;
+        try {
+          errorData = jsonDecode(response.body);
+        } catch (_) {
+          errorData = null;
+        }
+
+        if (errorData is Map && errorData['code'] == 'ALREADY_PAID') {
           throw Exception('ALREADY_PAID');
         }
-        throw Exception(errorData['msg'] ?? 'Payment error');
+        
+        String errorMsg = 'Payment error';
+        if (errorData is Map) {
+          errorMsg = errorData['detail'] ?? errorData['msg'] ?? 'Payment error';
+        } else {
+          errorMsg = 'Server error (${response.statusCode}): ${response.body.isNotEmpty ? response.body : "No response"}';
+        }
+        throw Exception(errorMsg);
       }
     } catch (e) {
       if (e.toString().contains('ALREADY_PAID')) {
