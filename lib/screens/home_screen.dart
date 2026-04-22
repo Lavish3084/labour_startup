@@ -29,6 +29,7 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _showAllCategories = false;
   
   final TextEditingController _searchController = TextEditingController();
+  int _currentActiveBookingPage = 0;
 
   @override
   void initState() {
@@ -256,83 +257,128 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildActiveBookingSection() {
     return Consumer<AppStateProvider>(
       builder: (context, appState, _) {
-        final activeBookings = appState.bookings.where((b) => b['status'] == 'confirmed' || b['status'] == 'pending').toList();
+        final activeBookings = appState.bookings.where((b) => b['status'] == 'confirmed' || b['status'] == 'pending' || b['status'] == 'arrived').toList();
         
         if (activeBookings.isEmpty) return const SizedBox.shrink();
 
-        final booking = activeBookings.first;
-        final dynamic categoryData = booking['category'];
-        final String serviceName = categoryData is Map ? (categoryData['name'] ?? 'Service') : (categoryData?.toString() ?? 'Service');
-        
-        String dateStr = 'Upcoming';
-        if (booking['date'] != null) {
-          try {
-            final DateTime dt = DateTime.parse(booking['date'].toString()).toLocal();
-            dateStr = "${dt.day} ${_getMonthName(dt.month)} at ${dt.hour % 12 == 0 ? 12 : dt.hour % 12}:${dt.minute.toString().padLeft(2, '0')} ${dt.hour >= 12 ? 'PM' : 'AM'}";
-          } catch (_) {
-            dateStr = booking['date'].toString();
-          }
+        if (activeBookings.length == 1) {
+          return Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: _buildBookingCard(activeBookings.first),
+              ),
+              const SizedBox(height: 20),
+              _buildBookingDots(1, 0),
+            ],
+          );
         }
 
         return Column(
           children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-                decoration: BoxDecoration(
-                  color: AppTheme.activeCardBg,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: AppTheme.activeCardBorder, width: 1),
-                  boxShadow: AppTheme.figmaCardShadow,
-                ),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Text.rich(
-                        TextSpan(
-                          children: [
-                            TextSpan(
-                              text: 'Active Booking :\n',
-                              style: GoogleFonts.inter(
-                                fontSize: 16,
-                                color: Colors.black,
-                                fontWeight: FontWeight.w400,
-                                height: 1.5,
-                              ),
-                            ),
-                            TextSpan(
-                              text: '$serviceName - $dateStr',
-                              style: GoogleFonts.inter(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w700,
-                                color: Colors.black,
-                                height: 1.5,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    const Icon(Icons.arrow_forward_ios_rounded, size: 16, color: AppTheme.activeCardBorder),
-                  ],
-                ),
+            SizedBox(
+              height: 110,
+              child: PageView.builder(
+                controller: PageController(viewportFraction: 0.9),
+                itemCount: activeBookings.length,
+                onPageChanged: (index) {
+                  setState(() {
+                    _currentActiveBookingPage = index;
+                  });
+                },
+                itemBuilder: (context, index) {
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: _buildBookingCard(activeBookings[index]),
+                  );
+                },
               ),
             ),
             const SizedBox(height: 20),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                _buildDot(true),
-                const SizedBox(width: 21),
-                _buildDot(false),
-                const SizedBox(width: 21),
-                _buildDot(false),
-              ],
-            ),
+            _buildBookingDots(activeBookings.length, _currentActiveBookingPage),
           ],
         );
       },
+    );
+  }
+
+  Widget _buildBookingCard(Map<String, dynamic> booking) {
+    final dynamic categoryData = booking['category'];
+    final String serviceName = categoryData is Map ? (categoryData['name'] ?? 'Service') : (categoryData?.toString() ?? 'Service');
+    
+    String dateStr = 'Upcoming';
+    if (booking['date'] != null) {
+      try {
+        final DateTime dt = DateTime.parse(booking['date'].toString()).toLocal();
+        dateStr = "${dt.day} ${_getMonthName(dt.month)} at ${dt.hour % 12 == 0 ? 12 : dt.hour % 12}:${dt.minute.toString().padLeft(2, '0')} ${dt.hour >= 12 ? 'PM' : 'AM'}";
+      } catch (_) {
+        dateStr = booking['date'].toString();
+      }
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+      decoration: BoxDecoration(
+        color: AppTheme.activeCardBg,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppTheme.activeCardBorder, width: 1),
+        boxShadow: AppTheme.figmaCardShadow,
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text.rich(
+              TextSpan(
+                children: [
+                  TextSpan(
+                    text: 'Scheduled Arrival :\n',
+                    style: GoogleFonts.inter(
+                      fontSize: 16,
+                      color: Colors.black,
+                      fontWeight: FontWeight.w400,
+                      height: 1.5,
+                    ),
+                  ),
+                  TextSpan(
+                    text: '$serviceName - $dateStr',
+                    style: GoogleFonts.inter(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.black,
+                      height: 1.5,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const Icon(Icons.arrow_forward_ios_rounded, size: 16, color: AppTheme.activeCardBorder),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBookingDots(int count, int currentIndex) {
+    if (count <= 1) {
+      return Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          _buildDot(true),
+          const SizedBox(width: 21),
+          _buildDot(false),
+          const SizedBox(width: 21),
+          _buildDot(false),
+        ],
+      );
+    }
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: List.generate(count, (index) {
+        return Padding(
+          padding: EdgeInsets.only(right: index == count - 1 ? 0 : 21),
+          child: _buildDot(index == currentIndex),
+        );
+      }),
     );
   }
 
@@ -391,12 +437,16 @@ class _HomeScreenState extends State<HomeScreen> {
         const SizedBox(height: 28),
         Consumer<AppStateProvider>(
           builder: (context, appState, _) {
+            final activeBookings = appState.bookings.where((b) => b['status'] == 'confirmed' || b['status'] == 'pending' || b['status'] == 'arrived').toList();
+            final hasActiveBookings = activeBookings.isNotEmpty;
             final allCategories = appState.categories;
             if (allCategories.isEmpty) return const SizedBox.shrink();
 
-            final categoriesToShow = _showAllCategories ? allCategories : allCategories.take(4).toList();
+            final categoriesToShow = _showAllCategories 
+                ? allCategories 
+                : (hasActiveBookings ? allCategories.take(4).toList() : allCategories.take(8).toList());
 
-            if (_showAllCategories) {
+            if (_showAllCategories || !hasActiveBookings) {
               return Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 10),
                 child: GridView.builder(

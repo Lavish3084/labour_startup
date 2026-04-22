@@ -689,9 +689,6 @@ class _BookingsScreenState extends State<BookingsScreen> {
 
       if (referenceAmount > 0 && commission > 0) {
         calculatedFee = (referenceAmount * commission) / 100;
-      } else if (commission > 0) {
-        // If no amount yet, show min 20 if there is a commission percentage
-        calculatedFee = commission > 0 ? (commission > 20 ? commission : 20.0) : 0.0;
       } else {
         calculatedFee = 0.0;
       }
