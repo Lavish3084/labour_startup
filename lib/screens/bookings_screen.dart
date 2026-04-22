@@ -680,13 +680,23 @@ class _BookingsScreenState extends State<BookingsScreen> {
     
     double calculatedFee = 0;
     if (categoryObj != null) {
-      if (booking['amount'] != null && (booking['amount'] as num) > 0) {
-        calculatedFee = (booking['amount'] as num) * categoryObj.commissionPercentage / 100;
+      final double commission = categoryObj.commissionPercentage;
+      final double referenceAmount = (booking['amount'] != null && (booking['amount'] as num) > 0)
+          ? (booking['amount'] as num).toDouble()
+          : (booking['minAmount'] != null && (booking['minAmount'] as num) > 0)
+              ? (booking['minAmount'] as num).toDouble()
+              : 0.0;
+
+      if (referenceAmount > 0 && commission > 0) {
+        calculatedFee = (referenceAmount * commission) / 100;
+      } else if (commission > 0) {
+        // If no amount yet, show min 20 if there is a commission percentage
+        calculatedFee = commission > 0 ? (commission > 20 ? commission : 20.0) : 0.0;
       } else {
-        calculatedFee = categoryObj.commissionPercentage;
+        calculatedFee = 0.0;
       }
     } else {
-      calculatedFee = 20.0; // Fallback default fee
+      calculatedFee = 0.0;
     }
 
     Color statusColor;

@@ -126,34 +126,7 @@ class _BookingSetupScreenState extends State<BookingSetupScreen> {
 
       if (success) {
         if (!mounted) return;
-
-        final hoursDifference = widget.scheduledTime.difference(DateTime.now()).inHours;
-        
-        if (hoursDifference <= 12) {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-              builder: (context) => SearchingWorkerScreen(
-                category: widget.category,
-                address: widget.address,
-                scheduledTime: widget.scheduledTime,
-                bookingData: {'_id': _currentBookingId}, 
-              ),
-            ),
-          );
-        } else {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-              builder: (context) => BookingAcceptedScreen(
-                category: widget.category,
-                address: widget.address,
-                scheduledTime: widget.scheduledTime,
-                bookingData: {'_id': _currentBookingId}, 
-              ),
-            ),
-          );
-        }
+        _navigateToNextScreen();
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Payment verification failed. Please contact support.')),
@@ -179,6 +152,38 @@ class _BookingSetupScreenState extends State<BookingSetupScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('External Wallet Selected: ${response.walletName}')),
     );
+  }
+
+  void _navigateToNextScreen() {
+    final hoursDifference = widget.scheduledTime.difference(DateTime.now()).inHours;
+    
+    if (hoursDifference <= 12) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (context) => SearchingWorkerScreen(
+            category: widget.category,
+            address: widget.address,
+            scheduledTime: widget.scheduledTime,
+            latitude: widget.latitude,
+            longitude: widget.longitude,
+            bookingData: {'_id': _currentBookingId}, 
+          ),
+        ),
+      );
+    } else {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (context) => BookingAcceptedScreen(
+            category: widget.category,
+            address: widget.address,
+            scheduledTime: widget.scheduledTime,
+            bookingData: {'_id': _currentBookingId}, 
+          ),
+        ),
+      );
+    }
   }
   
   double get _bookingFee {
@@ -213,22 +218,34 @@ class _BookingSetupScreenState extends State<BookingSetupScreen> {
         final bookingData = result['data'];
         _currentBookingId = bookingData['_id'];
         
-        // 2. Create Razorpay Order for the platform fee
-        final int feeInPaise = (_bookingFee * 100).toInt();
-        final orderData = await ApiService.createPaymentOrder(_currentBookingId!, feeInPaise);
-        
-        // 3. Open Razorpay Checkout
-        final String razorpayKeyId = dotenv.get('RAZORPAY_KEY_ID', fallback: '');
-        
-        _paymentService.openCheckout(
-          keyId: razorpayKeyId,
-          orderId: orderData['id'],
-          name: 'Labour App',
-          description: '${widget.category.name} Booking Fee',
-          email: '', 
-          contact: '', 
-          amount: feeInPaise,
-        );
+        if (_bookingFee <= 0) {
+          // Skip payment gateway for 0-fee bookings
+          final success = await ApiService.confirmFreeBooking(_currentBookingId!);
+          if (success) {
+            _navigateToNextScreen();
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Failed to confirm booking. Please try again.')),
+            );
+          }
+        } else {
+          // 2. Create Razorpay Order for the platform fee
+          final int feeInPaise = (_bookingFee * 100).toInt();
+          final orderData = await ApiService.createPaymentOrder(_currentBookingId!, feeInPaise);
+          
+          // 3. Open Razorpay Checkout
+          final String razorpayKeyId = dotenv.get('RAZORPAY_KEY_ID', fallback: '');
+          
+          _paymentService.openCheckout(
+            keyId: razorpayKeyId,
+            orderId: orderData['id'],
+            name: 'Labour App',
+            description: '${widget.category.name} Booking Fee',
+            email: '', 
+            contact: '', 
+            amount: feeInPaise,
+          );
+        }
       } else {
         setState(() => _isLoading = false);
         ScaffoldMessenger.of(context).showSnackBar(
@@ -326,7 +343,9 @@ class _BookingSetupScreenState extends State<BookingSetupScreen> {
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  'Secure Your\nBooking For ₹${_bookingFee.toInt()}',
+                  _bookingFee <= 0 
+                    ? 'Confirm Your\n${widget.category.name} Booking'
+                    : 'Secure Your\nBooking For ₹${_bookingFee.toInt()}',
                   textAlign: TextAlign.center,
                   style: GoogleFonts.inter(
                     fontSize: 28,
@@ -577,7 +596,7 @@ class _BookingSetupScreenState extends State<BookingSetupScreen> {
                             height: 24,
                             child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
                         : Text(
-                            'Pay Now',
+                            _bookingFee <= 0 ? 'Confirm Booking' : 'Pay Now',
                             style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w600),
                           ),
                   ),

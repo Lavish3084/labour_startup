@@ -551,6 +551,26 @@ class ApiService {
     }
   }
 
+  static Future<bool> confirmFreeBooking(String bookingId) async {
+    try {
+      final token = await getToken();
+      final response = await http.post(
+        Uri.parse('$baseUrl/payments/confirm-free-booking'),
+        headers: {
+          'Content-Type': 'application/json',
+          'x-auth-token': token ?? '',
+        },
+        body: jsonEncode({
+          'bookingId': bookingId,
+        }),
+      );
+
+      return response.statusCode == 200;
+    } catch (e) {
+      return false;
+    }
+  }
+
   static Future<bool> addSavedAddress(Map<String, dynamic> data) async {
     try {
       final token = await getToken();

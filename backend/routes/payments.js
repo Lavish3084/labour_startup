@@ -25,7 +25,6 @@ const verifyToken = (req, res, next) => {
 };
 
 // Initialize Razorpay
-// Initialize Razorpay
 let razorpay;
 try {
     if (process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_SECRET) {
@@ -40,82 +39,130 @@ try {
     console.warn("WARNING: Failed to initialize Razorpay:", err.message);
 }
 
+/**
+ * Helper to handle post-payment logic (marking as paid, notifying worker, launching broadcast)
+ */
+async function completePaymentLogic(bookingId, paymentId) {
+    // 1) Mark as paid
+    await Booking.findByIdAndUpdate(bookingId, {
+        paymentStatus: 'paid',
+        paymentId: paymentId
+    });
+
+    // 2) Process notifications and assignments
+    try {
+        const booking = await Booking.findById(bookingId).populate('labourer');
+        if (!booking) return;
+
+        if (booking.labourer) {
+            // Direct Booking: Notify worker and clear overlaps
+            const labourerId = booking.labourer._id;
+            const bStart = new Date(booking.date).getTime();
+            const bEnd = bStart + (booking.numberOfHours || 2) * 60 * 60 * 1000;
+
+            const pendingBookings = await Booking.find({
+                status: 'pending',
+                applicants: labourerId
+            });
+
+            for (let pBooking of pendingBookings) {
+                if (pBooking._id.toString() === bookingId.toString()) continue;
+                
+                const pStart = new Date(pBooking.date).getTime();
+                const pEnd = pStart + (pBooking.numberOfHours || 2) * 60 * 60 * 1000;
+                
+                if (bStart < pEnd && bEnd > pStart) {
+                    pBooking.applicants = pBooking.applicants.filter(
+                        id => id.toString() !== labourerId.toString()
+                    );
+                    await pBooking.save();
+                }
+            }
+
+            const labourer = await Labourer.findById(labourerId).populate('user');
+            if (labourer && labourer.user && labourer.user.fcmToken) {
+                await sendNotification(
+                    labourer.user.fcmToken,
+                    'Payment Received',
+                    'The platform fee for your current job has been paid.',
+                    { 
+                        type: 'booking',
+                        bookingId: bookingId.toString(),
+                        status: booking.status
+                    }
+                );
+            }
+        } else {
+            // Broadcast Booking: Trigger broadcast
+            console.log(`[Payment] Success for broadcast booking ${bookingId}. Launching broadcast...`);
+            const bookingsRouter = require('./bookings');
+            if (bookingsRouter.broadcastBooking) {
+                await bookingsRouter.broadcastBooking(booking);
+            }
+        }
+    } catch (err) {
+        console.error("Failed to process post-payment logic:", err);
+        throw err;
+    }
+}
+
 // @route   POST /api/payments/create-order
 // @desc    Create a Razorpay order
 // @access  Private
 router.post('/create-order', verifyToken, async (req, res) => {
-    const { bookingId, amount } = req.body; // amount in INR (e.g., 500)
+    const { bookingId } = req.body;
 
     if (!razorpay) {
-        console.error("Razorpay instance not initialized");
-        return res.status(500).json({ msg: "Payment service configuration error. Please contact support." });
+        return res.status(500).json({ msg: "Payment service configuration error." });
     }
 
     try {
-        const booking = await Booking.findById(bookingId).populate('labourer');
-        if (!booking) {
-            return res.status(404).json({ msg: "Booking not found" });
-        }
+        const booking = await Booking.findById(bookingId);
+        if (!booking) return res.status(404).json({ msg: "Booking not found" });
 
-        // PREVENTION: Don't create a new order if already paid
         if (booking.paymentStatus === 'paid') {
-            return res.status(400).json({ 
-                msg: "This booking is already paid.",
-                code: "ALREADY_PAID"
-            });
+            return res.status(400).json({ msg: "Already paid", code: "ALREADY_PAID" });
         }
 
-        // Fetch the platform fee from the specific Category
-        let feeAmount = 20; // Default fallback
+        // Calculate fee
+        let feeAmount = 0; 
         try {
             const categoryObj = await Category.findOne({ name: booking.category });
             if (categoryObj) {
                 const commission = categoryObj.commissionPercentage || 0;
-                // For broadcast bookings, use the minAmount as a reference if available
                 const referenceAmount = booking.amount || booking.minAmount || 0;
 
-                if (referenceAmount > 0 && commission > 0) {
+                if (referenceAmount > 0) {
                     feeAmount = (referenceAmount * commission) / 100;
-                } else if (commission > 0) {
-                    // If no amount is set yet, use the commission percentage value as a flat fee,
-                    // but ensure it's at least as much as our default 20 INR.
-                    feeAmount = Math.max(commission, 20);
+                } else {
+                    // Fallback to percentage as flat fee if no amount set, min 20 if commission > 0
+                    feeAmount = commission > 0 ? Math.max(commission, 20) : 0;
                 }
             }
         } catch (err) {
-            console.error("Error fetching category commission:", err);
+            console.error("Error calculating fee:", err);
         }
 
-        // Razorpay Safety: Ensure the amount is at least 1 INR (100 paise)
+        // Safety: If fee is 0, we shouldn't be here (frontend should use confirm-free-booking)
+        // but if we are, enforce minimum 1 INR for Razorpay if it's supposed to be paid
         if (feeAmount < 1) {
-            feeAmount = 1;
+            return res.status(400).json({ msg: "Booking fee is 0. Please use confirm-free-booking route." });
         }
 
         const options = {
-            amount: feeAmount * 100, // amount in the smallest currency unit (paise)
+            amount: Math.round(feeAmount * 100), // paise
             currency: "INR",
             receipt: `receipt_booking_${bookingId}`,
-            notes: {
-                bookingId: bookingId,
-                userId: req.user.id
-            }
+            notes: { bookingId: bookingId, userId: req.user.id }
         };
 
         const order = await razorpay.orders.create(options);
-
-        // Update booking with orderId
-        await Booking.findByIdAndUpdate(bookingId, {
-            orderId: order.id
-            // Removed amount: amount so that the original service cost isn't overwritten by the 20rs fee
-        });
+        await Booking.findByIdAndUpdate(bookingId, { orderId: order.id });
 
         res.json(order);
     } catch (err) {
         console.error("Razorpay Error:", err);
-        res.status(500).json({ 
-            msg: "Error creating order", 
-            detail: err.description || err.message || "Server error"
-        });
+        res.status(500).json({ msg: "Error creating order" });
     }
 });
 
@@ -126,89 +173,50 @@ router.post('/verify-payment', verifyToken, async (req, res) => {
     const { razorpay_order_id, razorpay_payment_id, razorpay_signature, bookingId } = req.body;
 
     const body = razorpay_order_id + "|" + razorpay_payment_id;
-
     const expectedSignature = crypto
         .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET)
         .update(body.toString())
         .digest('hex');
 
-    const isAuthentic = expectedSignature === razorpay_signature;
-
-    if (isAuthentic) {
-        // Payment successful
-        await Booking.findByIdAndUpdate(bookingId, {
-            paymentStatus: 'paid',
-            paymentId: razorpay_payment_id
-        });
-
-        // Notify the worker and remove them from overlapping pending jobs
+    if (expectedSignature === razorpay_signature) {
         try {
-            const booking = await Booking.findById(bookingId).populate('labourer');
-            if (booking) {
-                if (booking.labourer) {
-                    // 1) Remove worker from applicants of other overlapping pending bookings
-                    const labourerId = booking.labourer._id;
-                    const bStart = new Date(booking.date).getTime();
-                    const bEnd = bStart + (booking.numberOfHours || 2) * 60 * 60 * 1000;
+            await completePaymentLogic(bookingId, razorpay_payment_id);
+            res.json({ success: true, msg: "Payment verified successfully" });
+        } catch (err) {
+            res.status(500).json({ success: false, msg: "Error processing payment logic" });
+        }
+    } else {
+        res.status(400).json({ success: false, msg: "Invalid signature" });
+    }
+});
 
-                    const pendingBookings = await Booking.find({
-                        status: 'pending',
-                        applicants: labourerId
-                    });
+// @route   POST /api/payments/confirm-free-booking
+// @desc    Confirm a booking with 0 platform fee
+// @access  Private
+router.post('/confirm-free-booking', verifyToken, async (req, res) => {
+    const { bookingId } = req.body;
 
-                    for (let pBooking of pendingBookings) {
-                        if (pBooking._id.toString() === bookingId.toString()) continue;
-                        
-                        const pStart = new Date(pBooking.date).getTime();
-                        const pEnd = pStart + (pBooking.numberOfHours || 2) * 60 * 60 * 1000;
-                        
-                        // If times overlap, remove worker from this pending job's applicants
-                        if (bStart < pEnd && bEnd > pStart) {
-                            pBooking.applicants = pBooking.applicants.filter(
-                                id => id.toString() !== labourerId.toString()
-                            );
-                            await pBooking.save();
-                        }
-                    }
+    try {
+        const booking = await Booking.findById(bookingId);
+        if (!booking) return res.status(404).json({ msg: "Booking not found" });
 
-                    // 2) Send Notification
-                    const Labourer = require('../models/Labourer');
-                    const labourer = await Labourer.findById(labourerId).populate('user');
-                    if (labourer && labourer.user && labourer.user.fcmToken) {
-                        await sendNotification(
-                            labourer.user.fcmToken,
-                            'Payment Received',
-                            'The platform fee for your current job has been paid.',
-                            { 
-                                type: 'booking',
-                                bookingId: bookingId.toString(),
-                                status: booking.status
-                            }
-                        );
-                    }
-                } else {
-                    // This is a broadcast booking (no specific labourer yet)
-                    // Trigger the broadcast now that it's paid
-                    console.log(`[Payment] Verification success for broadcast booking ${bookingId}. Launching broadcast...`);
-                    const bookingsRouter = require('./bookings');
-                    if (bookingsRouter.broadcastBooking) {
-                        await bookingsRouter.broadcastBooking(booking);
-                    }
-                }
-            }
-        } catch (notifyErr) {
-            console.error("Failed to process post-payment logic:", notifyErr);
+        if (booking.paymentStatus === 'paid') {
+            return res.status(200).json({ msg: "Already confirmed" });
         }
 
-        res.json({
-            success: true,
-            msg: "Payment verified successfully"
-        });
-    } else {
-        res.status(400).json({
-            success: false,
-            msg: "Invalid signature"
-        });
+        // Verify if it's actually free
+        const categoryObj = await Category.findOne({ name: booking.category });
+        const commission = categoryObj ? (categoryObj.commissionPercentage || 0) : 0;
+        
+        if (commission > 0) {
+            return res.status(400).json({ msg: "This booking requires a platform fee." });
+        }
+
+        await completePaymentLogic(bookingId, 'FREE_BOOKING');
+        res.json({ success: true, msg: "Booking confirmed successfully" });
+    } catch (err) {
+        console.error("Confirm Free Booking Error:", err);
+        res.status(500).json({ msg: "Server error" });
     }
 });
 

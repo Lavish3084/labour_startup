@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../utils/app_theme.dart';
 import '../models/service_category.dart';
@@ -12,6 +14,8 @@ class SearchingWorkerScreen extends StatefulWidget {
   final ServiceCategory category;
   final String address;
   final DateTime scheduledTime;
+  final double latitude;
+  final double longitude;
   final Map<String, dynamic>? bookingData;
 
   const SearchingWorkerScreen({
@@ -19,6 +23,8 @@ class SearchingWorkerScreen extends StatefulWidget {
     required this.category,
     required this.address,
     required this.scheduledTime,
+    required this.latitude,
+    required this.longitude,
     this.bookingData,
   });
 
@@ -109,7 +115,7 @@ class _SearchingWorkerScreenState extends State<SearchingWorkerScreen> with Tick
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('\${widget.category.name} worker found!'),
+          content: Text('${widget.category.name} worker found!'),
           backgroundColor: AppTheme.success,
           behavior: SnackBarBehavior.floating,
         ),
@@ -152,7 +158,7 @@ class _SearchingWorkerScreenState extends State<SearchingWorkerScreen> with Tick
   String get _formattedTime {
     int minutes = _remainingSeconds ~/ 60;
     int seconds = _remainingSeconds % 60;
-    return '\${minutes.toString().padLeft(2, '0')}:\${seconds.toString().padLeft(2, '0')} Remaining';
+    return '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')} Remaining';
   }
 
   @override
@@ -243,7 +249,7 @@ class _SearchingWorkerScreenState extends State<SearchingWorkerScreen> with Tick
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text(
-                      'Notifying \${widget.category.name}\nworkers near you',
+                      'Notifying ${widget.category.name}\nworkers near you',
                       textAlign: TextAlign.center,
                       style: GoogleFonts.roboto(
                         fontSize: 26,
@@ -291,11 +297,21 @@ class _SearchingWorkerScreenState extends State<SearchingWorkerScreen> with Tick
       child: Stack(
         alignment: Alignment.center,
         children: [
-          // Simulated Map Background
-          Positioned.fill(
-            child: CustomPaint(
-              painter: _MapRoadsPainter(),
+          // Actual OpenStreetMap integration
+          FlutterMap(
+            options: MapOptions(
+              initialCenter: LatLng(widget.latitude, widget.longitude),
+              initialZoom: 15.0,
+              interactionOptions: const InteractionOptions(
+                flags: InteractiveFlag.none, // Static display for clean UI
+              ),
             ),
+            children: [
+              TileLayer(
+                urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                userAgentPackageName: 'com.example.labour',
+              ),
+            ],
           ),
           // Pulsing Circles
           ...List.generate(4, (index) {
@@ -310,7 +326,7 @@ class _SearchingWorkerScreenState extends State<SearchingWorkerScreen> with Tick
                     shape: BoxShape.circle,
                     border: Border.all(
                       color: const Color(0xFF2E876E).withOpacity(1.0 - progress),
-                      width: 1,
+                      width: 2,
                     ),
                   ),
                 );
@@ -397,52 +413,3 @@ class _HeaderPatternPainter extends CustomPainter {
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
-class _MapRoadsPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    // Draws a fake road map background resembling Kharar or a generic map.
-    final paint = Paint()
-      ..color = const Color(0xFF8BA5CD).withOpacity(0.5) // Light blue/grey roads
-      ..style = PaintingStyle.stroke;
-      
-    // Main slanted road
-    paint.strokeWidth = 16.0;
-    canvas.drawLine(Offset(0, size.height * 0.3), Offset(size.width, size.height * 0.6), paint);
-    
-    // Vertical road
-    paint.strokeWidth = 8.0;
-    canvas.drawLine(Offset(size.width * 0.75, 0), Offset(size.width * 0.85, size.height), paint);
-    
-    // Thin local lines
-    paint.strokeWidth = 2.0;
-    paint.color = Colors.black12;
-    // Draw some random horizontal/vertical lines
-    for (int i = 1; i <= 6; i++) {
-       canvas.drawLine(Offset(0, size.height * (i/7)), Offset(size.width, size.height * (i/7) + (i%2 == 0 ? 20 : -20)), paint);
-       canvas.drawLine(Offset(size.width * (i/7), 0), Offset(size.width * (i/7) + (i%3 == 0 ? 30 : -10), size.height), paint);
-    }
-    
-    _drawText(canvas, 'GURU TEG\nBAHADUR NAGAR', Offset(size.width * 0.35, size.height * 0.15));
-    _drawText(canvas, 'SECTOR 43', Offset(size.width * 0.35, size.height * 0.40));
-    _drawText(canvas, 'RANJIT NAGAR', Offset(size.width * 0.25, size.height * 0.85));
-  }
-  
-  void _drawText(Canvas canvas, String text, Offset offset) {
-    final textStyle = GoogleFonts.inter(
-      color: Colors.black54,
-      fontSize: 10,
-      fontWeight: FontWeight.w600,
-    );
-    final textSpan = TextSpan(text: text, style: textStyle);
-    final textPainter = TextPainter(
-      text: textSpan,
-      textDirection: TextDirection.ltr,
-      textAlign: TextAlign.center,
-    );
-    textPainter.layout(minWidth: 0, maxWidth: 100);
-    textPainter.paint(canvas, offset);
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
-}
