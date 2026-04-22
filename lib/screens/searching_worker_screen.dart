@@ -230,7 +230,8 @@ class _SearchingWorkerScreenState extends State<SearchingWorkerScreen> with Tick
   }
 
   void _startPolling(String id) {
-    _pollingTimer = Timer.periodic(const Duration(seconds: 4), (timer) {
+    // Fallback polling reduced to 60 seconds as we use NotificationService for real-time updates
+    _pollingTimer = Timer.periodic(const Duration(seconds: 60), (timer) {
       _checkBookingStatus(id);
     });
   }

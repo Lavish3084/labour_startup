@@ -200,7 +200,7 @@ class ApiService {
         await logout();
         throw Exception('Unauthorized');
       } else {
-        throw Exception('Data error');
+        throw Exception('Failed to load profile: ${response.statusCode}');
       }
     } catch (e) {
       throw Exception(ErrorHandler.getErrorMessage(e));
@@ -344,7 +344,7 @@ class ApiService {
         await logout();
         throw Exception('Unauthorized');
       } else {
-        throw Exception('Data error');
+        throw Exception('Failed to load settings: ${response.statusCode}');
       }
     } catch (e) {
       throw Exception(ErrorHandler.getErrorMessage(e));
@@ -440,7 +440,7 @@ class ApiService {
       if (response.statusCode == 200) {
         return jsonDecode(response.body);
       } else {
-        throw Exception('Data error');
+        throw Exception('Failed to load settings: ${response.statusCode}');
       }
     } catch (e) {
       throw Exception(ErrorHandler.getErrorMessage(e));
@@ -455,7 +455,7 @@ class ApiService {
         final List<dynamic> data = jsonDecode(response.body);
         return data.map((json) => ServiceCategory.fromJson(json)).toList();
       } else {
-        throw Exception('Data error');
+        throw Exception('Failed to load categories: ${response.statusCode}');
       }
     } catch (e) {
       throw Exception(ErrorHandler.getErrorMessage(e));
@@ -470,7 +470,7 @@ class ApiService {
         final List<dynamic> data = jsonDecode(response.body);
         return data.map((json) => Labourer.fromJson(json)).toList();
       } else {
-        throw Exception('Data error');
+        throw Exception('Failed to load workers: ${response.statusCode}');
       }
     } catch (e) {
       throw Exception(ErrorHandler.getErrorMessage(e));

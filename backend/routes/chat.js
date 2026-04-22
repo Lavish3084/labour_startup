@@ -27,6 +27,10 @@ router.get('/:bookingId', verifyToken, async (req, res) => {
     }
 });
 
+const User = require('../models/User');
+const Labourer = require('../models/Labourer');
+const { sendNotification } = require('../utils/notification');
+
 // @route   POST api/chat
 // @desc    Send a message
 // @access  Private
@@ -44,6 +48,42 @@ router.post('/', verifyToken, async (req, res) => {
         
         // Populate sender before returning
         const populatedMessage = await Message.findById(message._id).populate('sender', 'name profilePicture');
+
+        // Notification logic
+        try {
+            const booking = await Booking.findById(bookingId).populate('user');
+            if (booking) {
+                let recipientId;
+                if (req.user.id === booking.user._id.toString()) {
+                    // Sender is customer, recipient is worker
+                    if (booking.labourer) {
+                        const labourer = await Labourer.findById(booking.labourer);
+                        recipientId = labourer.user;
+                    }
+                } else {
+                    // Sender is worker, recipient is customer
+                    recipientId = booking.user._id;
+                }
+
+                if (recipientId) {
+                    const recipient = await User.findById(recipientId);
+                    if (recipient && recipient.fcmToken) {
+                        await sendNotification(
+                            recipient.fcmToken, 
+                            'New Message', 
+                            text, 
+                            { 
+                                type: 'chat', 
+                                bookingId: bookingId.toString(),
+                                senderName: populatedMessage.sender.name 
+                            }
+                        );
+                    }
+                }
+            }
+        } catch (notifyErr) {
+            console.error('Error sending chat notification:', notifyErr);
+        }
 
         res.json(populatedMessage);
     } catch (err) {

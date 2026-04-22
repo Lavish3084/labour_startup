@@ -11,6 +11,7 @@ import '../services/api_service.dart';
 import '../services/payment_service.dart';
 import '../services/error_handler.dart';
 import '../models/labourer.dart';
+import '../services/notification_service.dart';
 
 class TrackStatusScreen extends StatefulWidget {
   final String bookingId;
@@ -23,6 +24,7 @@ class TrackStatusScreen extends StatefulWidget {
 
 class _TrackStatusScreenState extends State<TrackStatusScreen> {
   Timer? _pollingTimer;
+  StreamSubscription? _notificationSubscription;
   bool _isLoading = true;
   dynamic _booking;
   final PaymentService _paymentService = PaymentService();
@@ -33,6 +35,7 @@ class _TrackStatusScreenState extends State<TrackStatusScreen> {
     super.initState();
     _fetchBookingDetails();
     _startPolling();
+    _listenForNotifications();
     _paymentService.initialize(
       onSuccess: _handlePaymentSuccess,
       onFailure: _handlePaymentFailure,
@@ -43,13 +46,26 @@ class _TrackStatusScreenState extends State<TrackStatusScreen> {
   @override
   void dispose() {
     _pollingTimer?.cancel();
+    _notificationSubscription?.cancel();
     _paymentService.dispose();
     super.dispose();
   }
 
+  void _listenForNotifications() {
+    _notificationSubscription = NotificationService.onNotification.listen((_) {
+      if (mounted) {
+        debugPrint('TrackStatusScreen: Refreshing due to notification');
+        _fetchBookingDetails(showLoading: false);
+      }
+    });
+  }
+
   void _startPolling() {
-    _pollingTimer = Timer.periodic(const Duration(seconds: 4), (timer) {
-      _fetchBookingDetails(showLoading: false);
+    // Fallback polling reduced to 60 seconds since we now use notifications
+    _pollingTimer = Timer.periodic(const Duration(seconds: 60), (timer) {
+      if (mounted) {
+        _fetchBookingDetails(showLoading: false);
+      }
     });
   }
 

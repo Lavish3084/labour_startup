@@ -681,7 +681,12 @@ router.put('/:id/verify-arrival', verifyToken, async (req, res) => {
         // Notify user
         const user = await User.findById(booking.user);
         if (user && user.fcmToken) {
-            await sendNotification(user.fcmToken, 'Worker Arrived', 'The worker has arrived and starting the job!');
+            await sendNotification(
+                user.fcmToken, 
+                'Worker Arrived', 
+                'The worker has arrived and starting the job!',
+                { type: 'booking_update', bookingId: booking._id.toString() }
+            );
         }
 
         res.json(booking);
@@ -741,7 +746,12 @@ router.put('/:id/verify-completion', verifyToken, async (req, res) => {
         // Notify user
         const user = await User.findById(booking.user);
         if (user && user.fcmToken) {
-            await sendNotification(user.fcmToken, 'Work Completed', 'Job completed successfully! Thank you for using Will.');
+            await sendNotification(
+                user.fcmToken, 
+                'Work Completed', 
+                'Job completed successfully! Thank you for using Will.',
+                { type: 'booking_update', bookingId: booking._id.toString() }
+            );
         }
 
         res.json(booking);

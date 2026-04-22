@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../services/api_service.dart';
+import '../services/notification_service.dart';
 
 class ChatScreen extends StatefulWidget {
   final String bookingId;
@@ -24,6 +25,7 @@ class _ChatScreenState extends State<ChatScreen> {
   final ScrollController _scrollController = ScrollController();
   List<dynamic> _messages = [];
   Timer? _pollingTimer;
+  StreamSubscription? _notificationSubscription;
   bool _isLoading = true;
   String? _myId;
 
@@ -33,29 +35,43 @@ class _ChatScreenState extends State<ChatScreen> {
     _loadMyId();
     _fetchMessages();
     _startPolling();
+    _listenForNotifications();
   }
 
   @override
   void dispose() {
     _pollingTimer?.cancel();
+    _notificationSubscription?.cancel();
     _messageController.dispose();
     _scrollController.dispose();
     super.dispose();
   }
 
+  void _listenForNotifications() {
+    _notificationSubscription = NotificationService.onNotification.listen((_) {
+      if (mounted) {
+        debugPrint('ChatScreen: Refreshing due to notification');
+        _fetchMessages(showLoading: false);
+      }
+    });
+  }
+
   Future<void> _loadMyId() async {
-    // In a real app, you'd get this from a UserProvider
-    // For now, we'll fetch it from profile or assume sender populate handles it
-    final profile = await ApiService.getProfile();
-    if (mounted) {
-      setState(() {
-        _myId = profile['_id'];
-      });
+    try {
+      final profile = await ApiService.getProfile();
+      if (mounted) {
+        setState(() {
+          _myId = profile['user']['_id'];
+        });
+      }
+    } catch (e) {
+      debugPrint("ChatScreen: Error loading profile for ID: $e");
     }
   }
 
   void _startPolling() {
-    _pollingTimer = Timer.periodic(const Duration(seconds: 3), (timer) {
+    // Robustness fallback: 60 seconds
+    _pollingTimer = Timer.periodic(const Duration(seconds: 60), (timer) {
       _fetchMessages(showLoading: false);
     });
   }
