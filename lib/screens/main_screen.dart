@@ -34,11 +34,14 @@ class _MainScreenState extends State<MainScreen>
     super.initState();
     _appState = Provider.of<AppStateProvider>(context, listen: false);
     
-    if (widget.initialIndex != null) {
-      _appState.setTab(widget.initialIndex!);
+    // Determine the starting tab safely
+    _lastTab = widget.initialIndex ?? _appState.selectedTab;
+    
+    if (widget.initialIndex != null && widget.initialIndex != _appState.selectedTab) {
+      // Sync the provider state after the current build phase to avoid the build-phase error
+      Future.microtask(() => _appState.setTab(widget.initialIndex!));
     }
     
-    _lastTab = _appState.selectedTab;
     _pageController = PageController(initialPage: _lastTab);
     _displayPage = ValueNotifier<double>(_lastTab.toDouble());
 

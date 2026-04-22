@@ -5,9 +5,12 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../utils/app_theme.dart';
+import 'worker_assigned_screen.dart';
+import '../models/labourer.dart';
 import '../models/service_category.dart';
 import '../services/api_service.dart';
 import '../services/notification_service.dart';
+import '../widgets/pattern_painter.dart';
 import 'main_screen.dart';
 
 class SearchingWorkerScreen extends StatefulWidget {
@@ -37,6 +40,9 @@ class _SearchingWorkerScreenState extends State<SearchingWorkerScreen> with Tick
   Timer? _pollingTimer;
   StreamSubscription? _notificationSubscription;
   bool _isNavigating = false;
+  bool _isTimedOut = false;
+  bool _isRecreating = false;
+  String? _currentBookingId;
   
   // Timer state
   late int _remainingSeconds;
@@ -45,37 +51,159 @@ class _SearchingWorkerScreenState extends State<SearchingWorkerScreen> with Tick
   @override
   void initState() {
     super.initState();
+    _currentBookingId = (widget.bookingData?['_id'] ?? widget.bookingData?['id'])?.toString();
     
-    // Set timer to 30 minutes (1800 seconds)
-    _remainingSeconds = 30 * 60;
+    // Calculate remaining seconds based on createdAt to ensure persistence
+    final createdAtStr = widget.bookingData?['createdAt'];
+    if (createdAtStr != null) {
+      try {
+        final createdAt = DateTime.parse(createdAtStr.toString()).toLocal();
+        final expiryTime = createdAt.add(const Duration(minutes: 30));
+        final now = DateTime.now();
+        _remainingSeconds = expiryTime.difference(now).inSeconds;
+        
+        if (_remainingSeconds <= 0) {
+          _remainingSeconds = 0;
+          _isTimedOut = true;
+        }
+      } catch (e) {
+        _remainingSeconds = 30 * 60;
+      }
+    } else {
+      _remainingSeconds = 30 * 60;
+    }
     
     _pulseController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 3),
     )..repeat();
 
-    _startCountdown();
-
-    final rawId = widget.bookingData?['_id'] ?? widget.bookingData?['id'];
-    if (rawId != null) {
-      final String bookingId = rawId.toString();
-      _startPolling(bookingId);
-      _notificationSubscription = NotificationService.onNotification.listen((_) {
-        _checkBookingStatus(bookingId);
-      });
+    if (!_isTimedOut) {
+      _startCountdown();
+      if (_currentBookingId != null) {
+        _startPolling(_currentBookingId!);
+        _notificationSubscription = NotificationService.onNotification.listen((_) {
+          _checkBookingStatus(_currentBookingId!);
+        });
+      }
     }
   }
 
   void _startCountdown() {
     _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (_remainingSeconds > 0) {
-        setState(() {
-          _remainingSeconds--;
-        });
+        if (mounted) {
+          setState(() {
+            _remainingSeconds--;
+          });
+        }
       } else {
         timer.cancel();
+        _handleExpiry();
       }
     });
+  }
+
+  Future<void> _handleExpiry() async {
+    if (_isNavigating || _isTimedOut) return;
+    
+    if (_currentBookingId != null) {
+      try {
+        // Call API to cancel the booking as it has expired
+        await ApiService.updateBookingStatus(_currentBookingId!, 'cancelled');
+      } catch (e) {
+        debugPrint('Error cancelling expired booking: $e');
+      }
+    }
+    
+    if (mounted) {
+      _countdownTimer?.cancel();
+      _pollingTimer?.cancel();
+      setState(() {
+        _isTimedOut = true;
+        _remainingSeconds = 0;
+      });
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Search timed out. You can try searching again.'),
+          backgroundColor: Colors.orange,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+  }
+
+  Future<void> _handleSearchAgain() async {
+    if (_isRecreating) return;
+    
+    setState(() {
+      _isRecreating = true;
+    });
+
+    try {
+      // Prepare new booking data from existing one
+      final newBookingData = Map<String, dynamic>.from(widget.bookingData ?? {});
+      // Remove identifying fields to trigger a new creation
+      newBookingData.remove('_id');
+      newBookingData.remove('id');
+      newBookingData.remove('createdAt');
+      newBookingData.remove('updatedAt');
+      newBookingData.remove('status');
+      newBookingData.remove('labourer');
+      newBookingData.remove('__v');
+
+      // Re-create the booking via API using named parameters
+      final response = await ApiService.createBooking(
+        category: widget.category.name,
+        date: widget.scheduledTime,
+        bookingMode: widget.bookingData?['bookingMode'] ?? 'Hourly',
+        address: widget.address,
+        latitude: widget.latitude,
+        longitude: widget.longitude,
+        numberOfHours: int.tryParse(widget.bookingData?['numberOfHours']?.toString() ?? ''),
+        numberOfWorkers: int.tryParse(widget.bookingData?['numberOfWorkers']?.toString() ?? '1') ?? 1,
+        notes: widget.bookingData?['notes']?.toString(),
+        problemTitle: widget.bookingData?['problemTitle']?.toString(),
+        landmark: widget.bookingData?['landmark']?.toString(),
+        houseNumber: widget.bookingData?['houseNumber']?.toString(),
+        workType: widget.bookingData?['workType']?.toString(),
+      );
+      final newId = (response['_id'] ?? response['id'])?.toString();
+
+      if (mounted && newId != null) {
+        setState(() {
+          _currentBookingId = newId;
+          _isTimedOut = false;
+          _isRecreating = false;
+          _remainingSeconds = 30 * 60; // Reset to 30 mins
+        });
+
+        _startCountdown();
+        _startPolling(newId);
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Search restarted!'),
+            backgroundColor: AppTheme.brandGreenMain,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isRecreating = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to restart search: ${e.toString()}'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
   }
 
   @override
@@ -94,7 +222,7 @@ class _SearchingWorkerScreenState extends State<SearchingWorkerScreen> with Tick
       if (!mounted) return;
 
       if (booking['status'] == 'confirmed' || booking['labourer'] != null) {
-        _handleSuccess();
+        _handleSuccess(booking);
       }
     } catch (e) {
       debugPrint('Status check error: $e');
@@ -107,24 +235,38 @@ class _SearchingWorkerScreenState extends State<SearchingWorkerScreen> with Tick
     });
   }
 
-  void _handleSuccess() {
+  void _handleSuccess(Map<String, dynamic> bookingData) {
     if (_isNavigating) return;
     _isNavigating = true;
     _pollingTimer?.cancel();
 
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('${widget.category.name} worker found!'),
-          backgroundColor: AppTheme.success,
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
-      
-      Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(builder: (context) => const MainScreen(initialIndex: 1)),
-        (route) => false,
-      );
+      final workerData = bookingData['labourer'];
+      Labourer? assignedWorker;
+      if (workerData != null) {
+        assignedWorker = Labourer.fromJson(workerData);
+      }
+
+      if (assignedWorker != null) {
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(
+            builder: (context) => WorkerAssignedScreen(
+              category: widget.category,
+              address: widget.address,
+              scheduledTime: widget.scheduledTime,
+              bookingData: bookingData,
+              worker: assignedWorker!,
+            ),
+          ),
+          (route) => false,
+        );
+      } else {
+        // Fallback if worker data is somehow missing but status is confirmed
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (context) => const MainScreen(initialIndex: 1)),
+          (route) => false,
+        );
+      }
     }
   }
 
@@ -141,12 +283,23 @@ class _SearchingWorkerScreenState extends State<SearchingWorkerScreen> with Tick
             child: Text('Keep Waiting', style: GoogleFonts.inter(color: Colors.grey)),
           ),
           ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              Navigator.of(context).popUntil((route) => route.isFirst);
+            onPressed: () async {
+              final rawId = widget.bookingData?['_id'] ?? widget.bookingData?['id'];
+              if (rawId != null) {
+                // Actual API call to cancel the search
+                await ApiService.updateBookingStatus(rawId.toString(), 'cancelled');
+              }
+              if (mounted) {
+                Navigator.pop(context); // Pop dialog
+                Navigator.of(context).pushAndRemoveUntil(
+                  MaterialPageRoute(builder: (context) => const MainScreen(initialIndex: 0)),
+                  (route) => false,
+                );
+              }
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.redAccent,
+              foregroundColor: Colors.white,
             ),
             child: const Text('Cancel Request'),
           ),
@@ -156,6 +309,7 @@ class _SearchingWorkerScreenState extends State<SearchingWorkerScreen> with Tick
   }
 
   String get _formattedTime {
+    if (_isTimedOut) return '00:00 - Search Timed Out';
     int minutes = _remainingSeconds ~/ 60;
     int seconds = _remainingSeconds % 60;
     return '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')} Remaining';
@@ -188,7 +342,7 @@ class _SearchingWorkerScreenState extends State<SearchingWorkerScreen> with Tick
                   _buildProgressBar(),
                   const SizedBox(height: 24),
                   Text(
-                    'High demand...',
+                    _isTimedOut ? 'Search Window Closed' : 'High demand...',
                     style: GoogleFonts.inter(
                       fontSize: 14,
                       fontWeight: FontWeight.w700,
@@ -197,7 +351,9 @@ class _SearchingWorkerScreenState extends State<SearchingWorkerScreen> with Tick
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    'We will notify you, once we assign\na worker for the task!',
+                    _isTimedOut 
+                      ? 'No worker accepted the request in time.\nYou can restart the search to try again!'
+                      : 'We will notify you, once we assign\na worker for the task!',
                     textAlign: TextAlign.center,
                     style: GoogleFonts.inter(
                       fontSize: 14,
@@ -207,7 +363,7 @@ class _SearchingWorkerScreenState extends State<SearchingWorkerScreen> with Tick
                     ),
                   ),
                   const SizedBox(height: 32),
-                  _buildCancelButton(),
+                  _buildFooterButtons(),
                   const SizedBox(height: 32),
                 ],
               ),
@@ -238,7 +394,7 @@ class _SearchingWorkerScreenState extends State<SearchingWorkerScreen> with Tick
         children: [
           Positioned.fill(
             child: CustomPaint(
-              painter: _HeaderPatternPainter(),
+              painter: DotPatternPainter(),
             ),
           ),
           SafeArea(
@@ -249,7 +405,9 @@ class _SearchingWorkerScreenState extends State<SearchingWorkerScreen> with Tick
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text(
-                      'Notifying ${widget.category.name}\nworkers near you',
+                      _isTimedOut 
+                        ? 'Search Timed Out' 
+                        : 'Notifying ${widget.category.name}\nworkers near you',
                       textAlign: TextAlign.center,
                       style: GoogleFonts.roboto(
                         fontSize: 26,
@@ -369,47 +527,80 @@ class _SearchingWorkerScreenState extends State<SearchingWorkerScreen> with Tick
     );
   }
 
-  Widget _buildCancelButton() {
-    return SizedBox(
-      width: 180,
-      height: 48,
-      child: ElevatedButton(
-        onPressed: _handleCancel,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFF4A9782),
-          elevation: 0,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(24),
+  Widget _buildFooterButtons() {
+    return Column(
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // Cancel Button
+            SizedBox(
+              width: 180,
+              height: 48,
+              child: ElevatedButton(
+                onPressed: _isTimedOut ? _handleSearchAgain : _handleCancel,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF4A9782),
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(24),
+                  ),
+                ),
+                child: _isRecreating 
+                  ? const SizedBox(
+                      width: 20, 
+                      height: 20, 
+                      child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)
+                    )
+                  : Text(
+                      _isTimedOut ? 'Search Again' : 'Cancel Search',
+                      style: GoogleFonts.inter(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                      ),
+                    ),
+              ),
+            ),
+            const SizedBox(width: 16),
+            // Home Button (Right Side, Same Color Combo)
+            Container(
+              height: 48,
+              width: 48,
+              decoration: BoxDecoration(
+                color: const Color(0xFF4A9782),
+                shape: BoxShape.circle,
+              ),
+              child: IconButton(
+                onPressed: () {
+                  Navigator.of(context).pushAndRemoveUntil(
+                    MaterialPageRoute(builder: (context) => const MainScreen(initialIndex: 0)),
+                    (route) => false,
+                  );
+                },
+                icon: const Icon(Icons.home_rounded, color: Colors.white, size: 24),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 20),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: Text(
+            'Search will continue even if you go home\nto explore other services!',
+            textAlign: TextAlign.center,
+            style: GoogleFonts.inter(
+              fontSize: 12,
+              fontWeight: FontWeight.w400,
+              color: Colors.black54,
+              fontStyle: FontStyle.italic,
+              height: 1.4,
+            ),
           ),
         ),
-        child: Text(
-          'Cancel Search',
-          style: GoogleFonts.inter(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-            color: Colors.white,
-          ),
-        ),
-      ),
+      ],
     );
   }
 }
 
-class _HeaderPatternPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = Colors.white.withOpacity(0.1)
-      ..style = PaintingStyle.fill;
-    const spacing = 20.0;
-    const radius = 1.0;
-    for (double x = 0; x < size.width; x += spacing) {
-      for (double y = 0; y < size.height; y += spacing) {
-        canvas.drawCircle(Offset(x, y), radius, paint);
-      }
-    }
-  }
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
-}
 

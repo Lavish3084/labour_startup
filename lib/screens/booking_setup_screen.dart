@@ -94,6 +94,7 @@ class _BookingSetupScreenState extends State<BookingSetupScreen> {
   int _selectedTip = 0;
   late PaymentService _paymentService;
   String? _currentBookingId;
+  int? _serverFee;
 
   @override
   void initState() {
@@ -186,9 +187,9 @@ class _BookingSetupScreenState extends State<BookingSetupScreen> {
     }
   }
   
-  double get _bookingFee {
-    return (widget.category.commissionPercentage / 100) * widget.amount;
-  }
+  double get _bookingFee => (widget.category.commissionPercentage / 100) * widget.amount;
+  
+  int get _finalFeeAmount => _serverFee ?? _bookingFee.ceil();
   
   Future<void> _handleBookNow() async {
     setState(() => _isLoading = true);
@@ -218,7 +219,12 @@ class _BookingSetupScreenState extends State<BookingSetupScreen> {
         final bookingData = result['data'];
         _currentBookingId = bookingData['_id'];
         
-        if (_bookingFee <= 0) {
+        // Capture the official fee from the server
+        if (bookingData['commissionAmount'] != null) {
+          _serverFee = (bookingData['commissionAmount'] as num).toInt();
+        }
+        
+        if (_finalFeeAmount <= 0) {
           // Skip payment gateway for 0-fee bookings
           final success = await ApiService.confirmFreeBooking(_currentBookingId!);
           if (success) {
@@ -230,7 +236,7 @@ class _BookingSetupScreenState extends State<BookingSetupScreen> {
           }
         } else {
           // 2. Create Razorpay Order for the platform fee
-          final int feeInPaise = (_bookingFee * 100).toInt();
+          final int feeInPaise = _finalFeeAmount * 100;
           final orderData = await ApiService.createPaymentOrder(_currentBookingId!, feeInPaise);
           
           // 3. Open Razorpay Checkout
@@ -343,9 +349,9 @@ class _BookingSetupScreenState extends State<BookingSetupScreen> {
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  _bookingFee <= 0 
+                  _finalFeeAmount <= 0 
                     ? 'Confirm Your\n${widget.category.name} Booking'
-                    : 'Secure Your\nBooking For ₹${_bookingFee.toInt()}',
+                    : 'Secure Your\nBooking For ₹$_finalFeeAmount',
                   textAlign: TextAlign.center,
                   style: GoogleFonts.inter(
                     fontSize: 28,
@@ -574,7 +580,7 @@ class _BookingSetupScreenState extends State<BookingSetupScreen> {
                   children: [
                     Text('Booking Fee', style: GoogleFonts.inter(fontSize: 12, color: Colors.black54)),
                     const SizedBox(height: 4),
-                    Text('₹${_bookingFee.toInt()}', style: GoogleFonts.inter(fontSize: 24, fontWeight: FontWeight.w800, color: const Color(0xFF4A9782))),
+                    Text('₹$_finalFeeAmount', style: GoogleFonts.inter(fontSize: 24, fontWeight: FontWeight.w800, color: const Color(0xFF4A9782))),
                   ],
                 ),
               ),
@@ -596,7 +602,7 @@ class _BookingSetupScreenState extends State<BookingSetupScreen> {
                             height: 24,
                             child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
                         : Text(
-                            _bookingFee <= 0 ? 'Confirm Booking' : 'Pay Now',
+                            _finalFeeAmount <= 0 ? 'Confirm Booking' : 'Pay Now',
                             style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w600),
                           ),
                   ),

@@ -13,6 +13,7 @@ import '../providers/location_provider.dart';
 import '../providers/app_state_provider.dart';
 import 'searching_worker_screen.dart';
 import 'booking_setup_screen.dart';
+import '../widgets/pattern_painter.dart';
 
 class ServiceRequestScreen extends StatefulWidget {
   final ServiceCategory category;
@@ -1192,23 +1193,3 @@ class _TimePickerSheetState extends State<_TimePickerSheet> {
   }
 }
 
-class DotPatternPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = Colors.white.withValues(alpha: 0.1)
-      ..style = PaintingStyle.fill;
-
-    const spacing = 20.0;
-    const radius = 1.0;
-
-    for (double x = 0; x < size.width; x += spacing) {
-      for (double y = 0; y < size.height; y += spacing) {
-        canvas.drawCircle(Offset(x, y), radius, paint);
-      }
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
-}

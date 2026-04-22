@@ -66,6 +66,7 @@ const paymentRoutes = require('./routes/payments');
 const adminRoutes = require('./routes/admin');
 const categoriesRoutes = require('./routes/categories');
 const settingsRoutes = require('./routes/settings');
+const chatRoutes = require('./routes/chat');
 
 app.use('/api/auth', authRoutes);
 app.use('/api/categories', categoriesRoutes);
@@ -75,6 +76,7 @@ app.use('/api/bookings', bookingRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/settings', settingsRoutes);
+app.use('/api/chat', chatRoutes);
 
 // Database Connection
 mongoose.connect(process.env.MONGO_URI)

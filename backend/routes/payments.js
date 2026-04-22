@@ -126,21 +126,30 @@ router.post('/create-order', verifyToken, async (req, res) => {
 
         // Calculate fee
         let feeAmount = 0; 
-        try {
-            const categoryObj = await Category.findOne({ name: booking.category });
-            if (categoryObj) {
-                const commission = categoryObj.commissionPercentage || 0;
-                const referenceAmount = booking.amount || booking.minAmount || 0;
-
-                if (referenceAmount > 0) {
-                    feeAmount = (referenceAmount * commission) / 100;
-                } else {
-                    // Fallback to percentage as flat fee if no amount set, min 20 if commission > 0
-                    feeAmount = commission > 0 ? Math.max(commission, 20) : 0;
+        
+        // 1) Try using the pre-calculated amount from the booking record
+        if (booking.commissionAmount !== undefined && booking.commissionAmount !== null) {
+            feeAmount = booking.commissionAmount;
+        } 
+        
+        // 2) Fallback to recalculation if not found (legacy support)
+        if (feeAmount === 0) {
+            try {
+                const categoryObj = await Category.findOne({ name: booking.category });
+                if (categoryObj) {
+                    const commission = categoryObj.commissionPercentage || 0;
+                    const referenceAmount = booking.amount || booking.minAmount || 0;
+    
+                    if (referenceAmount > 0) {
+                        feeAmount = (referenceAmount * commission) / 100;
+                    } else {
+                        // Fallback to percentage as flat fee if no amount set, min 20 if commission > 0
+                        feeAmount = commission > 0 ? Math.max(commission, 20) : 0;
+                    }
                 }
+            } catch (err) {
+                console.error("Error calculating fee fallback:", err);
             }
-        } catch (err) {
-            console.error("Error calculating fee:", err);
         }
 
         // Safety: If fee is 0, we shouldn't be here (frontend should use confirm-free-booking)

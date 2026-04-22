@@ -4,6 +4,7 @@ const Booking = require('../models/Booking');
 const Labourer = require('../models/Labourer');
 const User = require('../models/User');
 const Setting = require('../models/Setting');
+const Category = require('../models/Category');
 const jwt = require('jsonwebtoken');
 const admin = require('firebase-admin');
 const Razorpay = require('razorpay');
@@ -139,8 +140,27 @@ router.post('/', verifyToken, async (req, res) => {
             minAmount,
             maxAmount,
             numberOfWorkers: numberOfWorkers || 1,
-            workType
+            workType,
+            commissionAmount: 0 // Default
         };
+
+        // Calculate platform commission fee from backend configuration
+        try {
+            const categoryObj = await Category.findOne({ name: category });
+            if (categoryObj) {
+                const commission = categoryObj.commissionPercentage || 0;
+                const referenceAmount = amount || minAmount || 0;
+                
+                if (referenceAmount > 0) {
+                    bookingData.commissionAmount = Math.ceil((referenceAmount * commission) / 100);
+                } else if (commission > 0) {
+                    // Fallback to percentage as flat fee if no amount set, min 20 if commission > 0
+                    bookingData.commissionAmount = Math.max(commission, 20);
+                }
+            }
+        } catch (err) {
+            console.error('Error calculating commission:', err);
+        }
 
         const priceDisplay = (minAmount && maxAmount)
             ? `₹${minAmount}-₹${maxAmount}`
@@ -310,7 +330,11 @@ router.get('/worker', verifyToken, async (req, res) => {
 router.get('/:id', verifyToken, async (req, res) => {
     try {
         const booking = await Booking.findById(req.params.id)
-            .populate('labourer', 'name category imageUrl hourlyRate location rating jobsCompleted reviews')
+            .populate({
+                path: 'labourer',
+                select: 'name category imageUrl hourlyRate location rating jobsCompleted reviews',
+                populate: { path: 'user', select: 'phoneNumber' }
+            })
             .populate('applicants', 'name category imageUrl hourlyRate location rating jobsCompleted reviews');
         
         if (!booking) {

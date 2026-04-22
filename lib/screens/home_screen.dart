@@ -15,6 +15,12 @@ import '../providers/app_state_provider.dart';
 import '../services/error_handler.dart';
 import '../widgets/glass_card.dart';
 import '../utils/app_theme.dart';
+import 'searching_worker_screen.dart';
+import 'booking_accepted_screen.dart';
+import 'worker_assigned_screen.dart';
+import 'track_status_screen.dart';
+import '../models/labourer.dart';
+import '../widgets/pattern_painter.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -185,67 +191,82 @@ class _HomeScreenState extends State<HomeScreen> {
         gradient: AppTheme.headerGradientGreen,
         borderRadius: BorderRadius.vertical(bottom: Radius.circular(24)),
       ),
-      padding: EdgeInsets.fromLTRB(20, MediaQuery.of(context).padding.top + 8, 20, 24),
-      child: Column(
+      padding: EdgeInsets.zero, // Padding handled inside Stack
+      child: Stack(
         children: [
-          Row(
-            children: [
-              GestureDetector(
-                onTap: _showAddressSelectionBottomSheet,
-                behavior: HitTestBehavior.opaque,
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
+          Positioned.fill(
+            child: CustomPaint(
+              painter: DotPatternPainter(
+                color: Colors.white.withOpacity(0.06),
+                spacing: 20.0,
+              ),
+            ),
+          ),
+          Padding(
+            padding: EdgeInsets.fromLTRB(20, MediaQuery.of(context).padding.top + 8, 20, 24),
+            child: Column(
+              children: [
+                Row(
                   children: [
-                    const Icon(Icons.location_on_rounded, color: AppTheme.brandYellow, size: 24),
-                    const SizedBox(width: 6),
-                    Flexible(
-                      child: Text(
-                        displayAddress,
-                        style: GoogleFonts.inter(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.white,
-                        ),
-                        overflow: TextOverflow.ellipsis,
+                    GestureDetector(
+                      onTap: _showAddressSelectionBottomSheet,
+                      behavior: HitTestBehavior.opaque,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.location_on_rounded, color: AppTheme.brandYellow, size: 24),
+                          const SizedBox(width: 6),
+                          Flexible(
+                            child: Text(
+                              displayAddress,
+                              style: GoogleFonts.inter(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                                color: Colors.white,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          const Icon(Icons.keyboard_arrow_down_rounded, color: Colors.white, size: 20),
+                        ],
                       ),
                     ),
-                    const SizedBox(width: 4),
-                    const Icon(Icons.keyboard_arrow_down_rounded, color: Colors.white, size: 20),
+                    const Spacer(),
+                    const Icon(Icons.notifications_none_rounded, color: Colors.white, size: 24),
+                    const SizedBox(width: 16),
+                    const Icon(Icons.settings_outlined, color: Colors.white, size: 24),
                   ],
                 ),
-              ),
-              const Spacer(),
-              const Icon(Icons.notifications_none_rounded, color: Colors.white, size: 24),
-              const SizedBox(width: 16),
-              const Icon(Icons.settings_outlined, color: Colors.white, size: 24),
-            ],
-          ),
-          const SizedBox(height: 32),
-          Container(
-            height: 56, // Matching Figma
-            decoration: BoxDecoration(
-              color: AppTheme.surfaceContainerHigh,
-              borderRadius: BorderRadius.circular(28),
-            ),
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _searchController,
-                    onChanged: (value) => Provider.of<AppStateProvider>(context, listen: false).setSearchQuery(value),
-                    decoration: InputDecoration(
-                      hintText: 'Explore Services',
-                      hintStyle: GoogleFonts.inter(
-                        color: const Color(0xFF49454F),
-                        fontSize: 16,
-                        fontWeight: FontWeight.w400,
+                const SizedBox(height: 32),
+                Container(
+                  height: 56, // Matching Figma
+                  decoration: BoxDecoration(
+                    color: AppTheme.surfaceContainerHigh,
+                    borderRadius: BorderRadius.circular(28),
+                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: _searchController,
+                          onChanged: (value) => Provider.of<AppStateProvider>(context, listen: false).setSearchQuery(value),
+                          decoration: InputDecoration(
+                            hintText: 'Explore Services',
+                            hintStyle: GoogleFonts.inter(
+                              color: const Color(0xFF49454F),
+                              fontSize: 16,
+                              fontWeight: FontWeight.w400,
+                            ),
+                            border: InputBorder.none,
+                          ),
+                        ),
                       ),
-                      border: InputBorder.none,
-                    ),
+                      const Icon(Icons.search, color: Color(0xFF49454F)),
+                    ],
                   ),
                 ),
-                const Icon(Icons.search, color: Color(0xFF49454F)),
               ],
             ),
           ),
@@ -257,7 +278,15 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildActiveBookingSection() {
     return Consumer<AppStateProvider>(
       builder: (context, appState, _) {
-        final activeBookings = appState.bookings.where((b) => b['status'] == 'confirmed' || b['status'] == 'pending' || b['status'] == 'arrived').toList();
+        final activeBookings = appState.bookings.where((b) {
+          final status = b['status'].toString().toLowerCase();
+          if (status == 'completed' || status == 'cancelled') return false;
+          final date = DateTime.parse(b['date'].toString()).toLocal();
+          final hours = int.tryParse(b['numberOfHours']?.toString() ?? '2') ?? 2;
+          final endTime = date.add(Duration(hours: hours));
+          if (DateTime.now().isAfter(endTime)) return false;
+          return status == 'confirmed' || status == 'pending' || status == 'arrived';
+        }).toList();
         
         if (activeBookings.isEmpty) return const SizedBox.shrink();
 
@@ -277,9 +306,9 @@ class _HomeScreenState extends State<HomeScreen> {
         return Column(
           children: [
             SizedBox(
-              height: 110,
+              height: 80,
               child: PageView.builder(
-                controller: PageController(viewportFraction: 0.9),
+                controller: PageController(viewportFraction: 0.85),
                 itemCount: activeBookings.length,
                 onPageChanged: (index) {
                   setState(() {
@@ -287,10 +316,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   });
                 },
                 itemBuilder: (context, index) {
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    child: _buildBookingCard(activeBookings[index]),
-                  );
+                  return _buildBookingCard(activeBookings[index]);
                 },
               ),
             ),
@@ -316,45 +342,122 @@ class _HomeScreenState extends State<HomeScreen> {
       }
     }
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+    final cardContent = Container(
+      width: double.infinity,
+      height: 56,
+      margin: const EdgeInsets.symmetric(horizontal: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 20),
       decoration: BoxDecoration(
-        color: AppTheme.activeCardBg,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppTheme.activeCardBorder, width: 1),
-        boxShadow: AppTheme.figmaCardShadow,
+        color: const Color(0xFFF7F8FA),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFF4A9782).withOpacity(0.3), width: 1),
       ),
       child: Row(
         children: [
           Expanded(
-            child: Text.rich(
-              TextSpan(
-                children: [
-                  TextSpan(
-                    text: 'Scheduled Arrival :\n',
-                    style: GoogleFonts.inter(
-                      fontSize: 16,
-                      color: Colors.black,
-                      fontWeight: FontWeight.w400,
-                      height: 1.5,
-                    ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Active Booking',
+                  style: GoogleFonts.roboto(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w400,
+                    color: Colors.black,
+                    height: 1.5,
+                    letterSpacing: 0.5,
                   ),
-                  TextSpan(
-                    text: '$serviceName - $dateStr',
-                    style: GoogleFonts.inter(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.black,
-                      height: 1.5,
-                    ),
+                ),
+                Text(
+                  '$serviceName $dateStr',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.roboto(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.black,
+                    height: 1.5,
+                    letterSpacing: 0.5,
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
-          const Icon(Icons.arrow_forward_ios_rounded, size: 16, color: AppTheme.activeCardBorder),
+          Icon(Icons.play_arrow_rounded, size: 18, color: const Color(0xFF4A9782).withOpacity(0.8)),
         ],
       ),
+    );
+
+    return GestureDetector(
+      onTap: () {
+        final DateTime scheduledTime = DateTime.parse(booking['date'].toString()).toLocal();
+        final now = DateTime.now();
+        final difference = scheduledTime.difference(now);
+
+        // Find the ServiceCategory object for the search screen
+        final allCategories = Provider.of<AppStateProvider>(context, listen: false).categories;
+        final categoryName = booking['category'] is Map 
+            ? (booking['category']['name'] ?? 'Service') 
+            : (booking['category']?.toString() ?? 'Service');
+        
+        final categoryObj = allCategories.firstWhere(
+          (c) => c.name == categoryName,
+          orElse: () => ServiceCategory(
+            name: categoryName,
+            icon: Icons.category,
+            description: '',
+            supportedModes: ['Hourly'],
+            hourlyRate: 0,
+            dailyRate: 0,
+            minHourlyRate: 0,
+            maxHourlyRate: 0,
+            commissionPercentage: 0,
+          ),
+        );
+
+        // 1. If worker is already assigned, go to TrackStatusScreen
+        final workerData = booking['labourer'];
+        if (workerData != null) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => TrackStatusScreen(bookingId: booking['_id']),
+            ),
+          );
+          return;
+        }
+
+        // 2. If no worker assigned yet, follow timing logic
+        if (difference.inHours < 12) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => SearchingWorkerScreen(
+                category: categoryObj,
+                address: booking['address'] ?? '',
+                scheduledTime: scheduledTime,
+                latitude: (booking['latitude'] as num?)?.toDouble() ?? 0.0,
+                longitude: (booking['longitude'] as num?)?.toDouble() ?? 0.0,
+                bookingData: booking,
+              ),
+            ),
+          );
+        } else {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => BookingAcceptedScreen(
+                category: categoryObj,
+                address: booking['address'] ?? '',
+                scheduledTime: scheduledTime,
+                bookingData: booking,
+              ),
+            ),
+          );
+        }
+      },
+      child: cardContent,
     );
   }
 
@@ -437,7 +540,15 @@ class _HomeScreenState extends State<HomeScreen> {
         const SizedBox(height: 28),
         Consumer<AppStateProvider>(
           builder: (context, appState, _) {
-            final activeBookings = appState.bookings.where((b) => b['status'] == 'confirmed' || b['status'] == 'pending' || b['status'] == 'arrived').toList();
+            final activeBookings = appState.bookings.where((b) {
+          final status = b['status'].toString().toLowerCase();
+          if (status == 'completed' || status == 'cancelled') return false;
+          final date = DateTime.parse(b['date'].toString()).toLocal();
+          final hours = int.tryParse(b['numberOfHours']?.toString() ?? '2') ?? 2;
+          final endTime = date.add(Duration(hours: hours));
+          if (DateTime.now().isAfter(endTime)) return false;
+          return status == 'confirmed' || status == 'pending' || status == 'arrived';
+        }).toList();
             final hasActiveBookings = activeBookings.isNotEmpty;
             final allCategories = appState.categories;
             if (allCategories.isEmpty) return const SizedBox.shrink();
