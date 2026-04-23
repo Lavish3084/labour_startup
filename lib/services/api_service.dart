@@ -301,7 +301,7 @@ class ApiService {
         body: jsonEncode({
           'labourerId': labourerId,
           'category': category,
-          'date': date.toIso8601String(),
+          'date': date.toUtc().toIso8601String(),
           'bookingMode': bookingMode,
           'numberOfHours': numberOfHours,
           'notes': notes,

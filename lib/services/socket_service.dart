@@ -15,9 +15,9 @@ class SocketService {
     if (_socket != null && _socket!.connected) return;
 
     _socket = io.io(
-      _baseUrl,
+      'https://api.justlavish.tech',
       io.OptionBuilder()
-          .setTransports(['websocket'])
+          .setTransports(['websocket', 'polling'])
           .enableAutoConnect()
           .build(),
     );

@@ -170,7 +170,7 @@ class _BookingsScreenState extends State<BookingsScreen> {
     final status = (booking['status'] as String).toLowerCase();
     if (status == 'completed' || status == 'cancelled') return true;
 
-    final date = DateTime.parse(booking['date']);
+    final date = DateTime.parse(booking['date']).toLocal();
     final hours = int.tryParse(booking['numberOfHours']?.toString() ?? '2') ?? 2;
     final endTime = date.add(Duration(hours: hours));
 

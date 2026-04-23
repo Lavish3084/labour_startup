@@ -113,14 +113,6 @@ const broadcastBooking = async (booking) => {
 router.post('/', verifyToken, async (req, res) => {
     const { labourerId, category, date, notes, problemTitle, address, houseNumber, landmark, latitude, longitude, bookingMode, numberOfHours, amount, minAmount, maxAmount, numberOfWorkers, workType, taskImages, taskAudio } = req.body;
     
-    // Check if the booking date is less than 1 hour away or in the past
-    const bookingDate = new Date(date);
-    const minBookingTime = new Date(Date.now() + 3600000); // Current time + 1 hour
-
-    if (bookingDate < minBookingTime) {
-        return res.status(400).json({ msg: 'Booking must be scheduled at least 1 hour in advance.' });
-    }
-
     try {
         let bookingData = {
             user: req.user.id,
@@ -668,15 +660,6 @@ router.put('/:id/verify-arrival', verifyToken, async (req, res) => {
         const labourer = await Labourer.findOne({ user: req.user.id });
         if (!labourer || booking.labourer.toString() !== labourer._id.toString()) {
             return res.status(401).json({ msg: 'Not authorized' });
-        }
-
-        const now = new Date();
-        const scheduled = new Date(booking.date);
-        const start = new Date(scheduled.getTime() - 3600000); // 1 hour before
-        const end = new Date(scheduled.getTime() + 1800000);   // 30 mins after
-
-        if (now < start || now > end) {
-            return res.status(400).json({ msg: 'Arrival verification window expired (Allowed: 1h before to 30m after).' });
         }
 
         if (booking.arrivalOTP !== otp) {

@@ -12,8 +12,9 @@ import '../services/payment_service.dart';
 import '../services/error_handler.dart';
 import '../models/labourer.dart';
 import '../services/notification_service.dart';
-
 import '../services/socket_service.dart';
+import 'booking_complete_screen.dart';
+import 'main_screen.dart';
 
 class TrackStatusScreen extends StatefulWidget {
   final String bookingId;
@@ -31,6 +32,7 @@ class _TrackStatusScreenState extends State<TrackStatusScreen> {
   dynamic _booking;
   final PaymentService _paymentService = PaymentService();
   String? _pendingBookingId;
+  bool _isWorkerCardExpanded = false;
 
   @override
   void initState() {
@@ -63,8 +65,24 @@ class _TrackStatusScreenState extends State<TrackStatusScreen> {
         setState(() {
           _booking = data;
         });
+        _checkCompletionStatus();
       }
     });
+  }
+
+  void _checkCompletionStatus() {
+    if (_booking != null && _booking['status']?.toString().toLowerCase() == 'completed') {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) => BookingCompleteScreen(booking: _booking),
+            ),
+          );
+        }
+      });
+    }
   }
 
   void _listenForNotifications() {
@@ -85,6 +103,7 @@ class _TrackStatusScreenState extends State<TrackStatusScreen> {
           _booking = booking;
           _isLoading = false;
         });
+        _checkCompletionStatus();
       }
     } catch (e) {
       if (mounted) setState(() => _isLoading = false);
@@ -125,26 +144,91 @@ class _TrackStatusScreenState extends State<TrackStatusScreen> {
   }
 
   Future<void> _initiatePayment(int amount) async {
-    try {
-      final String razorpayKeyId = dotenv.get('RAZORPAY_KEY_ID', fallback: '');
-      final order = await ApiService.createPaymentOrder(widget.bookingId, amount);
+    final labourerData = _booking['labourer'];
+    final upiId = labourerData?['upiId']?.toString();
+    final workerName = labourerData?['name']?.toString() ?? "Worker";
 
-      _paymentService.openCheckout(
-        keyId: razorpayKeyId,
-        orderId: order['id'],
-        name: "Will App",
-        description: "Payment for ${_booking['category']}",
-        email: "", // Ideally from user state
-        contact: "", // Ideally from user state
-        amount: order['amount'],
-      );
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(ErrorHandler.getErrorMessage(e))),
-        );
+    if (upiId != null && upiId.isNotEmpty) {
+      // Launch UPI Intent
+      final String upiUri = 'upi://pay?pa=$upiId&pn=${Uri.encodeComponent(workerName)}&am=$amount&cu=INR&tn=${Uri.encodeComponent("Payment for ${_booking['category']} via WILL App")}';
+      
+      try {
+        if (await canLaunchUrl(Uri.parse(upiUri))) {
+          await launchUrl(Uri.parse(upiUri));
+        } else {
+          // Fallback if no UPI app
+          _showPaymentDialog(amount, isUpi: true, upiId: upiId);
+        }
+      } catch (e) {
+        _showPaymentDialog(amount, isUpi: true, upiId: upiId);
       }
+    } else {
+      // Show Cash Payment Dialog
+      _showPaymentDialog(amount, isUpi: false);
     }
+  }
+
+  void _showPaymentDialog(int amount, {bool isUpi = false, String? upiId}) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text(isUpi ? 'Pay via UPI' : 'Pay in Cash', style: GoogleFonts.roboto(fontWeight: FontWeight.bold)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              isUpi 
+                ? 'We couldn\'t open your UPI app automatically. You can pay manually to:'
+                : 'The worker hasn\'t set up online payments. Please pay them directly.',
+              style: GoogleFonts.roboto(fontSize: 14),
+            ),
+            const SizedBox(height: 16),
+            if (isUpi && upiId != null) ...[
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF2F2F2),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(child: Text(upiId, style: const TextStyle(fontWeight: FontWeight.bold))),
+                    IconButton(
+                      icon: const Icon(Icons.copy, size: 18),
+                      onPressed: () {
+                        // Copy to clipboard logic could go here
+                      },
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+            ],
+            Text(
+              'Amount: ₹$amount',
+              style: GoogleFonts.roboto(fontSize: 18, fontWeight: FontWeight.bold, color: const Color(0xFF4A9782)),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+          if (isUpi)
+            ElevatedButton(
+              onPressed: () {
+                // If we show this dialog, user probably already tried opening the app
+                Navigator.pop(context);
+              },
+              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF4A9782)),
+              child: const Text('Done', style: TextStyle(color: Colors.white)),
+            ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -168,6 +252,7 @@ class _TrackStatusScreenState extends State<TrackStatusScreen> {
     final labourerData = _booking['labourer'];
     final labourer = labourerData != null ? Labourer.fromJson(labourerData) : null;
     final amount = _booking['amount'] ?? (_booking['minAmount'] ?? 0);
+    final bool hasUpi = labourerData?['upiId'] != null && labourerData!['upiId'].toString().isNotEmpty;
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -182,8 +267,8 @@ class _TrackStatusScreenState extends State<TrackStatusScreen> {
           'Track Status',
           style: GoogleFonts.roboto(
             color: Colors.black,
-            fontSize: 24,
-            fontWeight: FontWeight.w500,
+            fontSize: 22,
+            fontWeight: FontWeight.w400,
           ),
         ),
         centerTitle: true,
@@ -197,15 +282,130 @@ class _TrackStatusScreenState extends State<TrackStatusScreen> {
       body: SingleChildScrollView(
         child: Column(
           children: [
-            const SizedBox(height: 20),
+            const SizedBox(height: 40),
             _buildProgressBar(status),
-            const SizedBox(height: 30),
+            const SizedBox(height: 12),
             _buildOTPCard(status, arrivalOTP, completionOTP),
-            const SizedBox(height: 30),
-            if (labourer != null) _buildWorkerCard(labourer),
-            const SizedBox(height: 20),
-            if (status != 'completed') _buildWorkDetailsCard(_booking),
-            if (status == 'arrived' || status == 'completed') _buildPaymentSection(status, amount),
+            const SizedBox(height: 40),
+            // Main Content Grey Card
+            Container(
+              margin: const EdgeInsets.symmetric(horizontal: 24),
+              decoration: ShapeDecoration(
+                color: const Color(0xFFF2F2F2),
+                shape: RoundedRectangleBorder(
+                  side: const BorderSide(width: 1, color: Color(0xFFD2D2D2)),
+                  borderRadius: BorderRadius.circular(17),
+                ),
+              ),
+              child: Column(
+                children: [
+                  const SizedBox(height: 16),
+                  if (labourer != null) _buildWorkerCard(labourer),
+                  if (status != 'arrived' && status != 'completed') ...[
+                    const SizedBox(height: 12),
+                    _buildWorkDetailsCard(_booking),
+                    _buildPaymentSection(status, amount),
+                  ] else ...[
+                    if (_isWorkerCardExpanded) ...[
+                      const SizedBox(height: 12),
+                      _buildWorkDetailsCard(_booking),
+                    ],
+                    const SizedBox(height: 8),
+                    IconButton(
+                      onPressed: () {
+                        setState(() {
+                          _isWorkerCardExpanded = !_isWorkerCardExpanded;
+                        });
+                      },
+                      icon: Icon(
+                        _isWorkerCardExpanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
+                        color: Colors.black,
+                        size: 24,
+                      ),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                    ),
+                    const SizedBox(height: 8),
+                  ],
+                ],
+              ),
+            ),
+            if (status == 'arrived' || status == 'completed') ...[
+              const SizedBox(height: 60),
+              Text(
+                'Your Work is Complete :',
+                style: GoogleFonts.roboto(
+                  color: Colors.black,
+                  fontSize: 24,
+                  fontWeight: FontWeight.w400,
+                ),
+              ),
+              const SizedBox(height: 12),
+              RichText(
+                text: TextSpan(
+                  children: [
+                    TextSpan(
+                      text: 'Pay Now : ',
+                      style: GoogleFonts.roboto(
+                        color: const Color(0xFF8F8F8F),
+                        fontSize: 36,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    TextSpan(
+                      text: '₹${amount.toInt()}',
+                      style: GoogleFonts.roboto(
+                        color: const Color(0xFF4A9782),
+                        fontSize: 36,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (!hasUpi) ...[
+                const SizedBox(height: 16),
+                Text(
+                  'Pay directly to worker',
+                  style: GoogleFonts.roboto(
+                    color: Colors.black,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w400,
+                  ),
+                ),
+              ],
+              const SizedBox(height: 60),
+              if (hasUpi) _buildPaymentOptionsBar(),
+              const SizedBox(height: 32),
+              if (hasUpi)
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 100),
+                  child: SizedBox(
+                    width: double.infinity,
+                    height: 52,
+                    child: ElevatedButton(
+                      onPressed: () => _initiatePayment(
+                        amount is int ? amount : int.tryParse(amount.toString()) ?? 0,
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF529A87),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(26),
+                        ),
+                        elevation: 0,
+                      ),
+                      child: Text(
+                        'Pay Now',
+                        style: GoogleFonts.roboto(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+            ],
             const SizedBox(height: 40),
           ],
         ),
@@ -216,135 +416,163 @@ class _TrackStatusScreenState extends State<TrackStatusScreen> {
   Widget _buildProgressBar(String status) {
     bool isArrived = status == 'arrived' || status == 'completed';
     bool isCompleted = status == 'completed';
-    
+    double progress = isCompleted ? 1.0 : (isArrived ? 0.5 : 0.05);
+
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 32.0),
+      padding: const EdgeInsets.symmetric(horizontal: 36.0),
       child: Stack(
-        alignment: Alignment.center,
+        alignment: Alignment.centerLeft,
+        clipBehavior: Clip.none,
         children: [
+          // Background Bar
           Container(
             height: 4,
             width: double.infinity,
             decoration: BoxDecoration(
-              color: Colors.grey.shade300,
+              color: const Color(0xFFB6B6B6),
               borderRadius: BorderRadius.circular(2),
             ),
           ),
-          Align(
-            alignment: Alignment.centerLeft,
-            child: FractionallySizedBox(
-              widthFactor: isCompleted ? 1.0 : (isArrived ? 0.5 : 0.1),
-              child: Container(
-                height: 4,
-                decoration: BoxDecoration(
-                  color: const Color(0xFF4A9782),
-                  borderRadius: BorderRadius.circular(2),
-                ),
+          // Active Bar
+          FractionallySizedBox(
+            widthFactor: progress,
+            child: Container(
+              height: 4,
+              decoration: BoxDecoration(
+                color: const Color(0xFF4A9782),
+                borderRadius: BorderRadius.circular(2),
               ),
             ),
           ),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              _buildProgressDot(true),
-              _buildProgressDot(isCompleted, isEnd: true),
-            ],
+          // Start Dot
+          Container(
+            width: 12,
+            height: 12,
+            decoration: const BoxDecoration(
+              color: Color(0xFF4A9782),
+              shape: BoxShape.circle,
+            ),
+          ),
+          // End Checkmark (only visible if completed or at the end of the visual line)
+          Positioned(
+            right: -6,
+            child: Container(
+              width: 22,
+              height: 22,
+              decoration: BoxDecoration(
+                color: isCompleted ? const Color(0xFF4A9782) : const Color(0xFF4A9782).withValues(alpha: 0.5),
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.white, width: 2),
+              ),
+              child: const Icon(
+                Icons.check,
+                size: 14,
+                color: Colors.white,
+              ),
+            ),
           ),
         ],
       ),
-    );
-  }
-
-  Widget _buildProgressDot(bool active, {bool isEnd = false}) {
-    return Container(
-      width: 24,
-      height: 24,
-      decoration: BoxDecoration(
-        color: active ? const Color(0xFF4A9782) : Colors.white,
-        shape: BoxShape.circle,
-        border: Border.all(
-          color: active ? const Color(0xFF4A9782) : Colors.grey.shade300,
-          width: 2,
-        ),
-      ),
-      child: active && (active)
-          ? const Icon(Icons.check, size: 14, color: Colors.white) 
-          : null,
     );
   }
 
   Widget _buildOTPCard(String status, String arrivalOTP, String completionOTP) {
     bool isCompletion = status == 'arrived' || status == 'completed';
     String title = isCompletion 
-        ? "Share OTP to worker after payment is done" 
-        : "Share OTP to worker once he arrives";
+        ? "Share OTP to worker\nafter payment is done" 
+        : "Share OTP to worker\nonce he arrives";
     String otp = isCompletion ? completionOTP : arrivalOTP;
 
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 40),
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFF4A9782).withOpacity(0.4), width: 1.5),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF4A9782).withOpacity(0.1),
-            blurRadius: 15,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            title,
-            style: GoogleFonts.roboto(
-              color: const Color(0xFF4A9782),
-              fontSize: 13,
-              fontWeight: FontWeight.w400,
+    return Align(
+      alignment: isCompletion ? Alignment.centerRight : Alignment.centerLeft,
+      child: Container(
+        margin: isCompletion ? const EdgeInsets.only(right: 36) : const EdgeInsets.only(left: 36),
+        padding: const EdgeInsets.all(16),
+        decoration: ShapeDecoration(
+          color: Colors.white,
+          shape: RoundedRectangleBorder(
+            side: const BorderSide(width: 1, color: Color(0xFF4A9782)),
+            borderRadius: BorderRadius.only(
+              topLeft: isCompletion ? const Radius.circular(16) : Radius.zero,
+              topRight: isCompletion ? Radius.zero : const Radius.circular(16),
+              bottomLeft: const Radius.circular(16),
+              bottomRight: const Radius.circular(16),
             ),
           ),
-          const SizedBox(height: 8),
-          Text(
-            otp,
-            style: GoogleFonts.roboto(
-              color: const Color(0xFF4A9782),
-              fontSize: 36,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 2,
+          shadows: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            )
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              title,
+              style: GoogleFonts.roboto(
+                color: const Color(0xFF2B7F68),
+                fontSize: 12,
+                fontWeight: FontWeight.w400,
+                height: 1.33,
+                letterSpacing: 0.40,
+              ),
             ),
-          ),
-        ],
+            const SizedBox(height: 8),
+            Text(
+              otp,
+              style: GoogleFonts.roboto(
+                color: const Color(0xFF4A9782),
+                fontSize: 22,
+                fontWeight: FontWeight.w700,
+                height: 1.27,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildWorkerCard(Labourer labourer) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 24),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.06),
-            blurRadius: 15,
-            offset: const Offset(0, 5),
+    return Column(
+      children: [
+        Container(
+          margin: const EdgeInsets.symmetric(horizontal: 16),
+          padding: const EdgeInsets.all(12),
+          decoration: ShapeDecoration(
+            color: Colors.white,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            shadows: const [
+              BoxShadow(
+                color: Color(0x3F000000),
+                blurRadius: 4,
+                offset: Offset(0, 4),
+                spreadRadius: 0,
+              )
+            ],
           ),
-        ],
-      ),
-      child: Column(
-        children: [
-          Row(
+          child: Row(
             children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(15),
-                child: labourer.imageUrl.isNotEmpty
-                    ? Image.network(labourer.imageUrl, width: 60, height: 60, fit: BoxFit.cover)
-                    : Container(width: 60, height: 60, color: Colors.grey.shade200, child: const Icon(Icons.person)),
+              Container(
+                width: 63,
+                height: 63,
+                decoration: ShapeDecoration(
+                  image: DecorationImage(
+                    image: labourer.imageUrl.isNotEmpty
+                        ? NetworkImage(labourer.imageUrl)
+                        : const NetworkImage("https://placehold.co/63x63"),
+                    fit: BoxFit.cover,
+                  ),
+                  shape: const OvalBorder(
+                    side: BorderSide(width: 1, color: Color(0xFF4A9782)),
+                  ),
+                ),
               ),
               const SizedBox(width: 16),
               Expanded(
@@ -356,82 +584,92 @@ class _TrackStatusScreenState extends State<TrackStatusScreen> {
                       style: GoogleFonts.roboto(
                         fontSize: 20,
                         fontWeight: FontWeight.w700,
-                        color: Colors.black,
+                        height: 0.80,
+                        letterSpacing: 0.40,
                       ),
                     ),
+                    const SizedBox(height: 8),
                     Text(
                       labourer.category,
                       style: GoogleFonts.roboto(
-                        fontSize: 12,
+                        fontSize: 10,
                         fontWeight: FontWeight.w400,
-                        color: Colors.grey.shade600,
+                        letterSpacing: 0.40,
                       ),
                     ),
                   ],
                 ),
               ),
               Row(
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   const Icon(Icons.star, color: Color(0xFFFFD700), size: 18),
                   const SizedBox(width: 4),
                   Text(
-                    labourer.rating.toStringAsFixed(1),
+                    '${labourer.rating} ',
                     style: GoogleFonts.roboto(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.grey.shade600,
+                      color: const Color(0xFF595959),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w400,
                     ),
                   ),
                 ],
               ),
             ],
           ),
-          const SizedBox(height: 20),
-          Row(
+        ),
+        const SizedBox(height: 20),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Row(
             children: [
               Expanded(
-                child: OutlinedButton(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => ChatScreen(
-                          bookingId: widget.bookingId,
-                          otherUserName: labourer.name,
-                          otherUserPhoto: labourer.imageUrl,
-                        ),
-                      ),
-                    );
-                  },
-                  style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    side: const BorderSide(color: Color(0xFF4A9782)),
+                child: Container(
+                  height: 48,
+                  decoration: ShapeDecoration(
+                    color: const Color(0xFFF5FFFC),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(25),
+                      side: const BorderSide(width: 1, color: Color(0xFF4A9782)),
+                      borderRadius: BorderRadius.circular(25.50),
                     ),
                   ),
-                  child: Text(
-                    'Message',
-                    style: GoogleFonts.roboto(
-                      color: const Color(0xFF4A9782),
-                      fontSize: 18,
-                      fontWeight: FontWeight.w500,
+                  child: TextButton(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => ChatScreen(
+                            bookingId: widget.bookingId,
+                            otherUserName: labourer.name,
+                            otherUserPhoto: labourer.imageUrl,
+                          ),
+                        ),
+                      );
+                    },
+                    child: Text(
+                      'Message',
+                      style: GoogleFonts.inter(
+                        color: const Color(0xFF4A9782),
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                   ),
                 ),
               ),
               const SizedBox(width: 12),
               Container(
-                width: 70,
-                height: 50,
-                decoration: BoxDecoration(
-                  color: const Color(0xFF4A9782),
-                  borderRadius: BorderRadius.circular(25),
+                width: 124,
+                height: 48,
+                decoration: ShapeDecoration(
+                  color: const Color(0xFF539987),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(25.50),
+                  ),
                 ),
                 child: IconButton(
-                  icon: const Icon(Icons.call, color: Colors.white),
+                  icon: const Icon(Icons.call_outlined, color: Colors.white, size: 24),
                   onPressed: () async {
-                    // Access phone from nested user object
                     final userData = _booking['labourer']?['user'];
                     final phone = userData?['phoneNumber'];
                     if (phone != null && phone.isNotEmpty) {
@@ -439,12 +677,58 @@ class _TrackStatusScreenState extends State<TrackStatusScreen> {
                       if (await canLaunchUrl(Uri.parse(url))) {
                         await launchUrl(Uri.parse(url));
                       }
-                    } else {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text("Worker's phone number not available")),
-                      );
                     }
                   },
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildWorkDetailsCard(dynamic booking) {
+    final date = DateTime.parse(booking['date']).toLocal();
+    final timeStr = "${date.hour % 12 == 0 ? 12 : date.hour % 12}:${date.minute.toString().padLeft(2, '0')} ${date.hour >= 12 ? 'PM' : 'AM'}";
+    final dateStr = "${date.day} ${_getMonthName(date.month)}";
+
+    return Container(
+      padding: const EdgeInsets.fromLTRB(24, 0, 24, 20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Work Details :',
+            style: GoogleFonts.roboto(
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+              color: Colors.black,
+              letterSpacing: 0.40,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              _buildDetailItem('Service', booking['category']),
+              _buildVerticalDivider(),
+              _buildDetailItem('Duration', '${booking['numberOfHours'] ?? 2} Hours'),
+              _buildVerticalDivider(),
+              _buildDetailItem('Date', dateStr),
+            ],
+          ),
+          const SizedBox(height: 24),
+          Row(
+            children: [
+              _buildDetailItem('Arrival Time', timeStr),
+              const SizedBox(width: 24),
+              _buildVerticalDivider(),
+              const SizedBox(width: 24),
+              Expanded(
+                child: _buildDetailItem(
+                  'Location',
+                  booking['address'] ?? 'Kharar, India',
                 ),
               ),
             ],
@@ -454,83 +738,11 @@ class _TrackStatusScreenState extends State<TrackStatusScreen> {
     );
   }
 
-  Widget _buildWorkDetailsCard(dynamic booking) {
-    final date = DateTime.parse(booking['date']);
-    final timeStr = "${date.hour % 12 == 0 ? 12 : date.hour % 12}:${date.minute.toString().padLeft(2, '0')} ${date.hour >= 12 ? 'PM' : 'AM'}";
-    final dateStr = "${date.day} ${_getMonthName(date.month)}";
-
+  Widget _buildVerticalDivider() {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 24),
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF8F8F8),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.grey.shade200),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Work Details :',
-            style: GoogleFonts.roboto(
-              fontSize: 16,
-              fontWeight: FontWeight.w700,
-              color: Colors.black,
-            ),
-          ),
-          const SizedBox(height: 16),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              _buildDetailItem('Service', booking['category']),
-              _buildDetailItem('Duration', '${booking['numberOfHours'] ?? 2} Hours'),
-              _buildDetailItem('Date', dateStr),
-            ],
-          ),
-          const SizedBox(height: 20),
-          Row(
-            children: [
-              _buildDetailItem('Arrival Time', timeStr),
-              const SizedBox(width: 40),
-              Expanded(child: _buildDetailItem('Location', booking['address'] ?? 'Kharar, India')),
-            ],
-          ),
-          const Divider(height: 32),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Total Amount Due :',
-                    style: GoogleFonts.roboto(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.black,
-                    ),
-                  ),
-                  Text(
-                    'Pay to worker after work completion',
-                    style: GoogleFonts.roboto(
-                      fontSize: 10,
-                      color: Colors.grey.shade600,
-                    ),
-                  ),
-                ],
-              ),
-              Text(
-                '₹${booking['amount'] ?? 0}',
-                style: GoogleFonts.roboto(
-                  fontSize: 28,
-                  fontWeight: FontWeight.w700,
-                  color: const Color(0xFF4A9782),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
+      width: 1,
+      height: 33,
+      color: const Color(0xFFCCCCCC),
     );
   }
 
@@ -542,7 +754,10 @@ class _TrackStatusScreenState extends State<TrackStatusScreen> {
           label,
           style: GoogleFonts.roboto(
             fontSize: 10,
-            color: Colors.grey.shade600,
+            fontWeight: FontWeight.w400,
+            color: Colors.black,
+            height: 1.60,
+            letterSpacing: 0.40,
           ),
         ),
         const SizedBox(height: 4),
@@ -552,6 +767,8 @@ class _TrackStatusScreenState extends State<TrackStatusScreen> {
             fontSize: 14,
             fontWeight: FontWeight.w400,
             color: Colors.black,
+            height: 1.43,
+            letterSpacing: 0.25,
           ),
         ),
       ],
@@ -561,91 +778,82 @@ class _TrackStatusScreenState extends State<TrackStatusScreen> {
   Widget _buildPaymentSection(String status, dynamic amount) {
     return Column(
       children: [
-        const SizedBox(height: 30),
-        Text(
-          'Your Work is Complete :',
-          style: GoogleFonts.roboto(
-            fontSize: 20,
-            fontWeight: FontWeight.w500,
-            color: Colors.black,
-          ),
-        ),
-        const SizedBox(height: 12),
-        RichText(
-          text: TextSpan(
-            children: [
-              TextSpan(
-                text: 'Pay Now : ',
-                style: GoogleFonts.roboto(
-                  fontSize: 32,
-                  fontWeight: FontWeight.w700,
-                  color: const Color(0xFFBDBDBD),
-                ),
-              ),
-              TextSpan(
-                text: '₹$amount',
-                style: GoogleFonts.roboto(
-                  fontSize: 32,
-                  fontWeight: FontWeight.w700,
-                  color: const Color(0xFF4A9782),
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 24),
-        Container(
-          margin: const EdgeInsets.symmetric(horizontal: 24),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          decoration: BoxDecoration(
-            color: const Color(0xFFF5F5F5),
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: Row(
-            children: [
-              Expanded(
-                child: Text(
-                  'Choose Payment Option :',
-                  style: GoogleFonts.roboto(fontSize: 13, color: Colors.black87),
-                ),
-              ),
-              Image.network('https://upload.wikimedia.org/wikipedia/commons/thumb/c/c7/Google_Pay_Logo.svg/2560px-Google_Pay_Logo.svg.png', height: 20),
-              const SizedBox(width: 10),
-              Image.network('https://upload.wikimedia.org/wikipedia/commons/thumb/2/24/Paytm_Logo_%28standalone%29.svg/2560px-Paytm_Logo_%28standalone%29.svg.png', height: 14),
-              const SizedBox(width: 10),
-              const Icon(Icons.account_balance_wallet_outlined, size: 22, color: Color(0xFF4A9782)),
-              const SizedBox(width: 4),
-              const Text('COD', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-              const Icon(Icons.arrow_drop_down),
-            ],
-          ),
+        const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 0),
+          child: Divider(color: Color(0xFFD0D0D0), thickness: 1, height: 1),
         ),
         const SizedBox(height: 24),
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 40.0),
-          child: SizedBox(
-            width: double.infinity,
-            height: 52,
-            child: ElevatedButton(
-              onPressed: () => _initiatePayment(amount is int ? amount : int.tryParse(amount.toString()) ?? 0),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF4A9782),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(26),
-                ),
-                elevation: 0,
+          padding: const EdgeInsets.symmetric(horizontal: 32),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Total Amount Due :',
+                    style: GoogleFonts.roboto(
+                      color: Colors.black,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      height: 1,
+                      letterSpacing: 0.40,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Pay to worker after work completion',
+                    style: GoogleFonts.roboto(
+                      color: const Color(0xFF2D2D2D),
+                      fontSize: 10,
+                      fontWeight: FontWeight.w400,
+                    ),
+                  ),
+                ],
               ),
-              child: Text(
-                'Pay Now',
+              Text(
+                '₹$amount',
                 style: GoogleFonts.roboto(
-                  color: Colors.white,
-                  fontSize: 18,
+                  color: const Color(0xFF47907D),
+                  fontSize: 28,
                   fontWeight: FontWeight.w700,
+                  height: 1.29,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 32),
+        if (status == 'arrived' || status == 'completed') ...[
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 32.0),
+            child: SizedBox(
+              width: double.infinity,
+              height: 52,
+              child: ElevatedButton(
+                onPressed: () => _initiatePayment(
+                  amount is int ? amount : int.tryParse(amount.toString()) ?? 0,
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF4A9782),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(26),
+                  ),
+                  elevation: 0,
+                ),
+                child: Text(
+                  'Pay Now',
+                  style: GoogleFonts.roboto(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
               ),
             ),
           ),
-        ),
+        ],
       ],
     );
   }
@@ -656,5 +864,51 @@ class _TrackStatusScreenState extends State<TrackStatusScreen> {
       'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
     ];
     return months[month - 1];
+  }
+
+  Widget _buildPaymentOptionsBar() {
+    final labourerData = _booking['labourer'];
+    final bool hasUpi = labourerData?['upiId'] != null && labourerData!['upiId'].toString().isNotEmpty;
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 32),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF2F2F2),
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            flex: 3,
+            child: Text(
+              hasUpi ? 'Choose Payment\nOption :' : 'Pay Worker\nDirectly :',
+              style: GoogleFonts.roboto(
+                color: Colors.black,
+                fontSize: 12,
+                fontWeight: FontWeight.w400,
+              ),
+            ),
+          ),
+          if (hasUpi) ...[
+            Image.asset('assets/images/gpay_logo.png', height: 16, errorBuilder: (c, e, s) => const Text('GPay', style: TextStyle(fontSize: 10))),
+            const SizedBox(width: 12),
+            Image.asset('assets/images/paytm_logo.png', height: 16, errorBuilder: (c, e, s) => const Text('Paytm', style: TextStyle(fontSize: 10))),
+            const SizedBox(width: 12),
+            const Icon(Icons.account_balance_wallet_outlined, size: 20, color: Color(0xFF4A9782)),
+            const SizedBox(width: 4),
+          ],
+          Text(
+            'COD',
+            style: GoogleFonts.roboto(
+              color: Colors.black,
+              fontSize: 12,
+              fontWeight: FontWeight.w400,
+            ),
+          ),
+          const Icon(Icons.arrow_drop_down, color: Colors.black),
+        ],
+      ),
+    );
   }
 }
