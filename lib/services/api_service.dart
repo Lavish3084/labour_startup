@@ -234,10 +234,122 @@ class ApiService {
       body: jsonEncode({'profilePicture': base64Image}),
     );
 
-    print('Response status: ${response.statusCode}');
-    print('Response body: ${response.body}');
-
     return response.statusCode == 200;
+  }
+
+  // Wallet & Referral
+  static Future<double> getWalletBalance() async {
+    try {
+      final token = await getToken();
+      final response = await http.get(
+        Uri.parse('$baseUrl/profile/wallet'),
+        headers: {'x-auth-token': token ?? ''},
+      );
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return (data['balance'] ?? 0).toDouble();
+      }
+      return 0.0;
+    } catch (e) {
+      return 0.0;
+    }
+  }
+
+  static Future<List<dynamic>> getWalletTransactions() async {
+    try {
+      final token = await getToken();
+      final response = await http.get(
+        Uri.parse('$baseUrl/profile/wallet/transactions'),
+        headers: {'x-auth-token': token ?? ''},
+      );
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      }
+      return [];
+    } catch (e) {
+      return [];
+    }
+  }
+
+  static Future<bool> addMoneyToWallet(double amount, String paymentId) async {
+    try {
+      final token = await getToken();
+      final response = await http.post(
+        Uri.parse('$baseUrl/profile/wallet/add'),
+        headers: {
+          'Content-Type': 'application/json',
+          'x-auth-token': token ?? '',
+        },
+        body: jsonEncode({'amount': amount, 'paymentId': paymentId}),
+      );
+      return response.statusCode == 200;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  static Future<Map<String, dynamic>> createWalletOrder(int amount) async {
+    try {
+      final token = await getToken();
+      final response = await http.post(
+        Uri.parse('$baseUrl/payments/create-wallet-order'),
+        headers: {
+          'Content-Type': 'application/json',
+          'x-auth-token': token ?? '',
+        },
+        body: jsonEncode({'amount': amount}),
+      );
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      }
+      throw Exception('Failed to create wallet order');
+    } catch (e) {
+      throw Exception(ErrorHandler.getErrorMessage(e));
+    }
+  }
+
+  static Future<bool> verifyWalletPayment(
+    String orderId,
+    String paymentId,
+    String signature,
+    double amount,
+  ) async {
+    try {
+      final token = await getToken();
+      final response = await http.post(
+        Uri.parse('$baseUrl/payments/verify-wallet-payment'),
+        headers: {
+          'Content-Type': 'application/json',
+          'x-auth-token': token ?? '',
+        },
+        body: jsonEncode({
+          'razorpay_order_id': orderId,
+          'razorpay_payment_id': paymentId,
+          'razorpay_signature': signature,
+          'amount': amount,
+        }),
+      );
+      return response.statusCode == 200;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  static Future<Map<String, dynamic>> applyReferral(String code) async {
+    try {
+      final token = await getToken();
+      final response = await http.post(
+        Uri.parse('$baseUrl/profile/referral/apply'),
+        headers: {
+          'Content-Type': 'application/json',
+          'x-auth-token': token ?? '',
+        },
+        body: jsonEncode({'code': code}),
+      );
+      return jsonDecode(response.body);
+    } catch (e) {
+      return {'success': false, 'message': ErrorHandler.getErrorMessage(e)};
+    }
   }
 
   static Future<void> updateFcmToken() async {

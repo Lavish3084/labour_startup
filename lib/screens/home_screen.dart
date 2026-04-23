@@ -147,32 +147,54 @@ class _HomeScreenState extends State<HomeScreen> {
           child: SingleChildScrollView(
             keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
             physics: const AlwaysScrollableScrollPhysics(),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildGreenHeader(),
-                const SizedBox(height: 32),
-                _buildActiveBookingSection(),
-                const SizedBox(height: 32),
-                _buildCategoriesSection(),
-                const SizedBox(height: 32),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: Text(
-                    'Top Reasons to Choose',
-                    style: GoogleFonts.roboto(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.black,
-                      height: 1.5, // 24px line-height
-                      letterSpacing: 0.5,
+            child: Consumer<AppStateProvider>(
+              builder: (context, appState, _) {
+                final activeBookings = appState.bookings.where((b) {
+                  final status = b['status'].toString().toLowerCase();
+                  if (status == 'completed' || status == 'cancelled') return false;
+                  final date = DateTime.parse(b['date'].toString()).toLocal();
+                  final hours = int.tryParse(b['numberOfHours']?.toString() ?? '2') ?? 2;
+                  final endTime = date.add(Duration(hours: hours));
+                  if (DateTime.now().isAfter(endTime)) return false;
+                  return status == 'confirmed' || status == 'pending' || status == 'arrived';
+                }).toList();
+                
+                final hasActive = activeBookings.isNotEmpty;
+                final hasCategories = appState.categories.isNotEmpty;
+
+                return Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildGreenHeader(),
+                    if (hasActive) ...[
+                      const SizedBox(height: 32),
+                      _buildActiveBookingList(activeBookings),
+                    ],
+                    if (hasCategories) ...[
+                      const SizedBox(height: 32),
+                      _buildCategoriesSection(activeBookings),
+                    ],
+                    const SizedBox(height: 16),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      child: Text(
+                        'Top Reasons to Choose',
+                        style: GoogleFonts.roboto(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.black,
+                          height: 1.5,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
                     ),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                _buildTrustBanner(),
-                const SizedBox(height: 120),
-              ],
+                    const SizedBox(height: 12),
+                    _buildTrustBanner(),
+                    const SizedBox(height: 40),
+                  ],
+                );
+              },
             ),
           ),
         ),
@@ -275,57 +297,47 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildActiveBookingSection() {
-    return Consumer<AppStateProvider>(
-      builder: (context, appState, _) {
-        final activeBookings = appState.bookings.where((b) {
-          final status = b['status'].toString().toLowerCase();
-          if (status == 'completed' || status == 'cancelled') return false;
-          final date = DateTime.parse(b['date'].toString()).toLocal();
-          final hours = int.tryParse(b['numberOfHours']?.toString() ?? '2') ?? 2;
-          final endTime = date.add(Duration(hours: hours));
-          if (DateTime.now().isAfter(endTime)) return false;
-          return status == 'confirmed' || status == 'pending' || status == 'arrived';
-        }).toList();
-        
-        if (activeBookings.isEmpty) return const SizedBox.shrink();
+  Widget _buildActiveBookingList(List<dynamic> activeBookings) {
+    if (activeBookings.isEmpty) return const SizedBox.shrink();
 
-        if (activeBookings.length == 1) {
-          return Column(
-            children: [
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: _buildBookingCard(activeBookings.first),
-              ),
-              const SizedBox(height: 20),
-              _buildBookingDots(1, 0),
-            ],
-          );
-        }
-
+    return Builder(builder: (context) {
+      if (activeBookings.length == 1) {
         return Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            SizedBox(
-              height: 80,
-              child: PageView.builder(
-                controller: PageController(viewportFraction: 0.85),
-                itemCount: activeBookings.length,
-                onPageChanged: (index) {
-                  setState(() {
-                    _currentActiveBookingPage = index;
-                  });
-                },
-                itemBuilder: (context, index) {
-                  return _buildBookingCard(activeBookings[index]);
-                },
-              ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: _buildBookingCard(activeBookings.first),
             ),
             const SizedBox(height: 20),
-            _buildBookingDots(activeBookings.length, _currentActiveBookingPage),
+            _buildBookingDots(1, 0),
           ],
         );
-      },
-    );
+      }
+
+      return Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SizedBox(
+            height: 80,
+            child: PageView.builder(
+              controller: PageController(viewportFraction: 0.85),
+              itemCount: activeBookings.length,
+              onPageChanged: (index) {
+                setState(() {
+                  _currentActiveBookingPage = index;
+                });
+              },
+              itemBuilder: (context, index) {
+                return _buildBookingCard(activeBookings[index]);
+              },
+            ),
+          ),
+          const SizedBox(height: 20),
+          _buildBookingDots(activeBookings.length, _currentActiveBookingPage),
+        ],
+      );
+    });
   }
 
   Widget _buildBookingCard(Map<String, dynamic> booking) {
@@ -504,8 +516,9 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildCategoriesSection() {
+  Widget _buildCategoriesSection(List<dynamic> activeBookings) {
     return Column(
+      mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
@@ -538,17 +551,9 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
         const SizedBox(height: 28),
-        Consumer<AppStateProvider>(
-          builder: (context, appState, _) {
-            final activeBookings = appState.bookings.where((b) {
-          final status = b['status'].toString().toLowerCase();
-          if (status == 'completed' || status == 'cancelled') return false;
-          final date = DateTime.parse(b['date'].toString()).toLocal();
-          final hours = int.tryParse(b['numberOfHours']?.toString() ?? '2') ?? 2;
-          final endTime = date.add(Duration(hours: hours));
-          if (DateTime.now().isAfter(endTime)) return false;
-          return status == 'confirmed' || status == 'pending' || status == 'arrived';
-        }).toList();
+        Builder(
+          builder: (context) {
+            final appState = Provider.of<AppStateProvider>(context);
             final hasActiveBookings = activeBookings.isNotEmpty;
             final allCategories = appState.categories;
             if (allCategories.isEmpty) return const SizedBox.shrink();
@@ -560,17 +565,16 @@ class _HomeScreenState extends State<HomeScreen> {
             if (_showAllCategories || !hasActiveBookings) {
               return Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 10),
-                child: GridView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  itemCount: categoriesToShow.length,
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 4,
-                    mainAxisSpacing: 20,
-                    crossAxisSpacing: 0,
-                    childAspectRatio: 0.82,
-                  ),
-                  itemBuilder: (context, index) => _buildCategoryItem(categoriesToShow[index]),
+                child: Wrap(
+                  alignment: WrapAlignment.start,
+                  runSpacing: 20,
+                  spacing: 0,
+                  children: categoriesToShow.map((cat) {
+                    return SizedBox(
+                      width: (MediaQuery.of(context).size.width - 20) / 4,
+                      child: _buildCategoryItem(cat),
+                    );
+                  }).toList(),
                 ),
               );
             }

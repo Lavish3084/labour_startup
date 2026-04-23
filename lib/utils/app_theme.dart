@@ -23,7 +23,7 @@ class AppTheme {
 
   static const Color accent = Color(0xFF2952CC);          // Vibrant blue
   static const Color accentLight = Color(0xFFEEF2FF);
-  static const Color scaffoldBg = Color(0xFFF8F9FA); // Slightly cooler white
+  static const Color scaffoldBg = Color(0xFFF9F9F9); // Updated as requested
   static const Color surfaceLight = Color(0xFFF3F4F6);
   static const Color primaryGreen = Color(0xFF006D44); // Dark Green for Header
   static const Color saffron = Color(0xFFFF6B00);

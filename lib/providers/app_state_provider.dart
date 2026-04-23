@@ -21,6 +21,8 @@ class AppStateProvider with ChangeNotifier {
   String? _bookingsError;
   String? _categoriesError;
   String? _labourersError;
+  double _walletBalance = 0.0;
+  List<dynamic> _walletTransactions = [];
 
   Map<String, dynamic>? get profileData => _profileData;
   List<dynamic> get bookings => _bookings;
@@ -56,6 +58,8 @@ class AppStateProvider with ChangeNotifier {
   String? get bookingsError => _bookingsError;
   String? get categoriesError => _categoriesError;
   String? get labourersError => _labourersError;
+  double get walletBalance => _walletBalance;
+  List<dynamic> get walletTransactions => _walletTransactions;
 
   Future<void> fetchProfile() async {
     _isProfileLoading = true;
@@ -69,6 +73,40 @@ class AppStateProvider with ChangeNotifier {
     } finally {
       _isProfileLoading = false;
       notifyListeners();
+    }
+    // Also fetch wallet balance
+    fetchWalletBalance();
+  }
+
+  Future<void> fetchWalletBalance() async {
+    try {
+      _walletBalance = await ApiService.getWalletBalance();
+      _walletTransactions = await ApiService.getWalletTransactions();
+      notifyListeners();
+    } catch (e) {
+      debugPrint('Error fetching wallet balance: $e');
+    }
+  }
+
+  Future<bool> cancelBooking(Map<String, dynamic> booking) async {
+    try {
+      final String bookingId = booking['_id'];
+      final bool hasWorker = booking['labourerId'] != null || booking['labourer'] != null;
+      
+      final success = await ApiService.updateBookingStatus(bookingId, 'cancelled');
+      if (success) {
+        if (!hasWorker) {
+          // Simulate refund if no worker was assigned
+          // In a real app, the backend should do this and we just refresh balance
+          await fetchWalletBalance();
+        }
+        await fetchBookings();
+        return true;
+      }
+      return false;
+    } catch (e) {
+      debugPrint('Error cancelling booking: $e');
+      return false;
     }
   }
 
