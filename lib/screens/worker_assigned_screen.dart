@@ -243,8 +243,8 @@ class WorkerAssignedScreen extends StatelessWidget {
                   MaterialPageRoute(
                     builder: (context) => ChatScreen(
                       bookingId: bookingData['_id'],
-                      receiverName: worker.name,
-                      receiverImage: worker.imageUrl,
+                      otherUserName: worker.name,
+                      otherUserPhoto: worker.imageUrl,
                     ),
                   ),
                 );

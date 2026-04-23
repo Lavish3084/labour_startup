@@ -3,6 +3,7 @@ const router = express.Router();
 const verifyToken = require('../utils/verifyToken');
 const Message = require('../models/Message');
 const Booking = require('../models/Booking');
+const socketUtils = require('../utils/socket');
 
 // @route   GET api/chat/:bookingId
 // @desc    Get all messages for a booking
@@ -48,6 +49,13 @@ router.post('/', verifyToken, async (req, res) => {
         
         // Populate sender before returning
         const populatedMessage = await Message.findById(message._id).populate('sender', 'name profilePicture');
+
+        // Socket update
+        try {
+            socketUtils.getIO().to(`booking_${bookingId}`).emit('new_message', populatedMessage);
+        } catch (sErr) {
+            console.error('Socket error:', sErr.message);
+        }
 
         // Notification logic
         try {

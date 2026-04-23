@@ -8,6 +8,7 @@ const Category = require('../models/Category');
 const jwt = require('jsonwebtoken');
 const admin = require('firebase-admin');
 const Razorpay = require('razorpay');
+const socketUtils = require('../utils/socket');
 
 let razorpay;
 if (process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_SECRET) {
@@ -437,6 +438,13 @@ router.put('/:id/claim', verifyToken, async (req, res) => {
 
         await booking.save();
 
+        // Socket update
+        try {
+            socketUtils.getIO().to(`booking_${booking._id}`).emit('booking_update', booking);
+        } catch (sErr) {
+            console.error('Socket error:', sErr.message);
+        }
+
         // Populate user for the response card
         await booking.populate('user', 'name email');
 
@@ -678,6 +686,13 @@ router.put('/:id/verify-arrival', verifyToken, async (req, res) => {
         booking.status = 'arrived';
         await booking.save();
 
+        // Socket update
+        try {
+            socketUtils.getIO().to(`booking_${booking._id}`).emit('booking_update', booking);
+        } catch (sErr) {
+            console.error('Socket error:', sErr.message);
+        }
+
         // Notify user
         const user = await User.findById(booking.user);
         if (user && user.fcmToken) {
@@ -737,6 +752,13 @@ router.put('/:id/verify-completion', verifyToken, async (req, res) => {
         booking.paymentStatus = 'released';
 
         await booking.save();
+
+        // Socket update
+        try {
+            socketUtils.getIO().to(`booking_${booking._id}`).emit('booking_update', booking);
+        } catch (sErr) {
+            console.error('Socket error:', sErr.message);
+        }
 
         // Increment worker's jobsCompleted
         if (booking.labourer) {

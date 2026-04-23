@@ -140,7 +140,7 @@ class _SplashScreenState extends State<SplashScreen>
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'PROFESSIONAL LABOUR SERVICES',
+                      'PROFESSIONAL ON-DEMAND SERVICES',
                       style: GoogleFonts.inter(
                         color: Colors.white.withValues(alpha: 0.5),
                         fontSize: 11,

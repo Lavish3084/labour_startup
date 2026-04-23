@@ -11,7 +11,7 @@ const PrivacyPolicy = () => {
 
             <section>
               <h2 className="text-2xl font-bold text-gray-800 mb-4">1. Introduction</h2>
-              <p>Welcome to Labour. We are committed to protecting your personal information and your right to privacy. If you have any questions or concerns about our policy, or our practices with regards to your personal information, please contact us.</p>
+              <p>Welcome to WILL. WILL is developed and operated by Lavish3084. We are committed to protecting your personal information and your right to privacy. If you have any questions or concerns about our policy, or our practices with regards to your personal information, please contact us at templavish9@gmail.com.</p>
             </section>
 
             <section>

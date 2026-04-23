@@ -13,6 +13,8 @@ import '../services/error_handler.dart';
 import '../models/labourer.dart';
 import '../services/notification_service.dart';
 
+import '../services/socket_service.dart';
+
 class TrackStatusScreen extends StatefulWidget {
   final String bookingId;
 
@@ -23,7 +25,7 @@ class TrackStatusScreen extends StatefulWidget {
 }
 
 class _TrackStatusScreenState extends State<TrackStatusScreen> {
-  Timer? _pollingTimer;
+  final SocketService _socketService = SocketService();
   StreamSubscription? _notificationSubscription;
   bool _isLoading = true;
   dynamic _booking;
@@ -34,7 +36,7 @@ class _TrackStatusScreenState extends State<TrackStatusScreen> {
   void initState() {
     super.initState();
     _fetchBookingDetails();
-    _startPolling();
+    _initSocket();
     _listenForNotifications();
     _paymentService.initialize(
       onSuccess: _handlePaymentSuccess,
@@ -45,25 +47,30 @@ class _TrackStatusScreenState extends State<TrackStatusScreen> {
 
   @override
   void dispose() {
-    _pollingTimer?.cancel();
+    _socketService.leaveBooking(widget.bookingId);
+    _socketService.offBookingUpdate();
     _notificationSubscription?.cancel();
     _paymentService.dispose();
     super.dispose();
+  }
+
+  void _initSocket() {
+    _socketService.connect();
+    _socketService.joinBooking(widget.bookingId);
+    _socketService.onBookingUpdate((data) {
+      if (mounted) {
+        debugPrint('[Socket] TrackStatusScreen received update');
+        setState(() {
+          _booking = data;
+        });
+      }
+    });
   }
 
   void _listenForNotifications() {
     _notificationSubscription = NotificationService.onNotification.listen((_) {
       if (mounted) {
         debugPrint('TrackStatusScreen: Refreshing due to notification');
-        _fetchBookingDetails(showLoading: false);
-      }
-    });
-  }
-
-  void _startPolling() {
-    // Fallback polling reduced to 60 seconds since we now use notifications
-    _pollingTimer = Timer.periodic(const Duration(seconds: 60), (timer) {
-      if (mounted) {
         _fetchBookingDetails(showLoading: false);
       }
     });
@@ -125,7 +132,7 @@ class _TrackStatusScreenState extends State<TrackStatusScreen> {
       _paymentService.openCheckout(
         keyId: razorpayKeyId,
         orderId: order['id'],
-        name: "Labour App",
+        name: "Will App",
         description: "Payment for ${_booking['category']}",
         email: "", // Ideally from user state
         contact: "", // Ideally from user state
@@ -390,8 +397,8 @@ class _TrackStatusScreenState extends State<TrackStatusScreen> {
                       MaterialPageRoute(
                         builder: (context) => ChatScreen(
                           bookingId: widget.bookingId,
-                          receiverName: labourer.name,
-                          receiverImage: labourer.imageUrl,
+                          otherUserName: labourer.name,
+                          otherUserPhoto: labourer.imageUrl,
                         ),
                       ),
                     );

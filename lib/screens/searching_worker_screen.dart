@@ -10,6 +10,7 @@ import '../models/labourer.dart';
 import '../models/service_category.dart';
 import '../services/api_service.dart';
 import '../services/notification_service.dart';
+import '../services/socket_service.dart';
 import '../widgets/pattern_painter.dart';
 import 'main_screen.dart';
 
@@ -37,7 +38,7 @@ class SearchingWorkerScreen extends StatefulWidget {
 
 class _SearchingWorkerScreenState extends State<SearchingWorkerScreen> with TickerProviderStateMixin {
   late AnimationController _pulseController;
-  Timer? _pollingTimer;
+  final SocketService _socketService = SocketService();
   StreamSubscription? _notificationSubscription;
   bool _isNavigating = false;
   bool _isTimedOut = false;
@@ -81,12 +82,25 @@ class _SearchingWorkerScreenState extends State<SearchingWorkerScreen> with Tick
     if (!_isTimedOut) {
       _startCountdown();
       if (_currentBookingId != null) {
-        _startPolling(_currentBookingId!);
+        _initSocket(_currentBookingId!);
         _notificationSubscription = NotificationService.onNotification.listen((_) {
           _checkBookingStatus(_currentBookingId!);
         });
       }
     }
+  }
+
+  void _initSocket(String id) {
+    _socketService.connect();
+    _socketService.joinBooking(id);
+    _socketService.onBookingUpdate((data) {
+      if (mounted) {
+        debugPrint('[Socket] SearchingWorkerScreen received update');
+        if (data['status'] == 'confirmed' || data['labourer'] != null) {
+          _handleSuccess(data);
+        }
+      }
+    });
   }
 
   void _startCountdown() {
@@ -118,7 +132,6 @@ class _SearchingWorkerScreenState extends State<SearchingWorkerScreen> with Tick
     
     if (mounted) {
       _countdownTimer?.cancel();
-      _pollingTimer?.cancel();
       setState(() {
         _isTimedOut = true;
         _remainingSeconds = 0;
@@ -180,7 +193,7 @@ class _SearchingWorkerScreenState extends State<SearchingWorkerScreen> with Tick
         });
 
         _startCountdown();
-        _startPolling(newId);
+        _initSocket(newId);
         
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -208,7 +221,10 @@ class _SearchingWorkerScreenState extends State<SearchingWorkerScreen> with Tick
 
   @override
   void dispose() {
-    _pollingTimer?.cancel();
+    if (_currentBookingId != null) {
+      _socketService.leaveBooking(_currentBookingId!);
+      _socketService.offBookingUpdate();
+    }
     _countdownTimer?.cancel();
     _notificationSubscription?.cancel();
     _pulseController.dispose();
@@ -229,17 +245,9 @@ class _SearchingWorkerScreenState extends State<SearchingWorkerScreen> with Tick
     }
   }
 
-  void _startPolling(String id) {
-    // Fallback polling reduced to 60 seconds as we use NotificationService for real-time updates
-    _pollingTimer = Timer.periodic(const Duration(seconds: 60), (timer) {
-      _checkBookingStatus(id);
-    });
-  }
-
   void _handleSuccess(Map<String, dynamic> bookingData) {
     if (_isNavigating) return;
     _isNavigating = true;
-    _pollingTimer?.cancel();
 
     if (mounted) {
       final workerData = bookingData['labourer'];
@@ -468,7 +476,7 @@ class _SearchingWorkerScreenState extends State<SearchingWorkerScreen> with Tick
             children: [
               TileLayer(
                 urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                userAgentPackageName: 'com.example.labour',
+                userAgentPackageName: 'com.lavish3084.labour',
               ),
             ],
           ),

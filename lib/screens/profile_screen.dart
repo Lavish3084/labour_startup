@@ -677,7 +677,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
                         content: Text(
-                          'Download the Sevak Worker App from the Play Store and sign in with the same email/phone.',
+                          'Download the WILL Worker App from the Play Store and sign in with the same email/phone.',
                         ),
                         behavior: SnackBarBehavior.floating,
                       ),

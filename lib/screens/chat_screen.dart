@@ -3,17 +3,18 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../services/api_service.dart';
 import '../services/notification_service.dart';
+import '../services/socket_service.dart';
 
 class ChatScreen extends StatefulWidget {
   final String bookingId;
-  final String receiverName;
-  final String? receiverImage;
+  final String otherUserName;
+  final String? otherUserPhoto;
 
   const ChatScreen({
     super.key,
     required this.bookingId,
-    required this.receiverName,
-    this.receiverImage,
+    required this.otherUserName,
+    this.otherUserPhoto,
   });
 
   @override
@@ -23,37 +24,59 @@ class ChatScreen extends StatefulWidget {
 class _ChatScreenState extends State<ChatScreen> {
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
-  List<dynamic> _messages = [];
-  Timer? _pollingTimer;
+  final SocketService _socketService = SocketService();
   StreamSubscription? _notificationSubscription;
+  List<dynamic> _messages = [];
   bool _isLoading = true;
-  String? _myId;
+  String? _currentUserId;
 
   @override
   void initState() {
     super.initState();
-    _loadMyId();
-    _fetchMessages();
-    _startPolling();
+    _loadInitialData();
+    _initSocket();
     _listenForNotifications();
   }
 
   @override
   void dispose() {
-    _pollingTimer?.cancel();
-    _notificationSubscription?.cancel();
+    _socketService.leaveBooking(widget.bookingId);
+    _socketService.offNewMessage();
     _messageController.dispose();
     _scrollController.dispose();
+    _notificationSubscription?.cancel();
     super.dispose();
+  }
+
+  void _initSocket() {
+    _socketService.connect();
+    _socketService.joinBooking(widget.bookingId);
+    _socketService.onNewMessage((data) {
+      if (mounted) {
+        debugPrint('[Socket] ChatScreen received new message');
+        setState(() {
+          final exists = _messages.any((m) => m['_id'] == data['_id']);
+          if (!exists) {
+            _messages.add(data);
+            _scrollToBottom();
+          }
+        });
+      }
+    });
   }
 
   void _listenForNotifications() {
     _notificationSubscription = NotificationService.onNotification.listen((_) {
       if (mounted) {
         debugPrint('ChatScreen: Refreshing due to notification');
-        _fetchMessages(showLoading: false);
+        _fetchMessages();
       }
     });
+  }
+
+  Future<void> _loadInitialData() async {
+    await _loadMyId();
+    await _fetchMessages();
   }
 
   Future<void> _loadMyId() async {
@@ -61,19 +84,12 @@ class _ChatScreenState extends State<ChatScreen> {
       final profile = await ApiService.getProfile();
       if (mounted) {
         setState(() {
-          _myId = profile['user']['_id'];
+          _currentUserId = profile['user']['_id'];
         });
       }
     } catch (e) {
       debugPrint("ChatScreen: Error loading profile for ID: $e");
     }
-  }
-
-  void _startPolling() {
-    // Robustness fallback: 60 seconds
-    _pollingTimer = Timer.periodic(const Duration(seconds: 60), (timer) {
-      _fetchMessages(showLoading: false);
-    });
   }
 
   Future<void> _fetchMessages({bool showLoading = true}) async {
@@ -136,10 +152,10 @@ class _ChatScreenState extends State<ChatScreen> {
             CircleAvatar(
               radius: 18,
               backgroundColor: const Color(0xFF4A9782).withOpacity(0.1),
-              backgroundImage: widget.receiverImage != null && widget.receiverImage!.isNotEmpty
-                  ? NetworkImage(widget.receiverImage!)
+              backgroundImage: widget.otherUserPhoto != null && widget.otherUserPhoto!.isNotEmpty
+                  ? NetworkImage(widget.otherUserPhoto!)
                   : null,
-              child: widget.receiverImage == null || widget.receiverImage!.isEmpty
+              child: widget.otherUserPhoto == null || widget.otherUserPhoto!.isEmpty
                   ? const Icon(Icons.person, color: Color(0xFF4A9782), size: 20)
                   : null,
             ),
@@ -149,7 +165,7 @@ class _ChatScreenState extends State<ChatScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    widget.receiverName,
+                    widget.otherUserName,
                     style: GoogleFonts.roboto(
                       color: Colors.black,
                       fontSize: 16,
@@ -187,7 +203,7 @@ class _ChatScreenState extends State<ChatScreen> {
                     itemCount: _messages.length,
                     itemBuilder: (context, index) {
                       final msg = _messages[index];
-                      final isMe = msg['sender']['_id'] == _myId;
+                      final isMe = msg['sender']['_id'] == _currentUserId;
                       return _buildMessageBubble(msg['text'], isMe);
                     },
                   ),

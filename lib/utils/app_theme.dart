@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-/// Professional design system for the Labour app.
+/// Professional design system for the Will app.
 /// Clean, enterprise-grade — no funky colors.
 class AppTheme {
   AppTheme._();
