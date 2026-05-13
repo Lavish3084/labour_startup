@@ -25,7 +25,7 @@ api.interceptors.request.use(
 
 export const authService = {
     login: async (email, password) => {
-        const response = await api.post('/auth/login', { email, password });
+        const response = await api.post('/auth/login', { email, password, role: 'admin' });
         return response.data;
     },
 };

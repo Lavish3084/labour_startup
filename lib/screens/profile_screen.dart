@@ -84,20 +84,26 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
         final success = await ApiService.updateProfilePicture(base64Image);
         if (success && mounted) {
-          await Provider.of<AppStateProvider>(context, listen: false).fetchProfile();
+          await Provider.of<AppStateProvider>(
+            context,
+            listen: false,
+          ).fetchProfile();
         }
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(ErrorHandler.getErrorMessage(e, action: 'Image update failed'))),
+          SnackBar(
+            content: Text(
+              ErrorHandler.getErrorMessage(e, action: 'Image update failed'),
+            ),
+          ),
         );
       }
     } finally {
       if (mounted) setState(() => _isPickingImage = false);
     }
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -108,7 +114,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
     if (isLoading && profileData == null) {
       return const Scaffold(
         backgroundColor: Colors.white,
-        body: Center(child: CircularProgressIndicator(color: Color(0xFF4A9782))),
+        body: Center(
+          child: CircularProgressIndicator(color: Color(0xFF4A9782)),
+        ),
       );
     }
 
@@ -138,9 +146,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const SizedBox(height: 20), // ADJUST SPACING: Gap between AppBar and User Card (Original: 24)
+              const SizedBox(
+                height: 20,
+              ), // ADJUST SPACING: Gap between AppBar and User Card (Original: 24)
               _buildUserCard(user),
-              const SizedBox(height: 36), // ADJUST SPACING: Gap between User Card and 'Accounts' section (Original: 32)
+              const SizedBox(
+                height: 36,
+              ), // ADJUST SPACING: Gap between User Card and 'Accounts' section (Original: 32)
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 24),
                 child: Text(
@@ -153,9 +165,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                 ),
               ),
-              const SizedBox(height: 22), // ADJUST SPACING: Gap between header and list (Original: 16)
+              const SizedBox(
+                height: 22,
+              ), // ADJUST SPACING: Gap between header and list (Original: 16)
               _buildAccountsList(user),
-              const SizedBox(height: 40), // ADJUST SPACING: Bottom clearance (Original: 40)
+              const SizedBox(
+                height: 40,
+              ), // ADJUST SPACING: Bottom clearance (Original: 40)
             ],
           ),
         ),
@@ -170,12 +186,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 24),
-      padding: const EdgeInsets.all(20), // ADJUST SPACING: Inner padding of the profile card (Original: 24)
+      padding: const EdgeInsets.all(
+        20,
+      ), // ADJUST SPACING: Inner padding of the profile card (Original: 24)
       decoration: ShapeDecoration(
         color: Colors.white,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(13),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(13)),
         shadows: [
           BoxShadow(
             color: Colors.black.withOpacity(0.04),
@@ -198,9 +214,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     image: _getProfileImage(user),
                     color: const Color(0xFFF2F2F2),
                   ),
-                  child: user?['profilePicture'] == null
-                      ? const Icon(Icons.person, size: 40, color: Colors.grey)
-                      : null,
+                  child:
+                      user?['profilePicture'] == null
+                          ? const Icon(
+                            Icons.person,
+                            size: 40,
+                            color: Colors.grey,
+                          )
+                          : null,
                 ),
               ),
               const SizedBox(width: 20),
@@ -243,9 +264,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       margin: const EdgeInsets.symmetric(horizontal: 24),
       decoration: ShapeDecoration(
         color: Colors.white,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(13),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(13)),
         shadows: [
           BoxShadow(
             color: Colors.black.withOpacity(0.04),
@@ -259,10 +278,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
           _buildMenuItem(
             icon: Icons.person_outline_rounded,
             title: 'Manage Profile',
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const ManageProfileScreen()),
-            ),
+            onTap:
+                () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const ManageProfileScreen(),
+                  ),
+                ),
           ),
           _buildDivider(),
           _buildMenuItem(
@@ -284,19 +306,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
           _buildMenuItem(
             icon: Icons.location_on_outlined,
             title: 'Saved Addresses',
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const SavedAddressesScreen()),
-            ),
+            onTap:
+                () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const SavedAddressesScreen(),
+                  ),
+                ),
           ),
           _buildDivider(),
           _buildMenuItem(
             icon: Icons.share_outlined,
             title: 'Refer & Earn',
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const ReferEarnScreen()),
-            ),
+            onTap:
+                () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const ReferEarnScreen(),
+                  ),
+                ),
           ),
           _buildDivider(),
           _buildMenuItem(
@@ -317,7 +345,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
     bool isDestructive = false,
   }) {
     return ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 5), // ADJUST SPACING: Vertical padding of list items
+      contentPadding: const EdgeInsets.symmetric(
+        horizontal: 20,
+        vertical: 5,
+      ), // ADJUST SPACING: Vertical padding of list items
       dense: true, // Set to false for more vertical height
       onTap: onTap,
       leading: Icon(
@@ -335,7 +366,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
           height: 1.5,
         ),
       ),
-      trailing: const Icon(Icons.chevron_right_rounded, color: Color(0xFFBBBBBB)),
+      trailing: const Icon(
+        Icons.chevron_right_rounded,
+        color: Color(0xFFBBBBBB),
+      ),
     );
   }
 
@@ -348,7 +382,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Future<void> _handleLogout() async {
     final stateProvider = Provider.of<AppStateProvider>(context, listen: false);
-    final locationProvider = Provider.of<LocationProvider>(context, listen: false);
+    final locationProvider = Provider.of<LocationProvider>(
+      context,
+      listen: false,
+    );
 
     stateProvider.clearData();
     locationProvider.clearData();
@@ -364,7 +401,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   DecorationImage? _getProfileImage(dynamic user) {
-    if (user?['profilePicture'] == null || user!['profilePicture'].toString().isEmpty) {
+    if (user?['profilePicture'] == null ||
+        user!['profilePicture'].toString().isEmpty) {
       return null;
     }
     final String pic = user['profilePicture'].toString();
