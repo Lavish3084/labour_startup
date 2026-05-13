@@ -41,6 +41,17 @@ const UserSchema = new mongoose.Schema({
             type: Date,
             default: Date.now
         }
+    },
+    walletBalance: {
+        type: Number,
+        default: 0
+    },
+    walletTransactions: [{
+        amount: Number,
+        type: { type: String, enum: ['credit', 'debit'] },
+        description: String,
+        date: { type: Date, default: Date.now },
+        relatedBooking: { type: mongoose.Schema.Types.ObjectId, ref: 'Booking' }
     }],
     createdAt: {
         type: Date,

@@ -229,4 +229,71 @@ router.post('/confirm-free-booking', verifyToken, async (req, res) => {
     }
 });
 
+// @route   POST /api/payments/pay-with-wallet
+// @desc    Pay the booking fee using wallet balance
+// @access  Private
+router.post('/pay-with-wallet', verifyToken, async (req, res) => {
+    const { bookingId } = req.body;
+
+    try {
+        const booking = await Booking.findById(bookingId);
+        if (!booking) return res.status(404).json({ msg: "Booking not found" });
+
+        if (booking.paymentStatus === 'paid') {
+            return res.status(400).json({ msg: "Already paid", code: "ALREADY_PAID" });
+        }
+
+        let feeAmount = 0; 
+        if (booking.commissionAmount !== undefined && booking.commissionAmount !== null) {
+            feeAmount = booking.commissionAmount;
+        } 
+        
+        if (feeAmount === 0) {
+            try {
+                const categoryObj = await Category.findOne({ name: booking.category });
+                if (categoryObj) {
+                    const commission = categoryObj.commissionPercentage || 0;
+                    const referenceAmount = booking.amount || booking.minAmount || 0;
+                    if (referenceAmount > 0) {
+                        feeAmount = (referenceAmount * commission) / 100;
+                    } else {
+                        feeAmount = commission > 0 ? Math.max(commission, 20) : 0;
+                    }
+                }
+            } catch (err) {
+                console.error("Error calculating fee fallback:", err);
+            }
+        }
+
+        if (feeAmount < 1) {
+            return res.status(400).json({ msg: "Booking fee is 0. Please use confirm-free-booking route." });
+        }
+
+        const user = await User.findById(req.user.id);
+        if (!user) return res.status(404).json({ msg: "User not found" });
+
+        if ((user.walletBalance || 0) < feeAmount) {
+            return res.status(400).json({ msg: "Insufficient wallet balance" });
+        }
+
+        // Deduct from wallet
+        user.walletBalance -= feeAmount;
+        user.walletTransactions.push({
+            amount: feeAmount,
+            type: 'debit',
+            description: `Payment for Booking: ${booking.category}`,
+            relatedBooking: booking._id,
+            date: new Date()
+        });
+        await user.save();
+
+        // Complete logic
+        await completePaymentLogic(bookingId, 'WALLET_PAYMENT');
+        res.json({ success: true, msg: "Payment completed successfully using wallet" });
+    } catch (err) {
+        console.error("Wallet Payment Error:", err);
+        res.status(500).json({ msg: "Error processing wallet payment" });
+    }
+});
+
 module.exports = router;

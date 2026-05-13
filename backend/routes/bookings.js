@@ -572,6 +572,57 @@ router.put('/:id/status', verifyToken, async (req, res) => {
             booking.completionOTP = generateOTP();
         }
         
+        const previousStatus = booking.status;
+
+        // --- CANCELLATION REFUND LOGIC ---
+        if (status === 'cancelled' && previousStatus !== 'cancelled') {
+            // Only refund if the booking was paid
+            if (booking.paymentStatus === 'paid') {
+                let refundAmount = booking.commissionAmount || 0;
+                
+                if (refundAmount > 0) {
+                    if (previousStatus === 'confirmed' || previousStatus === 'arrived') {
+                        // User cancelling AFTER worker accepted
+                        // Fetch the refund percentage setting
+                        let refundPercentage = 50; // Default 50%
+                        try {
+                            const Setting = require('../models/Setting');
+                            const setting = await Setting.findOne({ key: 'cancellationRefundPercentage' });
+                            if (setting && setting.value !== undefined) {
+                                refundPercentage = Number(setting.value);
+                            }
+                        } catch(err) {
+                            console.error("Error fetching refund percentage", err);
+                        }
+                        
+                        refundAmount = (refundAmount * refundPercentage) / 100;
+                    } 
+                    // else (pending), refundAmount remains 100%
+
+                    // Refund to user's wallet
+                    if (refundAmount > 0) {
+                        try {
+                            const userToRefund = await User.findById(booking.user);
+                            if (userToRefund) {
+                                userToRefund.walletBalance = (userToRefund.walletBalance || 0) + refundAmount;
+                                userToRefund.walletTransactions.push({
+                                    amount: refundAmount,
+                                    type: 'credit',
+                                    description: `Refund for cancelled booking: ${booking.category}`,
+                                    relatedBooking: booking._id,
+                                    date: new Date()
+                                });
+                                await userToRefund.save();
+                            }
+                        } catch (err) {
+                            console.error("Error refunding to wallet:", err);
+                        }
+                    }
+                }
+            }
+        }
+        // --- END REFUND LOGIC ---
+
         booking.status = status;
         await booking.save();
 

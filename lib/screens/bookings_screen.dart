@@ -598,7 +598,7 @@ class _BookingsScreenState extends State<BookingsScreen> {
                     ),
                   ),
                 ],
-                if (!isHistory && (status == 'pending' || status == 'searching')) ...[
+                if (!isHistory) ...[
                   const SizedBox(height: 12),
                   SizedBox(
                     width: double.infinity,
@@ -674,9 +674,10 @@ class _BookingsScreenState extends State<BookingsScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Cancel Booking?'),
-        content: const Text(
-          'If you cancel now, your payment will be refunded to your wallet. '
-          'Refunds are only available BEFORE a worker is assigned.',
+        content: Text(
+          (booking['status'] == 'confirmed' || booking['status'] == 'arrived')
+            ? 'If you cancel now, a partial refund will be credited to your wallet according to the platform\'s cancellation policy, as a worker has already accepted this job.'
+            : 'If you cancel now, your full payment will be refunded to your wallet.',
         ),
         actions: [
           TextButton(

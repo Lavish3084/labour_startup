@@ -42,13 +42,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
   void _errorListener() {
     if (!mounted || _appState == null) return;
     if (_appState!.profileError != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(_appState!.profileError!),
-          backgroundColor: Colors.red.shade800,
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+      if (_appState!.profileError!.contains('Unauthorized')) {
+        _handleLogout();
+        return;
+      }
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(_appState!.profileError!),
+            backgroundColor: Colors.red.shade800,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      });
     }
   }
 

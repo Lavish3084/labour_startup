@@ -64,18 +64,39 @@ class AppStateProvider with ChangeNotifier {
   Future<void> fetchProfile() async {
     _isProfileLoading = true;
     _profileError = null;
-    notifyListeners();
+
+    // Try to load from local cache first
+    if (_profileData == null) {
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        final cachedData = prefs.getString('cached_profile');
+        if (cachedData != null) {
+          _profileData = jsonDecode(cachedData);
+          notifyListeners();
+        }
+      } catch (e) {
+        debugPrint('Error loading cached profile: $e');
+      }
+    } else {
+      notifyListeners();
+    }
 
     try {
-      _profileData = await ApiService.getProfile();
+      final freshProfile = await ApiService.getProfile();
+      _profileData = freshProfile;
+
+      // Save to local cache
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('cached_profile', jsonEncode(freshProfile));
+
+      // Also fetch wallet balance if profile succeeds
+      fetchWalletBalance();
     } catch (e) {
       _profileError = ErrorHandler.getErrorMessage(e);
     } finally {
       _isProfileLoading = false;
       notifyListeners();
     }
-    // Also fetch wallet balance
-    fetchWalletBalance();
   }
 
   Future<void> fetchWalletBalance() async {
@@ -198,6 +219,14 @@ class AppStateProvider with ChangeNotifier {
     _profileError = null;
     _bookingsError = null;
     _searchQuery = '';
+    
+    // Clear local cache asynchronously
+    SharedPreferences.getInstance().then((prefs) {
+      prefs.remove('cached_profile');
+    }).catchError((e) {
+      debugPrint('Error clearing cached profile: $e');
+    });
+    
     notifyListeners();
   }
 }

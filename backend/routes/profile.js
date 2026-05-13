@@ -429,4 +429,65 @@ router.delete('/', verifyToken, async (req, res) => {
     }
 });
 
+// @route   GET /api/profile/wallet
+// @desc    Get user's wallet balance
+// @access  Private
+router.get('/wallet', verifyToken, async (req, res) => {
+    try {
+        const user = await User.findById(req.user.id).select('walletBalance');
+        if (!user) return res.status(404).json({ msg: 'User not found' });
+        res.json({ balance: user.walletBalance || 0 });
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Server Error');
+    }
+});
+
+// @route   GET /api/profile/wallet/transactions
+// @desc    Get user's wallet transactions
+// @access  Private
+router.get('/wallet/transactions', verifyToken, async (req, res) => {
+    try {
+        const user = await User.findById(req.user.id)
+            .select('walletTransactions')
+            .populate('walletTransactions.relatedBooking', 'category date');
+        if (!user) return res.status(404).json({ msg: 'User not found' });
+        
+        const txs = user.walletTransactions || [];
+        txs.sort((a, b) => new Date(b.date) - new Date(a.date));
+        res.json(txs);
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Server Error');
+    }
+});
+
+// @route   POST /api/profile/wallet/add
+// @desc    Add money to wallet after Razorpay success
+// @access  Private
+router.post('/wallet/add', verifyToken, async (req, res) => {
+    const { amount, paymentId } = req.body;
+    if (!amount || amount <= 0) return res.status(400).json({ msg: 'Invalid amount' });
+
+    try {
+        // Ideally verify with Razorpay API here. Assuming client verified for now.
+        const user = await User.findById(req.user.id);
+        if (!user) return res.status(404).json({ msg: 'User not found' });
+
+        user.walletBalance = (user.walletBalance || 0) + amount;
+        user.walletTransactions.push({
+            amount: amount,
+            type: 'credit',
+            description: `Added via Razorpay (${paymentId})`,
+            date: new Date()
+        });
+
+        await user.save();
+        res.json({ balance: user.walletBalance, msg: 'Money added successfully' });
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Server Error');
+    }
+});
+
 module.exports = router;

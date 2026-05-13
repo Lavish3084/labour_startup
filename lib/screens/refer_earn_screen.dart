@@ -125,7 +125,7 @@ class _ReferEarnScreenState extends State<ReferEarnScreen> {
                 ],
               ),
             ),
-            const SizedBox(height: 40),
+            const SizedBox(height: 32),
             Text(
               'Your Referral Code',
               style: GoogleFonts.roboto(
@@ -191,9 +191,9 @@ class _ReferEarnScreenState extends State<ReferEarnScreen> {
                 ),
               ),
             ),
-            const SizedBox(height: 40),
+            const SizedBox(height: 24),
             const Divider(),
-            const SizedBox(height: 40),
+            const SizedBox(height: 24),
             Text(
               'Have a Referral Code?',
               style: GoogleFonts.roboto(

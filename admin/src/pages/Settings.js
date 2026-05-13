@@ -3,7 +3,7 @@ import api from '../services/api';
 import { Settings as SettingsIcon, Save } from 'lucide-react';
 
 const Settings = () => {
-    const [settings, setSettings] = useState({ adminCommissionPercentage: 0 });
+    const [settings, setSettings] = useState({ adminCommissionPercentage: 0, cancellationRefundPercentage: 50 });
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [message, setMessage] = useState({ type: '', text: '' });
@@ -18,6 +18,7 @@ const Settings = () => {
             // Initialize with default or retrieved values
             setSettings({
                 adminCommissionPercentage: res.data.adminCommissionPercentage || 0,
+                cancellationRefundPercentage: res.data.cancellationRefundPercentage ?? 50,
             });
             setLoading(false);
         } catch (err) {
@@ -77,6 +78,21 @@ const Settings = () => {
                             step="0.1"
                             value={settings.adminCommissionPercentage}
                             onChange={(e) => setSettings({ ...settings, adminCommissionPercentage: e.target.value })}
+                            style={styles.input}
+                            required
+                        />
+                    </div>
+
+                    <div style={styles.formGroup}>
+                        <label style={styles.label}>Cancellation Refund Percentage (%)</label>
+                        <p style={styles.helpText}>Percentage of platform fee refunded to user if they cancel after a worker accepted.</p>
+                        <input
+                            type="number"
+                            min="0"
+                            max="100"
+                            step="1"
+                            value={settings.cancellationRefundPercentage}
+                            onChange={(e) => setSettings({ ...settings, cancellationRefundPercentage: e.target.value })}
                             style={styles.input}
                             required
                         />

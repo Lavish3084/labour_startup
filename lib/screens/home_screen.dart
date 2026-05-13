@@ -21,6 +21,7 @@ import 'worker_assigned_screen.dart';
 import 'track_status_screen.dart';
 import '../models/labourer.dart';
 import '../widgets/pattern_painter.dart';
+import 'settings_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -257,7 +258,16 @@ class _HomeScreenState extends State<HomeScreen> {
                     const Spacer(),
                     const Icon(Icons.notifications_none_rounded, color: Colors.white, size: 24),
                     const SizedBox(width: 16),
-                    const Icon(Icons.settings_outlined, color: Colors.white, size: 24),
+                    GestureDetector(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => const SettingsScreen()),
+                        );
+                      },
+                      behavior: HitTestBehavior.opaque,
+                      child: const Icon(Icons.settings_outlined, color: Colors.white, size: 24),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 32),
@@ -474,24 +484,20 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildBookingDots(int count, int currentIndex) {
-    if (count <= 1) {
-      return Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          _buildDot(true),
-          const SizedBox(width: 21),
-          _buildDot(false),
-          const SizedBox(width: 21),
-          _buildDot(false),
-        ],
-      );
-    }
+    final displayCount = count.clamp(0, 3);
+    if (displayCount == 0) return const SizedBox.shrink();
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
-      children: List.generate(count, (index) {
+      children: List.generate(displayCount, (index) {
+        bool isActive = index == currentIndex;
+        // If more than 3 bookings, cap the active dot visual to the last dot
+        if (count > 3 && index == 2 && currentIndex >= 2) {
+          isActive = true;
+        }
         return Padding(
-          padding: EdgeInsets.only(right: index == count - 1 ? 0 : 21),
-          child: _buildDot(index == currentIndex),
+          padding: EdgeInsets.only(right: index == displayCount - 1 ? 0 : 21),
+          child: _buildDot(isActive),
         );
       }),
     );

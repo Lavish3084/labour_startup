@@ -9,6 +9,8 @@ import 'booking_accepted_screen.dart';
 import '../services/payment_service.dart';
 import 'package:razorpay_flutter/razorpay_flutter.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:provider/provider.dart';
+import '../providers/app_state_provider.dart';
 
 const String gpaySvg = '''
 <svg height="800px" width="800px" version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" 
@@ -95,6 +97,7 @@ class _BookingSetupScreenState extends State<BookingSetupScreen> {
   late PaymentService _paymentService;
   String? _currentBookingId;
   int? _serverFee;
+  bool _useWallet = false;
 
   @override
   void initState() {
@@ -105,6 +108,9 @@ class _BookingSetupScreenState extends State<BookingSetupScreen> {
       onFailure: _handlePaymentError,
       onExternalWallet: _handleExternalWallet,
     );
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Provider.of<AppStateProvider>(context, listen: false).fetchWalletBalance();
+    });
   }
 
   @override
@@ -234,6 +240,16 @@ class _BookingSetupScreenState extends State<BookingSetupScreen> {
               const SnackBar(content: Text('Failed to confirm booking. Please try again.')),
             );
           }
+        } else if (_useWallet) {
+          // 2. Pay using Wallet
+          final success = await ApiService.payWithWallet(_currentBookingId!);
+          if (success) {
+            _navigateToNextScreen();
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Failed to pay with wallet. Please try again.')),
+            );
+          }
         } else {
           // 2. Create Razorpay Order for the platform fee
           final int feeInPaise = _finalFeeAmount * 100;
@@ -282,7 +298,14 @@ class _BookingSetupScreenState extends State<BookingSetupScreen> {
                   _buildHeader(),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 20),
-                    child: _buildBookingDetailsCard(),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        _buildBookingDetailsCard(),
+                        const SizedBox(height: 20),
+                        _buildWalletSection(),
+                      ],
+                    ),
                   ),
                 ],
               ),
@@ -291,6 +314,66 @@ class _BookingSetupScreenState extends State<BookingSetupScreen> {
           _buildBottomBar(),
         ],
       ),
+    );
+  }
+
+  Widget _buildWalletSection() {
+    return Consumer<AppStateProvider>(
+      builder: (context, appState, child) {
+        final walletBalance = appState.walletBalance;
+        final hasEnoughBalance = walletBalance >= _finalFeeAmount;
+        
+        return Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: const Color(0xFFF9F9F9),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: Colors.black12),
+          ),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFE8F5E9),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(Icons.account_balance_wallet, color: Color(0xFF2E876E)),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Pay with Wallet',
+                      style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.black87),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Balance: ₹${walletBalance.toStringAsFixed(2)}',
+                      style: GoogleFonts.inter(
+                        fontSize: 14, 
+                        color: hasEnoughBalance ? const Color(0xFF4A9782) : Colors.red,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Switch(
+                value: _useWallet,
+                onChanged: hasEnoughBalance ? (val) {
+                  setState(() {
+                    _useWallet = val;
+                  });
+                } : null,
+                activeColor: const Color(0xFF2E876E),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 
@@ -578,7 +661,7 @@ class _BookingSetupScreenState extends State<BookingSetupScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Booking Fee', style: GoogleFonts.inter(fontSize: 12, color: Colors.black54)),
+                    Text(_useWallet ? 'Wallet Payment' : 'Booking Fee', style: GoogleFonts.inter(fontSize: 12, color: Colors.black54)),
                     const SizedBox(height: 4),
                     Text('₹$_finalFeeAmount', style: GoogleFonts.inter(fontSize: 24, fontWeight: FontWeight.w800, color: const Color(0xFF4A9782))),
                   ],

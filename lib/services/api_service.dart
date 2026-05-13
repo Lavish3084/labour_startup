@@ -292,18 +292,33 @@ class ApiService {
     try {
       final token = await getToken();
       final response = await http.post(
-        Uri.parse('$baseUrl/payments/create-wallet-order'),
+        Uri.parse('$baseUrl/profile/wallet/add'),
         headers: {
           'Content-Type': 'application/json',
           'x-auth-token': token ?? '',
         },
-        body: jsonEncode({'amount': amount}),
+        body: jsonEncode({'amount': amount, 'isWallet': true}),
       );
       if (response.statusCode == 200) {
         return jsonDecode(response.body);
       }
-      throw Exception('Failed to create wallet order');
+      
+      print('ApiService: createWalletOrder failed. URL: ${response.request?.url}, Status: ${response.statusCode}, Body: ${response.body}');
+      
+      dynamic errorData;
+      try {
+        errorData = jsonDecode(response.body);
+      } catch (_) {}
+      
+      String msg = 'Failed to create wallet order';
+      if (errorData is Map) {
+        msg = errorData['detail'] ?? errorData['msg'] ?? errorData['message'] ?? msg;
+      } else {
+        msg = '$msg (${response.statusCode}): ${response.body}';
+      }
+      throw Exception(msg);
     } catch (e) {
+      print('ApiService: createWalletOrder Error: $e');
       throw Exception(ErrorHandler.getErrorMessage(e));
     }
   }
@@ -317,7 +332,7 @@ class ApiService {
     try {
       final token = await getToken();
       final response = await http.post(
-        Uri.parse('$baseUrl/payments/verify-wallet-payment'),
+        Uri.parse('$baseUrl/payments/verify-payment'),
         headers: {
           'Content-Type': 'application/json',
           'x-auth-token': token ?? '',
@@ -327,6 +342,7 @@ class ApiService {
           'razorpay_payment_id': paymentId,
           'razorpay_signature': signature,
           'amount': amount,
+          'isWallet': true,
         }),
       );
       return response.statusCode == 200;
@@ -590,6 +606,48 @@ class ApiService {
   }
 
   // Payments
+  static Future<bool> payWithWallet(String bookingId) async {
+    try {
+      final token = await getToken();
+      final response = await http.post(
+        Uri.parse('$baseUrl/payments/pay-with-wallet'),
+        headers: {
+          'Content-Type': 'application/json',
+          'x-auth-token': token ?? '',
+        },
+        body: jsonEncode({'bookingId': bookingId}),
+      );
+
+      if (response.statusCode == 200) {
+        return true;
+      } else {
+        dynamic errorData;
+        try {
+          errorData = jsonDecode(response.body);
+        } catch (_) {
+          errorData = null;
+        }
+
+        if (errorData is Map && errorData['code'] == 'ALREADY_PAID') {
+          throw Exception('ALREADY_PAID');
+        }
+        
+        String errorMsg = 'Payment error';
+        if (errorData is Map) {
+          errorMsg = errorData['msg'] ?? errorData['detail'] ?? 'Payment error';
+        } else {
+          errorMsg = 'Server error (${response.statusCode})';
+        }
+        throw Exception(errorMsg);
+      }
+    } catch (e) {
+      if (e.toString().contains('ALREADY_PAID')) {
+        throw Exception('ALREADY_PAID');
+      }
+      throw Exception(ErrorHandler.getErrorMessage(e));
+    }
+  }
+
   static Future<Map<String, dynamic>> createPaymentOrder(
     String bookingId,
     int amount,
