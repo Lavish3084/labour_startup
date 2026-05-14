@@ -220,8 +220,9 @@ class _HomeScreenState extends State<HomeScreen> {
           Positioned.fill(
             child: CustomPaint(
               painter: DotPatternPainter(
-                color: Colors.white.withOpacity(0.06),
-                spacing: 20.0,
+                color: Colors.white.withOpacity(0.08),
+                spacing: 18.0,
+                radius: 2.0,
               ),
             ),
           ),

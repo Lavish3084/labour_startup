@@ -177,7 +177,16 @@ class _TaskInstructionsScreenState extends State<TaskInstructionsScreen> {
   }
 
   void _incrementWorkers() {
-    setState(() => _workerCount++);
+    if (_workerCount < 6) {
+      setState(() => _workerCount++);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Maximum 6 workers allowed per request'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+    }
   }
 
   void _decrementWorkers() {
