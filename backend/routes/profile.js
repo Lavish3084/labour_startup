@@ -375,6 +375,17 @@ router.post('/address', verifyToken, async (req, res) => {
 
     try {
         const user = await User.findById(req.user.id);
+        
+        // Prevent duplicate addresses from being saved
+        const addressExists = user.addresses.some(existingAddr => 
+            existingAddr.address.toLowerCase().trim() === address.toLowerCase().trim()
+        );
+
+        if (addressExists) {
+            console.log('Address already saved previously. Skipping duplicate saving.');
+            return res.json(user.addresses);
+        }
+
         const newAddress = {
             label: label || 'Saved Location',
             address,

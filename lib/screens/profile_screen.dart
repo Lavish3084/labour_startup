@@ -333,6 +333,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
             isDestructive: true,
             onTap: _handleLogout,
           ),
+          _buildDivider(),
+          _buildMenuItem(
+            icon: Icons.delete_forever_rounded,
+            title: 'Delete Account',
+            isDestructive: true,
+            onTap: _handleDeleteAccount,
+          ),
         ],
       ),
     );
@@ -397,6 +404,79 @@ class _ProfileScreenState extends State<ProfileScreen> {
         MaterialPageRoute(builder: (context) => const LoginScreen()),
         (route) => false,
       );
+    }
+  }
+
+  Future<void> _handleDeleteAccount() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text(
+          'Delete Account?',
+          style: GoogleFonts.roboto(fontWeight: FontWeight.w700),
+        ),
+        content: Text(
+          'This will permanently delete your account, profile information, saved addresses, and all associated data. This action cannot be undone.',
+          style: GoogleFonts.roboto(
+            color: const Color(0xFF555555),
+            height: 1.5,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(
+              'Cancel',
+              style: GoogleFonts.roboto(
+                color: const Color(0xFF666666),
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+              elevation: 0,
+            ),
+            child: Text(
+              'Delete',
+              style: GoogleFonts.roboto(
+                color: Colors.white,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && mounted) {
+      final success = await ApiService.deleteAccount();
+      if (success && mounted) {
+        final stateProvider = Provider.of<AppStateProvider>(context, listen: false);
+        final locationProvider = Provider.of<LocationProvider>(context, listen: false);
+        stateProvider.clearData();
+        locationProvider.clearData();
+
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (context) => const LoginScreen()),
+          (route) => false,
+        );
+      } else if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Failed to delete account. Please try again.'),
+            backgroundColor: Colors.red.shade800,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
     }
   }
 

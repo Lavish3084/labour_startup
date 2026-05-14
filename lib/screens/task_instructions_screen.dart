@@ -2,12 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:ui';
 import 'package:image_picker/image_picker.dart';
 import 'package:record/record.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:audioplayers/audioplayers.dart';
 import '../models/service_category.dart';
 import 'service_request_screen.dart';
+
+enum DescribeMode { photo, voice, text }
 
 class TaskInstructionsScreen extends StatefulWidget {
   final ServiceCategory category;
@@ -28,7 +31,7 @@ class _TaskInstructionsScreenState extends State<TaskInstructionsScreen> {
     'Periodic Checkup',
     'Other (please specify)'
   ];
-  List<String> _taskImagesBase64 = [];
+  final List<String> _taskImagesBase64 = [];
   String? _taskAudioBase64;
   final ImagePicker _picker = ImagePicker();
   
@@ -39,8 +42,10 @@ class _TaskInstructionsScreenState extends State<TaskInstructionsScreen> {
   bool _isPlaying = false;
   
   // Message state
-  bool _showMessageField = false;
   final TextEditingController _msgController = TextEditingController();
+  
+  // Active Describe Mode
+  DescribeMode _activeDescribeMode = DescribeMode.voice;
 
   @override
   void initState() {
@@ -79,7 +84,7 @@ class _TaskInstructionsScreenState extends State<TaskInstructionsScreen> {
         child: Wrap(
           children: [
             ListTile(
-              leading: const Icon(Icons.camera_alt, color: Color(0xFF4A9782)),
+              leading: const Icon(Icons.camera_alt, color: Color(0xFF468A73)),
               title: Text('Take a Photo', style: GoogleFonts.inter()),
               onTap: () {
                 Navigator.pop(context);
@@ -87,7 +92,7 @@ class _TaskInstructionsScreenState extends State<TaskInstructionsScreen> {
               },
             ),
             ListTile(
-              leading: const Icon(Icons.photo_library, color: Color(0xFF4A9782)),
+              leading: const Icon(Icons.photo_library, color: Color(0xFF468A73)),
               title: Text('Choose from Gallery', style: GoogleFonts.inter()),
               onTap: () {
                 Navigator.pop(context);
@@ -134,8 +139,6 @@ class _TaskInstructionsScreenState extends State<TaskInstructionsScreen> {
       if (_taskAudioBase64 != null) {
         if (_isPlaying) {
           await _audioPlayer.stop();
-        } else {
-          _showAudioOptionsBottomSheet();
         }
         return;
       }
@@ -173,44 +176,6 @@ class _TaskInstructionsScreenState extends State<TaskInstructionsScreen> {
     }
   }
 
-  void _showAudioOptionsBottomSheet() {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) => SafeArea(
-        child: Wrap(
-          children: [
-            ListTile(
-              leading: const Icon(Icons.play_arrow, color: Color(0xFF4A9782)),
-              title: Text('Play Audio', style: GoogleFonts.inter()),
-              onTap: () async {
-                Navigator.pop(context);
-                final bytes = base64Decode(_taskAudioBase64!.split(',').last);
-                await _audioPlayer.stop();
-                await _audioPlayer.release();
-                await _audioPlayer.play(BytesSource(bytes));
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.delete_outline, color: Colors.redAccent),
-              title: Text('Delete & Re-record', style: GoogleFonts.inter(color: Colors.redAccent)),
-              onTap: () {
-                Navigator.pop(context);
-                setState(() {
-                  _taskAudioBase64 = null;
-                  _isPlaying = false;
-                });
-                _audioPlayer.stop();
-              },
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   void _incrementWorkers() {
     setState(() => _workerCount++);
   }
@@ -224,26 +189,23 @@ class _TaskInstructionsScreenState extends State<TaskInstructionsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: const Color(0xFFFCFCFC),
       body: Column(
         children: [
           _buildHeader(),
           Expanded(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 30),
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
               child: Column(
                 children: [
-                  const SizedBox(height: 40),
                   _buildWorkTypeDropdown(),
-                  const SizedBox(height: 40),
-                  if (_taskImagesBase64.isNotEmpty) _buildImageThumbnails(),
-                  _buildActionButtons(),
-                  if (_showMessageField) _buildMessageField(),
-                  const SizedBox(height: 40),
+                  const SizedBox(height: 24),
+                  _buildDescribeSection(),
+                  const SizedBox(height: 24),
                   _buildWorkerSelector(),
-                  const Spacer(),
+                  const SizedBox(height: 32),
                   _buildNextButton(),
-                  const SizedBox(height: 40),
+                  const SizedBox(height: 20),
                 ],
               ),
             ),
@@ -260,38 +222,52 @@ class _TaskInstructionsScreenState extends State<TaskInstructionsScreen> {
       decoration: const BoxDecoration(
         color: Color(0xFF2E876E),
         borderRadius: BorderRadius.only(
-          bottomLeft: Radius.circular(30),
-          bottomRight: Radius.circular(30),
+          bottomLeft: Radius.circular(40),
+          bottomRight: Radius.circular(40),
         ),
       ),
       child: Stack(
         children: [
+          // Subtle dotted pattern
+          Positioned.fill(
+            child: CustomPaint(
+              painter: DotPatternPainter(),
+            ),
+          ),
           SafeArea(
             child: Padding(
               padding: const EdgeInsets.all(20),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  CircleAvatar(
-                    backgroundColor: Colors.white,
-                    radius: 20,
-                    child: IconButton(
-                      icon: const Icon(Icons.arrow_back, color: Color(0xFF2E876E), size: 20),
-                      onPressed: () => Navigator.pop(context),
+                  GestureDetector(
+                    onTap: () => Navigator.pop(context),
+                    child: Container(
+                      height: 38,
+                      width: 38,
+                      decoration: const BoxDecoration(
+                        color: Colors.white,
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.arrow_back, 
+                        color: Color(0xFF2E876E), 
+                        size: 20,
+                      ),
                     ),
                   ),
                   const Spacer(),
                   Center(
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 40),
+                      padding: const EdgeInsets.symmetric(horizontal: 24),
                       child: Text(
-                        'Help the workers understand the task.',
+                        'Help the workers\nunderstand the task.',
                         textAlign: TextAlign.center,
                         style: GoogleFonts.inter(
                           fontSize: 28,
                           fontWeight: FontWeight.w700,
                           color: Colors.white,
-                          height: 1.2,
+                          height: 1.3,
                         ),
                       ),
                     ),
@@ -308,7 +284,7 @@ class _TaskInstructionsScreenState extends State<TaskInstructionsScreen> {
 
   Widget _buildWorkTypeDropdown() {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 6),
       decoration: BoxDecoration(
         color: const Color(0xFFEBEBEB),
         borderRadius: BorderRadius.circular(30),
@@ -319,16 +295,24 @@ class _TaskInstructionsScreenState extends State<TaskInstructionsScreen> {
           hint: Text(
             'Select most relevant work type *',
             style: GoogleFonts.inter(
-              color: const Color(0xFF636363),
-              fontSize: 14,
+              color: const Color(0xFF6F6F6F),
+              fontSize: 15,
+              fontWeight: FontWeight.w500,
             ),
           ),
           isExpanded: true,
-          icon: const Icon(Icons.arrow_drop_down, color: Colors.black),
+          icon: const Icon(Icons.arrow_drop_down, color: Colors.black, size: 28),
           items: _workTypes.map((String value) {
             return DropdownMenuItem<String>(
               value: value,
-              child: Text(value, style: GoogleFonts.inter(fontSize: 14)),
+              child: Text(
+                value, 
+                style: GoogleFonts.inter(
+                  fontSize: 15,
+                  color: Colors.black,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
             );
           }).toList(),
           onChanged: (newValue) {
@@ -339,140 +323,105 @@ class _TaskInstructionsScreenState extends State<TaskInstructionsScreen> {
     );
   }
 
-  Widget _buildImageThumbnails() {
+  Widget _buildDescribeSection() {
     return Container(
-      height: 80,
-      margin: const EdgeInsets.only(bottom: 20),
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        itemCount: _taskImagesBase64.length,
-        itemBuilder: (context, index) {
-          final imgBase64 = _taskImagesBase64[index];
-          final bytes = base64Decode(imgBase64.split(',').last);
-          return Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8.0),
-            child: Stack(
-              children: [
-                GestureDetector(
-                  onTap: () => _previewImage(imgBase64),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(10),
-                    child: Image.memory(
-                      bytes,
-                      width: 80,
-                      height: 80,
-                      fit: BoxFit.cover,
-                    ),
-                  ),
-                ),
-                Positioned(
-                  top: 2,
-                  right: 2,
-                  child: GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        _taskImagesBase64.removeAt(index);
-                      });
-                    },
-                    child: Container(
-                      decoration: const BoxDecoration(
-                        color: Colors.black54,
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(Icons.close, color: Colors.white, size: 18),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  Widget _buildActionButtons() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        GestureDetector(
-          onTap: _showImagePickerBottomSheet,
-          child: _buildMediaButton(
-            label: _taskImagesBase64.length >= 5 ? 'Max images (5/5)' : 'Upload image (${_taskImagesBase64.length}/5)',
-            icon: Icons.unarchive_outlined,
-            isWide: true,
-            isSuccess: _taskImagesBase64.isNotEmpty,
-          ),
-        ),
-        const SizedBox(width: 15),
-        GestureDetector(
-          onTap: () => setState(() => _showMessageField = !_showMessageField),
-          child: _buildRoundButton(
-            Icons.comment_outlined, 
-            isActive: _showMessageField || _msgController.text.isNotEmpty,
-          ),
-        ),
-        const SizedBox(width: 15),
-        GestureDetector(
-          onTap: _toggleAudioAction,
-          child: _buildRoundButton(
-            _isRecording 
-                ? Icons.stop 
-                : (_taskAudioBase64 != null 
-                    ? (_isPlaying ? Icons.pause : Icons.play_arrow) 
-                    : Icons.mic_none_outlined),
-            isActive: _isRecording,
-            isSuccess: _taskAudioBase64 != null && !_isRecording,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildMessageField() {
-    return Padding(
-      padding: const EdgeInsets.only(top: 20),
-      child: Container(
-        decoration: BoxDecoration(
-          color: const Color(0xFFF8F8F8),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: const Color(0xFFEEEEEE)),
-        ),
-        child: TextField(
-          controller: _msgController,
-          maxLines: 3,
-          style: GoogleFonts.roboto(fontSize: 14),
-          decoration: InputDecoration(
-            hintText: 'Describe the issue or add instructions...',
-            hintStyle: GoogleFonts.roboto(color: Colors.grey[400], fontSize: 14),
-            border: InputBorder.none,
-            contentPadding: const EdgeInsets.all(16),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildMediaButton({required String label, required IconData icon, bool isWide = false, bool isSuccess = false}) {
-    return Container(
-      height: 50,
-      width: isWide ? 160 : null,
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: isSuccess ? const Color(0xFF4A9782) : const Color(0xFF1E6351),
-        borderRadius: BorderRadius.circular(15),
-        border: isSuccess ? Border.all(color: Colors.white, width: 2) : null,
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFEEEEEE), width: 1.5),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.02),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, color: Colors.white, size: 20),
-          const SizedBox(width: 8),
+          Text(
+            'Describe the problem (Optional)',
+            style: GoogleFonts.inter(
+              fontSize: 15,
+              fontWeight: FontWeight.w600,
+              color: const Color(0xFF444444),
+            ),
+          ),
+          const SizedBox(height: 20),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              _buildDescribeModeButton(
+                mode: DescribeMode.photo,
+                label: 'Photo',
+                icon: Icons.camera_alt_outlined,
+              ),
+              _buildDescribeModeButton(
+                mode: DescribeMode.voice,
+                label: 'Voice Note',
+                icon: Icons.mic,
+              ),
+              _buildDescribeModeButton(
+                mode: DescribeMode.text,
+                label: 'Text',
+                icon: Icons.chat_bubble_outline,
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          _buildDynamicInputArea(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDescribeModeButton({
+    required DescribeMode mode,
+    required String label,
+    required IconData icon,
+  }) {
+    final isSelected = _activeDescribeMode == mode;
+
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _activeDescribeMode = mode;
+        });
+      },
+      child: Column(
+        children: [
+          Container(
+            height: 56,
+            width: 56,
+            decoration: BoxDecoration(
+              color: isSelected ? const Color(0xFF468A73) : const Color(0xFFEBEBEB),
+              shape: BoxShape.circle,
+              boxShadow: isSelected
+                  ? [
+                      BoxShadow(
+                        color: const Color(0xFF468A73).withOpacity(0.3),
+                        blurRadius: 8,
+                        offset: const Offset(0, 4),
+                      )
+                    ]
+                  : [],
+            ),
+            child: Icon(
+              icon,
+              color: isSelected ? Colors.white : const Color(0xFF666666),
+              size: 22,
+            ),
+          ),
+          const SizedBox(height: 8),
           Text(
             label,
             style: GoogleFonts.inter(
-              color: Colors.white,
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
+              fontSize: 13,
+              fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+              color: isSelected ? const Color(0xFF468A73) : const Color(0xFF666666),
             ),
           ),
         ],
@@ -480,87 +429,344 @@ class _TaskInstructionsScreenState extends State<TaskInstructionsScreen> {
     );
   }
 
-  Widget _buildRoundButton(IconData icon, {bool isActive = false, bool isSuccess = false}) {
-    Color bgColor = const Color(0xFF519482);
-    if (isActive) bgColor = Colors.redAccent;
-    if (isSuccess) bgColor = const Color(0xFF2E876E);
+  Widget _buildDynamicInputArea() {
+    switch (_activeDescribeMode) {
+      case DescribeMode.photo:
+        return _buildPhotoArea();
+      case DescribeMode.voice:
+        return _buildVoiceArea();
+      case DescribeMode.text:
+        return _buildTextArea();
+    }
+  }
 
-    return Container(
-      height: 50,
-      width: 50,
-      decoration: BoxDecoration(
-        color: bgColor,
-        borderRadius: BorderRadius.circular(15),
-        border: isSuccess ? Border.all(color: Colors.white, width: 2) : null,
+  Widget _buildDashedTargetArea({required String text, required VoidCallback onTap}) {
+    return GestureDetector(
+      onTap: onTap,
+      child: CustomPaint(
+        painter: DashedBorderPainter(
+          color: const Color(0xFFCCCCCC),
+          borderRadius: 12,
+          dashWidth: 6,
+          dashSpace: 4,
+        ),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 20),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.attach_file, color: Color(0xFF888888), size: 28),
+              const SizedBox(height: 12),
+              Text(
+                text,
+                textAlign: TextAlign.center,
+                style: GoogleFonts.inter(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                  color: const Color(0xFF888888),
+                  height: 1.4,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
-      child: Icon(icon, color: Colors.white, size: 24),
     );
   }
 
-  Widget _buildWorkerSelector() {
-    return Row(
+  Widget _buildPhotoArea() {
+    if (_taskImagesBase64.isEmpty) {
+      return _buildDashedTargetArea(
+        text: 'Add media or text to describe the task clearly.',
+        onTap: _showImagePickerBottomSheet,
+      );
+    }
+    
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Icon(Icons.engineering, color: Colors.black, size: 36),
-        const SizedBox(width: 15),
-        Expanded(
-          child: Text(
-            'Select the number\nof Worker',
-            style: GoogleFonts.inter(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: Colors.black,
-              height: 1.3,
-            ),
+        SizedBox(
+          height: 90,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            itemCount: _taskImagesBase64.length + (_taskImagesBase64.length < 5 ? 1 : 0),
+            itemBuilder: (context, index) {
+              if (index == _taskImagesBase64.length) {
+                return GestureDetector(
+                  onTap: _showImagePickerBottomSheet,
+                  child: Container(
+                    width: 90,
+                    margin: const EdgeInsets.only(right: 10),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF5F5F5),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: const Color(0xFFE0E0E0)),
+                    ),
+                    child: const Icon(Icons.add_a_photo_outlined, color: Color(0xFF757575)),
+                  ),
+                );
+              }
+              
+              final imgBase64 = _taskImagesBase64[index];
+              final bytes = base64Decode(imgBase64.split(',').last);
+              return Stack(
+                children: [
+                  GestureDetector(
+                    onTap: () => _previewImage(imgBase64),
+                    child: Container(
+                      width: 90,
+                      height: 90,
+                      margin: const EdgeInsets.only(right: 10),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(12),
+                        image: DecorationImage(
+                          image: MemoryImage(bytes),
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    top: 4,
+                    right: 14,
+                    child: GestureDetector(
+                      onTap: () {
+                        setState(() {
+                          _taskImagesBase64.removeAt(index);
+                        });
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.all(2),
+                        decoration: const BoxDecoration(
+                          color: Colors.black54,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(Icons.close, color: Colors.white, size: 14),
+                      ),
+                    ),
+                  ),
+                ],
+              );
+            },
           ),
         ),
-        Row(
-          children: [
-            _buildCounterButton(Icons.remove, _decrementWorkers, isAdd: false),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 15),
-              child: Text(
-                '$_workerCount',
-                style: GoogleFonts.inter(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ),
-            _buildCounterButton(Icons.add, _incrementWorkers, isAdd: true),
-          ],
+        const SizedBox(height: 8),
+        Center(
+          child: Text(
+            '${_taskImagesBase64.length}/5 Images uploaded',
+            style: GoogleFonts.inter(fontSize: 12, color: Colors.grey[600]),
+          ),
         ),
       ],
     );
   }
 
-  Widget _buildCounterButton(IconData icon, VoidCallback onTap, {required bool isAdd}) {
-    bool isPressed = false;
-    return StatefulBuilder(
-      builder: (context, setStateLocal) {
-        return GestureDetector(
-          onTapDown: (_) => setStateLocal(() => isPressed = true),
-          onTapUp: (_) => setStateLocal(() => isPressed = false),
-          onTapCancel: () => setStateLocal(() => isPressed = false),
-          onTap: onTap,
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 100),
-            height: 30,
-            width: 30,
-            decoration: BoxDecoration(
-              color: isPressed ? const Color(0xFF519482) : const Color(0xFFD9D9D9),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(icon, color: Colors.white, size: 18),
+  Widget _buildVoiceArea() {
+    if (_isRecording) {
+      return CustomPaint(
+        painter: DashedBorderPainter(
+          color: const Color(0xFF468A73),
+          borderRadius: 12,
+          dashWidth: 6,
+          dashSpace: 4,
+        ),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 20),
+          child: Column(
+            children: [
+              const Icon(Icons.mic, color: Colors.redAccent, size: 30),
+              const SizedBox(height: 10),
+              Text(
+                'Recording audio note...',
+                style: GoogleFonts.inter(
+                  color: Colors.redAccent,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 13,
+                ),
+              ),
+              const SizedBox(height: 12),
+              ElevatedButton(
+                onPressed: _toggleAudioAction,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.redAccent,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                  elevation: 0,
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+                ),
+                child: Text('STOP', style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: Colors.white)),
+              ),
+            ],
           ),
-        );
-      },
+        ),
+      );
+    }
+
+    if (_taskAudioBase64 != null) {
+      return Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF0F9F6),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: const Color(0xFFD5EAE3)),
+        ),
+        child: Row(
+          children: [
+            GestureDetector(
+              onTap: () async {
+                if (_isPlaying) {
+                  await _audioPlayer.stop();
+                } else {
+                  final bytes = base64Decode(_taskAudioBase64!.split(',').last);
+                  await _audioPlayer.stop();
+                  await _audioPlayer.release();
+                  await _audioPlayer.play(BytesSource(bytes));
+                }
+              },
+              child: Container(
+                height: 40,
+                width: 40,
+                decoration: const BoxDecoration(
+                  color: Color(0xFF468A73),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  _isPlaying ? Icons.pause : Icons.play_arrow,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                _isPlaying ? 'Playing audio note...' : 'Voice note recorded',
+                style: GoogleFonts.inter(
+                  fontWeight: FontWeight.w500,
+                  color: const Color(0xFF333333),
+                  fontSize: 14,
+                ),
+              ),
+            ),
+            IconButton(
+              icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
+              onPressed: () {
+                setState(() {
+                  _taskAudioBase64 = null;
+                  _isPlaying = false;
+                });
+                _audioPlayer.stop();
+              },
+            )
+          ],
+        ),
+      );
+    }
+
+    return _buildDashedTargetArea(
+      text: 'Add media or text to describe the task clearly.',
+      onTap: _toggleAudioAction,
+    );
+  }
+
+  Widget _buildTextArea() {
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color(0xFFF9F9F9),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFE0E0E0)),
+      ),
+      child: TextField(
+        controller: _msgController,
+        maxLines: 4,
+        style: GoogleFonts.inter(fontSize: 14, color: Colors.black87),
+        decoration: InputDecoration(
+          hintText: 'Add text message or special instructions...',
+          hintStyle: GoogleFonts.inter(color: const Color(0xFF9E9E9E), fontSize: 13),
+          border: InputBorder.none,
+          contentPadding: const EdgeInsets.all(16),
+        ),
+        onChanged: (val) {
+          setState(() {});
+        },
+      ),
+    );
+  }
+
+  Widget _buildWorkerSelector() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFEEEEEE), width: 1.5),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.02),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.group_outlined, color: Color(0xFF468A73), size: 32),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Text(
+              'How many\nworkers do you\nneed?',
+              style: GoogleFonts.inter(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: const Color(0xFF333333),
+                height: 1.3,
+              ),
+            ),
+          ),
+          Row(
+            children: [
+              _buildCounterButton(Icons.remove, _decrementWorkers),
+              Container(
+                width: 40,
+                alignment: Alignment.center,
+                child: Text(
+                  '$_workerCount',
+                  style: GoogleFonts.inter(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black,
+                  ),
+                ),
+              ),
+              _buildCounterButton(Icons.add, _incrementWorkers),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCounterButton(IconData icon, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        height: 38,
+        width: 38,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          shape: BoxShape.circle,
+          border: Border.all(color: const Color(0xFFABDEC3), width: 1.5),
+        ),
+        child: Icon(icon, color: const Color(0xFF2E876E), size: 20),
+      ),
     );
   }
 
   Widget _buildNextButton() {
     return SizedBox(
-      width: 140,
-      height: 48,
+      width: double.infinity,
+      height: 56,
       child: ElevatedButton(
         onPressed: () {
           if (_selectedWorkType == null) {
@@ -571,7 +777,7 @@ class _TaskInstructionsScreenState extends State<TaskInstructionsScreen> {
           }
           if (_selectedWorkType == 'Other (please specify)' && _msgController.text.trim().isEmpty) {
              ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Please use the message button to specify the work type')),
+              const SnackBar(content: Text('Please add a description to specify the work type')),
             );
             return;
           }
@@ -601,27 +807,99 @@ class _TaskInstructionsScreenState extends State<TaskInstructionsScreen> {
           );
         },
         style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFF519482),
+          backgroundColor: const Color(0xFF4A9782),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(24),
+            borderRadius: BorderRadius.circular(16),
           ),
           elevation: 0,
         ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              'Next',
-              style: GoogleFonts.inter(
-                color: Colors.white,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const SizedBox(width: 8),
-            const Icon(Icons.arrow_forward, color: Colors.white, size: 18),
-          ],
+        child: Text(
+          'NEXT',
+          style: GoogleFonts.inter(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+            fontSize: 16,
+            letterSpacing: 0.8,
+          ),
         ),
       ),
     );
   }
+}
+
+// Painter for subtle dots pattern behind the curved green header
+class DotPatternPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = Colors.white.withOpacity(0.08)
+      ..style = PaintingStyle.fill;
+    
+    const double spacing = 18.0;
+    const double radius = 2.0;
+    
+    for (double y = 0; y < size.height; y += spacing) {
+      for (double x = 0; x < size.width; x += spacing) {
+        canvas.drawCircle(Offset(x, y), radius, paint);
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+// Painter to draw a dashed border around container for the dynamic input area
+class DashedBorderPainter extends CustomPainter {
+  final Color color;
+  final double strokeWidth;
+  final double dashWidth;
+  final double dashSpace;
+  final double borderRadius;
+
+  DashedBorderPainter({
+    this.color = Colors.grey,
+    this.strokeWidth = 1,
+    this.dashWidth = 5,
+    this.dashSpace = 3,
+    this.borderRadius = 12,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = strokeWidth;
+
+    final path = Path()
+      ..addRRect(RRect.fromRectAndRadius(
+        Rect.fromLTWH(0, 0, size.width, size.height),
+        Radius.circular(borderRadius),
+      ));
+
+    final dashPath = Path();
+    for (final PathMetric pathMetric in path.computeMetrics()) {
+      double distance = 0.0;
+      while (distance < pathMetric.length) {
+        final double length = dashWidth;
+        if (distance + length > pathMetric.length) {
+          dashPath.addPath(
+            pathMetric.extractPath(distance, pathMetric.length),
+            Offset.zero,
+          );
+        } else {
+          dashPath.addPath(
+            pathMetric.extractPath(distance, distance + length),
+            Offset.zero,
+          );
+        }
+        distance += length + dashSpace;
+      }
+    }
+    canvas.drawPath(dashPath, paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

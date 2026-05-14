@@ -7,11 +7,11 @@ const DataDeletion = () => {
         <div className="px-8 py-10">
           <h1 className="text-4xl font-extrabold text-gray-900 mb-8 border-b pb-4">Data Deletion Request</h1>
           <div className="prose prose-blue max-w-none text-gray-600 space-y-6">
-            <p className="text-sm text-gray-400 italic">Last Updated: March 25, 2026</p>
+            <p className="text-sm text-gray-400 italic">Last Updated: May 15, 2026</p>
 
             <section>
               <p>
-                At <strong>Will</strong>, we value your privacy and give you full control over your data.
+                At <strong>Will</strong>, developed by <strong>Lavish</strong>, we value your privacy and give you full control over your data.
                 You can request the deletion of your account and all associated data at any time.
               </p>
             </section>
@@ -46,9 +46,10 @@ const DataDeletion = () => {
               <h2 className="text-2xl font-bold text-gray-800 mb-4">What Data is Deleted?</h2>
               <p>Upon a successful deletion request, the following data is permanently removed from our active databases:</p>
               <ul className="list-disc pl-6 space-y-2">
-                <li>Your Profile Information (Name, Email, Profile Picture).</li>
+                <li>Your Profile Information (Name, Email, Phone Number, Profile Picture).</li>
                 <li>Your saved Addresses and Locations.</li>
                 <li>Any Worker/Labourer profile associated with your account.</li>
+                <li>Your in-app chat messages and communication history.</li>
                 <li>Your booking history (though we may retain anonymized transaction records for financial compliance as required by law).</li>
               </ul>
             </section>
@@ -62,9 +63,15 @@ const DataDeletion = () => {
               </p>
             </section>
 
-            <p className="pt-8 border-t text-sm text-gray-500">
-              If you have any questions regarding your data, please contact us at <span className="text-blue-600">templavish9@gmail.com</span>
-            </p>
+            <section>
+              <h2 className="text-2xl font-bold text-gray-800 mb-4">Contact</h2>
+              <p>If you have any questions regarding your data, please contact us:</p>
+              <ul className="list-none pl-0 space-y-1 mt-2">
+                <li><strong>Developer:</strong> Lavish</li>
+                <li><strong>App Name:</strong> Will</li>
+                <li><strong>Email:</strong> <span className="text-blue-600">templavish9@gmail.com</span></li>
+              </ul>
+            </section>
           </div>
         </div>
       </div>

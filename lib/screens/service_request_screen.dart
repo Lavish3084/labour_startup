@@ -47,7 +47,7 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
   double? _latitude;
   double? _longitude;
   bool _isLoading = false;
-  bool _saveAddress = true;
+  bool _saveAddress = false;
   late String _selectedBookingMode;
   int _numberOfHours = 2; // Default 2h
   Set<DateTime> _selectedDates = {}; // For multi-date selection in Daily mode

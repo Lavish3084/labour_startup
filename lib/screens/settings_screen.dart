@@ -132,6 +132,12 @@ class SettingsScreen extends StatelessWidget {
                           ),
                           _buildDivider(),
                           _buildTile(
+                            icon: Icons.privacy_tip_outlined,
+                            title: 'Privacy Policy',
+                            onTap: () => _launchURL(context, 'https://justlavish.tech/privacy-policy'),
+                          ),
+                          _buildDivider(),
+                          _buildTile(
                             icon: Icons.help_rounded,
                             title: 'Help Center',
                             onTap: () => _showComingSoon(context),
