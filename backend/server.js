@@ -94,18 +94,24 @@ app.get("/webhook", (req, res) => {
 app.post("/webhook", (req, res) => {
     console.log("GitHub webhook received");
 
+    // Respond immediately to GitHub
+    res.status(200).send("Webhook received");
+
+    // Run deployment in background
     exec(
         "cd /workspace/tmpdisk/backend/cloude-setup/labour_startup && ./deploy.sh",
         (err, stdout, stderr) => {
 
-            console.log(stdout);
-            console.error(stderr);
-
             if (err) {
-                return res.status(500).send("Deploy failed");
+                console.error("Deploy error:", err);
+                return;
             }
 
-            res.status(200).send("Deployment complete");
+            console.log(stdout);
+
+            if (stderr) {
+                console.error(stderr);
+            }
         }
     );
 });
