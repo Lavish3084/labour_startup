@@ -50,6 +50,7 @@ dependencies:
   flutter_dotenv: ^5.2.1
   url_launcher: ^6.3.2
   google_sign_in: ^6.2.1
+  flutter_ringtone_player: ^4.0.0+4
 
 dev_dependencies:
   flutter_test:

@@ -340,8 +340,12 @@ router.get('/:id', verifyToken, async (req, res) => {
         // If it's a worker, they should only see it if they are the assigned labourer 
         // OR if it's a broadcast unassigned job
         const labourer = await Labourer.findOne({ user: req.user.id });
+        const bookingLabourerId = booking.labourer 
+            ? (booking.labourer._id ? booking.labourer._id.toString() : booking.labourer.toString()) 
+            : null;
+
         const isLabourer = labourer && (
-            (booking.labourer && booking.labourer.toString() === labourer._id.toString()) ||
+            (bookingLabourerId && bookingLabourerId === labourer._id.toString()) ||
             (!booking.labourer && booking.status === 'pending' && booking.paymentStatus === 'paid' && booking.category === labourer.category)
         );
 
