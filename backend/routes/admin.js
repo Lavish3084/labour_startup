@@ -5,6 +5,7 @@ const User = require('../models/User');
 const Category = require('../models/Category');
 const Booking = require('../models/Booking');
 const Labourer = require('../models/Labourer');
+const HelpRequest = require('../models/HelpRequest');
 
 // Middleware to verify admin role
 const verifyAdmin = async (req, res, next) => {
@@ -172,6 +173,45 @@ router.get('/bookings', verifyAdmin, async (req, res) => {
             .sort({ createdAt: -1 });
         res.json(bookings);
     } catch (err) {
+        res.status(500).send('Server Error');
+    }
+});
+
+// @route   GET /api/admin/help-requests
+// @desc    Get all help requests
+// @access  Private (Admin only)
+router.get('/help-requests', verifyAdmin, async (req, res) => {
+    try {
+        const requests = await HelpRequest.find()
+            .populate('user', 'name email phoneNumber')
+            .sort({ createdAt: -1 });
+        res.json(requests);
+    } catch (err) {
+        console.error('Fetch Help Requests Error:', err.message);
+        res.status(500).send('Server Error');
+    }
+});
+
+// @route   PUT /api/admin/help-requests/:id
+// @desc    Update status of a help request
+// @access  Private (Admin only)
+router.put('/help-requests/:id', verifyAdmin, async (req, res) => {
+    const { status } = req.body;
+    if (!['pending', 'in-progress', 'resolved'].includes(status)) {
+        return res.status(400).json({ msg: 'Invalid status value' });
+    }
+
+    try {
+        const helpRequest = await HelpRequest.findById(req.params.id);
+        if (!helpRequest) {
+            return res.status(404).json({ msg: 'Help request not found' });
+        }
+
+        helpRequest.status = status;
+        await helpRequest.save();
+        res.json(helpRequest);
+    } catch (err) {
+        console.error('Update Help Request Error:', err.message);
         res.status(500).send('Server Error');
     }
 });

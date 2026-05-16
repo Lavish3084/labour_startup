@@ -849,4 +849,33 @@ class ApiService {
       return null;
     }
   }
+
+  static Future<Map<String, dynamic>> submitHelpRequest(String subject, String message) async {
+    try {
+      final token = await getToken();
+      final response = await http.post(
+        Uri.parse('$baseUrl/profile/help'),
+        headers: {
+          'Content-Type': 'application/json',
+          'x-auth-token': token ?? '',
+        },
+        body: jsonEncode({
+          'subject': subject,
+          'message': message,
+        }),
+      );
+
+      if (response.statusCode == 201) {
+        return {'success': true, 'message': 'Help request submitted successfully'};
+      } else {
+        final data = jsonDecode(response.body);
+        return {
+          'success': false,
+          'message': (data is Map && data.containsKey('msg')) ? data['msg'] : 'Failed to submit help request'
+        };
+      }
+    } catch (e) {
+      return {'success': false, 'message': ErrorHandler.getErrorMessage(e)};
+    }
+  }
 }

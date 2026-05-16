@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const User = require('../models/User');
 const Labourer = require('../models/Labourer');
+const HelpRequest = require('../models/HelpRequest');
 
 // Middleware to verify token (basic implementation for now, assuming you have one or extracting from header)
 // Since we didn't explicitly create an auth middleware file yet, I'll inline a simple one for this route file or rely on one if it exists.
@@ -497,6 +498,37 @@ router.post('/wallet/add', verifyToken, async (req, res) => {
         res.json({ balance: user.walletBalance, msg: 'Money added successfully' });
     } catch (err) {
         console.error(err.message);
+        res.status(500).send('Server Error');
+    }
+});
+
+// @route   POST /api/profile/help
+// @desc    Submit a help request from user/worker app
+// @access  Private
+router.post('/help', verifyToken, async (req, res) => {
+    const { subject, message } = req.body;
+    if (!subject || !message) {
+        return res.status(400).json({ msg: 'Please provide subject and message' });
+    }
+
+    try {
+        const user = await User.findById(req.user.id);
+        if (!user) return res.status(404).json({ msg: 'User not found' });
+
+        const helpRequest = new HelpRequest({
+            user: user.id,
+            name: user.name,
+            email: user.email || '',
+            phone: user.phoneNumber || '',
+            role: user.role,
+            subject,
+            message
+        });
+
+        await helpRequest.save();
+        res.status(201).json({ msg: 'Help request submitted successfully', helpRequest });
+    } catch (err) {
+        console.error('Help Request Submission Error:', err.message);
         res.status(500).send('Server Error');
     }
 });

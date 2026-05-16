@@ -8,6 +8,7 @@ import Bookings from './pages/Bookings';
 import Users from './pages/Users';
 import Settings from './pages/Settings';
 import Payouts from './pages/Payouts';
+import HelpRequests from './pages/HelpRequests';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import Terms from './pages/Terms';
 import DataDeletion from './pages/DataDeletion';
@@ -41,6 +42,7 @@ function App() {
                     <Route path="/categories" element={<Categories />} />
                     <Route path="/bookings" element={<Bookings />} />
                     <Route path="/users" element={<Users />} />
+                    <Route path="/help-requests" element={<HelpRequests />} />
                     <Route path="/settings" element={<Settings />} />
                     <Route path="/payouts" element={<Payouts />} />
                     {/* Fallback */}

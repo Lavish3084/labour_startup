@@ -11,7 +11,8 @@ import {
     Bell,
     Settings,
     UserCircle,
-    Wallet
+    Wallet,
+    LifeBuoy
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
@@ -26,6 +27,7 @@ const Layout = ({ children }) => {
         { icon: <ClipboardList size={20} />, label: 'Bookings', path: '/bookings' },
         { icon: <Wallet size={20} />, label: 'Payouts', path: '/payouts' },
         { icon: <Users size={20} />, label: 'Users', path: '/users' },
+        { icon: <LifeBuoy size={20} />, label: 'Help Requests', path: '/help-requests' },
         { icon: <Settings size={20} />, label: 'Settings', path: '/settings' },
     ];
 
