@@ -85,6 +85,31 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/chat', chatRoutes);
 
+const { exec } = require("child_process");
+
+app.get("/webhook", (req, res) => {
+    res.send("Webhook endpoint working ✅");
+});
+
+app.post("/webhook", (req, res) => {
+    console.log("GitHub webhook received");
+
+    exec(
+        "cd /workspace/tmpdisk/backend/cloude-setup/labour_startup && ./deploy.sh",
+        (err, stdout, stderr) => {
+
+            console.log(stdout);
+            console.error(stderr);
+
+            if (err) {
+                return res.status(500).send("Deploy failed");
+            }
+
+            res.status(200).send("Deployment complete");
+        }
+    );
+});
+
 // Database Connection
 mongoose.connect(process.env.MONGO_URI)
     .then(() => console.log('MongoDB Connected'))
