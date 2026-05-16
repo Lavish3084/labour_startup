@@ -289,6 +289,44 @@ router.put('/phone', verifyToken, async (req, res) => {
     }
 });
 
+// @route   PUT /api/auth/phone-direct
+// @desc    Update user phone number directly (WITHOUT OTP verification, e.g. for Google Sign-In users)
+// @access  Private
+router.put('/phone-direct', verifyToken, async (req, res) => {
+    const { phoneNumber } = req.body;
+    try {
+        if (!phoneNumber) return res.status(400).json({ msg: 'Phone number is required' });
+
+        const user = await User.findById(req.user.id);
+        if (!user) return res.status(404).json({ msg: 'User not found' });
+
+        // Basic format check
+        if (phoneNumber.length < 10) {
+            return res.status(400).json({ msg: 'Invalid phone number' });
+        }
+
+        // Check if phone number is already in use by ANOTHER user with the same role
+        const existingUser = await User.findOne({ 
+            phoneNumber, 
+            role: user.role,
+            _id: { $ne: user._id }
+        });
+
+        if (existingUser) {
+            return res.status(400).json({ msg: 'This phone number is already registered with another account.' });
+        }
+
+        user.phoneNumber = phoneNumber;
+        await user.save();
+
+        res.json({ msg: 'Phone number updated successfully', phoneNumber });
+
+    } catch (err) {
+        console.error('Phone Update Direct Error:', err.message);
+        res.status(500).json({ msg: 'Failed to update phone number' });
+    }
+});
+
 // GET /api/auth/check-other-role
 // Returns whether the authenticated user has an account in the opposite role.
 // Used by each app to show a "Linked Account" section on the profile screen.
