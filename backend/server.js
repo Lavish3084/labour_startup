@@ -122,7 +122,7 @@ mongoose.connect(process.env.MONGO_URI)
     .catch(err => console.log(err));
 
 app.get('/', (req, res) => {
-    res.send('WILL backend runningggg');
+    res.send('WILL backend runninn');
 });
 
 server.listen(PORT, () => {
