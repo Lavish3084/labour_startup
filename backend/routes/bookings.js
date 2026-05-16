@@ -323,6 +323,7 @@ router.get('/worker', verifyToken, async (req, res) => {
 router.get('/:id', verifyToken, async (req, res) => {
     try {
         const booking = await Booking.findById(req.params.id)
+            .populate('user', 'name phoneNumber')
             .populate({
                 path: 'labourer',
                 select: 'name category imageUrl hourlyRate location rating jobsCompleted reviews',
@@ -335,7 +336,10 @@ router.get('/:id', verifyToken, async (req, res) => {
         }
 
         // Check if user has access to this booking
-        const isOwner = booking.user.toString() === req.user.id;
+        const bookingUserId = booking.user
+            ? (booking.user._id ? booking.user._id.toString() : booking.user.toString())
+            : null;
+        const isOwner = bookingUserId === req.user.id;
         
         // If it's a worker, they should only see it if they are the assigned labourer 
         // OR if they are an applicant 
