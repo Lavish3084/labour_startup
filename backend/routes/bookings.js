@@ -356,7 +356,22 @@ router.get('/:id', verifyToken, async (req, res) => {
             (!booking.labourer && booking.status === 'pending' && booking.paymentStatus === 'paid' && booking.category === labourer.category)
         );
 
+        console.log(`[AUTH DEBUG] Booking ID: ${booking._id}`);
+        console.log(`[AUTH DEBUG] req.user.id: ${req.user.id}`);
+        console.log(`[AUTH DEBUG] booking.user: ${booking.user}`);
+        console.log(`[AUTH DEBUG] isOwner: ${isOwner}`);
+        console.log(`[AUTH DEBUG] labourer._id: ${labourer ? labourer._id : 'null'}`);
+        console.log(`[AUTH DEBUG] booking.labourer: ${booking.labourer}`);
+        console.log(`[AUTH DEBUG] bookingLabourerId: ${bookingLabourerId}`);
+        console.log(`[AUTH DEBUG] isApplicant: ${isApplicant}`);
+        console.log(`[AUTH DEBUG] booking.status: ${booking.status}`);
+        console.log(`[AUTH DEBUG] booking.paymentStatus: ${booking.paymentStatus}`);
+        console.log(`[AUTH DEBUG] booking.category: ${booking.category}`);
+        console.log(`[AUTH DEBUG] labourer.category: ${labourer ? labourer.category : 'null'}`);
+        console.log(`[AUTH DEBUG] isLabourer: ${isLabourer}`);
+
         if (!isOwner && !isLabourer) {
+             console.log(`[AUTH DEBUG] Denying access to booking ${booking._id} for user ${req.user.id}`);
              return res.status(401).json({ msg: 'Unauthorized to view this booking' });
         }
 
