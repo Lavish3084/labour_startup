@@ -1,6 +1,8 @@
 import 'dart:convert';
+import 'dart:math' as math;
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/service_category.dart';
 import '../models/labourer.dart';
@@ -286,6 +288,87 @@ class AppStateProvider with ChangeNotifier, WidgetsBindingObserver {
       }
     }
     return false;
+  }
+
+  /// Production-ready coordinate-based zone check using Haversine formula.
+  /// Returns true if the given coordinates fall inside any configured service zone.
+  /// Falls back to legacy text-based check if no zones are configured.
+  bool isCityEnabledByCoordinates(double? lat, double? lng, {String? fallbackAddress}) {
+    // Parse service zones from settings
+    final List<Map<String, dynamic>> zones = _parseServiceZones();
+
+    // If zones are configured, use coordinate-based Haversine check
+    if (zones.isNotEmpty) {
+      if (lat == null || lng == null) {
+        // No coordinates available yet, assume active to prevent flicker
+        return true;
+      }
+      for (final zone in zones) {
+        final double? zoneLat = _toDouble(zone['lat']);
+        final double? zoneLng = _toDouble(zone['lng']);
+        final double radiusKm = _toDouble(zone['radiusKm']) ?? 15.0;
+
+        if (zoneLat == null || zoneLng == null) continue;
+
+        final double distance = _haversineKm(lat, lng, zoneLat, zoneLng);
+        if (distance <= radiusKm) {
+          return true;
+        }
+      }
+      return false;
+    }
+
+    // No zones configured — fall back to legacy text-based check
+    return isCityEnabled(fallbackAddress);
+  }
+
+  /// Parse serviceZones from settings. Handles both JSON string and List formats.
+  List<Map<String, dynamic>> _parseServiceZones() {
+    final dynamic rawZones = _settings['serviceZones'];
+    if (rawZones == null) return [];
+
+    List<dynamic> zonesList;
+    if (rawZones is String) {
+      try {
+        zonesList = jsonDecode(rawZones);
+      } catch (_) {
+        return [];
+      }
+    } else if (rawZones is List) {
+      zonesList = rawZones;
+    } else {
+      return [];
+    }
+
+    return zonesList
+        .whereType<Map<String, dynamic>>()
+        .toList();
+  }
+
+  /// Haversine formula — calculates great-circle distance between two GPS points.
+  /// Returns distance in kilometers. Uses dart:math for precision.
+  static double _haversineKm(double lat1, double lng1, double lat2, double lng2) {
+    const double earthRadiusKm = 6371.0;
+    final double dLat = _toRadians(lat2 - lat1);
+    final double dLng = _toRadians(lng2 - lng1);
+
+    final double a =
+        math.sin(dLat / 2) * math.sin(dLat / 2) +
+        math.cos(_toRadians(lat1)) * math.cos(_toRadians(lat2)) *
+        math.sin(dLng / 2) * math.sin(dLng / 2);
+
+    final double c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a));
+    return earthRadiusKm * c;
+  }
+
+  static double _toRadians(double deg) => deg * math.pi / 180.0;
+
+  static double? _toDouble(dynamic value) {
+    if (value == null) return null;
+    if (value is double) return value;
+    if (value is int) return value.toDouble();
+    if (value is String) return double.tryParse(value);
+    return null;
   }
 
   Future<void> fetchCategories() async {

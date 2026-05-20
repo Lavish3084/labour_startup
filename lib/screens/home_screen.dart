@@ -241,7 +241,11 @@ class _HomeScreenState extends State<HomeScreen> {
                 final hasCategories = appState.categories.isNotEmpty;
 
                 final locationProvider = Provider.of<LocationProvider>(context);
-                final isCityActive = appState.isCityEnabled(locationProvider.currentAddress);
+                final isCityActive = appState.isCityEnabledByCoordinates(
+                  locationProvider.currentLatitude,
+                  locationProvider.currentLongitude,
+                  fallbackAddress: locationProvider.currentAddress,
+                );
                 final rawAddress = locationProvider.currentAddress ?? '';
                 final cityName = rawAddress.contains(',') ? rawAddress.split(',').first.trim() : rawAddress;
 

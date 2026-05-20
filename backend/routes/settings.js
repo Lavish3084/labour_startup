@@ -3,6 +3,7 @@ const router = express.Router();
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const Setting = require('../models/Setting');
+const { isPointInAnyZone } = require('../utils/geoUtils');
 
 // Middleware to verify admin role (consistent with admin.js)
 const verifyAdmin = async (req, res, next) => {
@@ -53,6 +54,53 @@ router.get('/', async (req, res) => {
     }
 });
 
+// GET check if a coordinate is in an active service zone
+// Usage: GET /settings/check-location?lat=30.7046&lng=76.7179
+router.get('/check-location', async (req, res) => {
+    try {
+        const lat = parseFloat(req.query.lat);
+        const lng = parseFloat(req.query.lng);
+
+        if (isNaN(lat) || isNaN(lng)) {
+            return res.status(400).json({ msg: 'Invalid coordinates. Provide lat and lng as query params.' });
+        }
+
+        // Fetch serviceZones from settings
+        const zonesSetting = await Setting.findOne({ key: 'serviceZones' });
+        let zones = [];
+
+        if (zonesSetting && zonesSetting.value) {
+            // value could be a JSON string or already parsed array
+            if (typeof zonesSetting.value === 'string') {
+                try {
+                    zones = JSON.parse(zonesSetting.value);
+                } catch (e) {
+                    zones = [];
+                }
+            } else if (Array.isArray(zonesSetting.value)) {
+                zones = zonesSetting.value;
+            }
+        }
+
+        // If no zones configured, fall back to legacy text-based check
+        if (zones.length === 0) {
+            const citiesSetting = await Setting.findOne({ key: 'enabledCities' });
+            if (!citiesSetting || !citiesSetting.value || citiesSetting.value.toString().trim() === '') {
+                // No restrictions at all
+                return res.json({ active: true, nearestZone: null, method: 'no_restrictions' });
+            }
+            // Can't do text-based check with coordinates alone, return unknown
+            return res.json({ active: null, nearestZone: null, method: 'legacy_text_only' });
+        }
+
+        const result = isPointInAnyZone(lat, lng, zones);
+        res.json({ ...result, method: 'geofence' });
+    } catch (err) {
+        console.error("Error in GET /settings/check-location:", err);
+        res.status(500).json({ msg: 'Server Error', error: err.message });
+    }
+});
+
 // GET specific setting by key
 router.get('/:key', async (req, res) => {
     try {
@@ -91,3 +139,4 @@ router.put('/', verifyAdmin, async (req, res) => {
 });
 
 module.exports = router;
+
