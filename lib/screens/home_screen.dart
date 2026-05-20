@@ -131,6 +131,83 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  Widget _buildComingSoonState(String cityName) {
+    final String resolvedCity = (cityName.isNotEmpty && cityName != 'Enable location') ? cityName : 'your area';
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+      child: GlassCard(
+        radius: 24,
+        blur: 15,
+        opacity: 0.8,
+        borderColor: AppTheme.brandGreenMain.withOpacity(0.15),
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: AppTheme.brandGreenMain.withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.rocket_launch_rounded,
+                color: AppTheme.brandGreenMain,
+                size: 48,
+              ),
+            ),
+            const SizedBox(height: 20),
+            Text(
+              "Coming Soon!",
+              style: GoogleFonts.inter(
+                fontSize: 22,
+                fontWeight: FontWeight.w800,
+                color: AppTheme.figmaHeaderEnd,
+                letterSpacing: -0.5,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              "We are not active in $resolvedCity yet. Choose another location to explore our services.",
+              textAlign: TextAlign.center,
+              style: GoogleFonts.inter(
+                fontSize: 14,
+                color: AppTheme.textSecondary,
+                fontWeight: FontWeight.w400,
+                height: 1.5,
+              ),
+            ),
+            const SizedBox(height: 24),
+            SizedBox(
+              width: double.infinity,
+              height: 52,
+              child: ElevatedButton.icon(
+                onPressed: _showAddressSelectionBottomSheet,
+                icon: const Icon(Icons.map_rounded, color: Colors.white, size: 20),
+                label: Text(
+                  "Select Other Location",
+                  style: GoogleFonts.inter(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white,
+                  ),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.brandGreenMain,
+                  elevation: 0,
+                  shadowColor: Colors.transparent,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
@@ -163,6 +240,11 @@ class _HomeScreenState extends State<HomeScreen> {
                 final hasActive = activeBookings.isNotEmpty;
                 final hasCategories = appState.categories.isNotEmpty;
 
+                final locationProvider = Provider.of<LocationProvider>(context);
+                final isCityActive = appState.isCityEnabled(locationProvider.currentAddress);
+                final rawAddress = locationProvider.currentAddress ?? '';
+                final cityName = rawAddress.contains(',') ? rawAddress.split(',').first.trim() : rawAddress;
+
                 return Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -172,26 +254,30 @@ class _HomeScreenState extends State<HomeScreen> {
                       const SizedBox(height: 32),
                       _buildActiveBookingList(activeBookings),
                     ],
-                    if (hasCategories) ...[
-                      const SizedBox(height: 32),
-                      _buildCategoriesSection(activeBookings),
-                    ],
-                    const SizedBox(height: 16),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
-                      child: Text(
-                        'Top Reasons to Choose',
-                        style: GoogleFonts.roboto(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.black,
-                          height: 1.5,
-                          letterSpacing: 0.5,
+                    if (!isCityActive)
+                      _buildComingSoonState(cityName)
+                    else ...[
+                      if (hasCategories) ...[
+                        const SizedBox(height: 32),
+                        _buildCategoriesSection(activeBookings),
+                      ],
+                      const SizedBox(height: 16),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        child: Text(
+                          'Top Reasons to Choose',
+                          style: GoogleFonts.roboto(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.black,
+                            height: 1.5,
+                            letterSpacing: 0.5,
+                          ),
                         ),
                       ),
-                    ),
-                    const SizedBox(height: 12),
-                    _buildTrustBanner(),
+                      const SizedBox(height: 12),
+                      _buildTrustBanner(),
+                    ],
                     const SizedBox(height: 40),
                   ],
                 );

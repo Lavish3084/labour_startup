@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/service_category.dart';
@@ -6,7 +7,7 @@ import '../models/labourer.dart';
 import '../services/api_service.dart';
 import '../services/error_handler.dart';
 
-class AppStateProvider with ChangeNotifier {
+class AppStateProvider with ChangeNotifier, WidgetsBindingObserver {
   Map<String, dynamic>? _profileData;
   List<dynamic> _bookings = [];
   List<ServiceCategory> _categories = [];
@@ -21,10 +22,78 @@ class AppStateProvider with ChangeNotifier {
   String? _bookingsError;
   String? _categoriesError;
   String? _labourersError;
+
+  // Language & Locale Settings
+  String _languageCode = 'en';
+  String? _manualLanguageCode;
+
+  String get languageCode => _languageCode;
+  String? get manualLanguageCode => _manualLanguageCode;
+
+  AppStateProvider() {
+    WidgetsBinding.instance.addObserver(this);
+    _initLanguage();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  Future<void> _initLanguage() async {
+    final prefs = await SharedPreferences.getInstance();
+    _manualLanguageCode = prefs.getString('manual_language_code');
+    _updateActiveLanguage();
+  }
+
+  void _updateActiveLanguage() {
+    if (_manualLanguageCode != null) {
+      _languageCode = _manualLanguageCode!;
+    } else {
+      // Get phone's system language
+      final systemLocales = PlatformDispatcher.instance.locales;
+      if (systemLocales.isNotEmpty) {
+        final sysLang = systemLocales.first.languageCode.toLowerCase();
+        if (sysLang == 'hi') {
+          _languageCode = 'hi';
+        } else if (sysLang == 'pa') {
+          _languageCode = 'pa';
+        } else {
+          _languageCode = 'en'; // default for rest is English
+        }
+      } else {
+        _languageCode = 'en';
+      }
+    }
+    notifyListeners();
+  }
+
+  @override
+  void didChangeLocales(List<Locale>? locales) {
+    super.didChangeLocales(locales);
+    // Dynamically update active language when device locale changes and no manual override exists
+    if (_manualLanguageCode == null) {
+      _updateActiveLanguage();
+    }
+  }
+
+  Future<void> setManualLanguage(String? langCode) async {
+    _manualLanguageCode = langCode;
+    final prefs = await SharedPreferences.getInstance();
+    if (langCode != null) {
+      await prefs.setString('manual_language_code', langCode);
+    } else {
+      await prefs.remove('manual_language_code');
+    }
+    _updateActiveLanguage();
+  }
   double _walletBalance = 0.0;
   List<dynamic> _walletTransactions = [];
+  Map<String, dynamic> _settings = {};
 
   Map<String, dynamic>? get profileData => _profileData;
+  Map<String, dynamic> get settings => _settings;
   List<dynamic> get bookings => _bookings;
   List<ServiceCategory> get categories {
     if (_searchQuery.isEmpty) return _categories;
@@ -147,6 +216,9 @@ class AppStateProvider with ChangeNotifier {
   }
 
   Future<void> loadCategories() async {
+    // Also load settings
+    loadSettings();
+
     // Load from cache first
     final prefs = await SharedPreferences.getInstance();
     final cachedData = prefs.getString('cached_categories');
@@ -163,6 +235,57 @@ class AppStateProvider with ChangeNotifier {
 
     // Always fetch from API in background
     fetchCategories();
+  }
+
+  Future<void> loadSettings() async {
+    final prefs = await SharedPreferences.getInstance();
+    final cachedData = prefs.getString('cached_settings');
+    if (cachedData != null) {
+      try {
+        _settings = jsonDecode(cachedData);
+        notifyListeners();
+      } catch (e) {
+        debugPrint('Error loading cached settings: $e');
+      }
+    }
+    await fetchSettings();
+  }
+
+  Future<void> fetchSettings() async {
+    try {
+      final freshSettings = await ApiService.getSettings();
+      _settings = freshSettings;
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('cached_settings', jsonEncode(freshSettings));
+      notifyListeners();
+    } catch (e) {
+      debugPrint('Error fetching settings from API: $e');
+    }
+  }
+
+  bool isCityEnabled(String? locationStr) {
+    final String? enabledCitiesStr = _settings['enabledCities']?.toString();
+    if (enabledCitiesStr == null || enabledCitiesStr.trim().isEmpty) {
+      return true;
+    }
+    if (locationStr == null || locationStr.trim().isEmpty) {
+      return false;
+    }
+    final List<String> enabledCitiesList = enabledCitiesStr
+        .split(',')
+        .map((city) => city.trim().toLowerCase())
+        .where((city) => city.isNotEmpty)
+        .toList();
+    if (enabledCitiesList.isEmpty) {
+      return true;
+    }
+    final String searchStr = locationStr.trim().toLowerCase();
+    for (final city in enabledCitiesList) {
+      if (searchStr.contains(city)) {
+        return true;
+      }
+    }
+    return false;
   }
 
   Future<void> fetchCategories() async {
@@ -228,5 +351,46 @@ class AppStateProvider with ChangeNotifier {
     });
     
     notifyListeners();
+  }
+}
+
+extension LocalizationExtension on BuildContext {
+  String t(String en, String hi, [String? pa]) {
+    try {
+      final provider = Provider.of<AppStateProvider>(this);
+      final lang = provider.languageCode;
+      if (lang == 'hi') return hi;
+      if (lang == 'pa') return pa ?? en;
+      return en;
+    } catch (_) {
+      return en;
+    }
+  }
+
+  bool get isHindi {
+    try {
+      final provider = Provider.of<AppStateProvider>(this);
+      return provider.languageCode == 'hi';
+    } catch (_) {
+      return false;
+    }
+  }
+
+  bool get isPunjabi {
+    try {
+      final provider = Provider.of<AppStateProvider>(this);
+      return provider.languageCode == 'pa';
+    } catch (_) {
+      return false;
+    }
+  }
+
+  bool get isEnglish {
+    try {
+      final provider = Provider.of<AppStateProvider>(this);
+      return provider.languageCode == 'en';
+    } catch (_) {
+      return true;
+    }
   }
 }

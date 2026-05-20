@@ -3,7 +3,7 @@ import api from '../services/api';
 import { Settings as SettingsIcon, Save } from 'lucide-react';
 
 const Settings = () => {
-    const [settings, setSettings] = useState({ adminCommissionPercentage: 0, cancellationRefundPercentage: 50 });
+    const [settings, setSettings] = useState({ adminCommissionPercentage: 0, cancellationRefundPercentage: 50, enabledCities: '' });
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [message, setMessage] = useState({ type: '', text: '' });
@@ -19,6 +19,7 @@ const Settings = () => {
             setSettings({
                 adminCommissionPercentage: res.data.adminCommissionPercentage || 0,
                 cancellationRefundPercentage: res.data.cancellationRefundPercentage ?? 50,
+                enabledCities: res.data.enabledCities || '',
             });
             setLoading(false);
         } catch (err) {
@@ -95,6 +96,23 @@ const Settings = () => {
                             onChange={(e) => setSettings({ ...settings, cancellationRefundPercentage: e.target.value })}
                             style={styles.input}
                             required
+                        />
+                    </div>
+
+                    <div style={styles.formGroup}>
+                        <label style={styles.label}>Enabled Service Cities</label>
+                        <p style={styles.helpText}>Comma-separated list of cities where service is active (e.g., Mohali, Chandigarh). Leave empty to enable all locations.</p>
+                        <textarea
+                            value={settings.enabledCities}
+                            onChange={(e) => setSettings({ ...settings, enabledCities: e.target.value })}
+                            style={{
+                                ...styles.input,
+                                maxWidth: '100%',
+                                minHeight: '80px',
+                                fontFamily: 'inherit',
+                                resize: 'vertical'
+                            }}
+                            placeholder="e.g., Mohali, Chandigarh"
                         />
                     </div>
 
