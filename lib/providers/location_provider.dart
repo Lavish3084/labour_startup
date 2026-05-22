@@ -50,6 +50,7 @@ class LocationProvider with ChangeNotifier {
   String? _error;
 
   String? _currentAddress;
+  String? _currentLabel;
   String? _currentHouseNumber;
   String? _currentLandmark;
   double? _currentLatitude;
@@ -59,6 +60,7 @@ class LocationProvider with ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get error => _error;
   String? get currentAddress => _currentAddress;
+  String? get currentLabel => _currentLabel;
   String? get currentHouseNumber => _currentHouseNumber;
   String? get currentLandmark => _currentLandmark;
   double? get currentLatitude => _currentLatitude;
@@ -84,12 +86,14 @@ class LocationProvider with ChangeNotifier {
     try {
       final prefs = await SharedPreferences.getInstance();
       final addressKey = await _getScopedKey('current_address');
+      final labelKey = await _getScopedKey('current_label');
       final houseKey = await _getScopedKey('current_house_number');
       final landmarkKey = await _getScopedKey('current_landmark');
       final latKey = await _getScopedKey('current_latitude');
       final lonKey = await _getScopedKey('current_longitude');
 
       _currentAddress = prefs.getString(addressKey);
+      _currentLabel = prefs.getString(labelKey);
       _currentHouseNumber = prefs.getString(houseKey);
       _currentLandmark = prefs.getString(landmarkKey);
       _currentLatitude = prefs.getDouble(latKey);
@@ -106,8 +110,10 @@ class LocationProvider with ChangeNotifier {
     String? landmark,
     double? latitude,
     double? longitude,
+    String? label,
   }) async {
     _currentAddress = address;
+    _currentLabel = label ?? 'Current Location';
     _currentHouseNumber = houseNumber;
     _currentLandmark = landmark;
     _currentLatitude = latitude;
@@ -117,6 +123,7 @@ class LocationProvider with ChangeNotifier {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString(await _getScopedKey('current_address'), address);
+      await prefs.setString(await _getScopedKey('current_label'), _currentLabel!);
       if (houseNumber != null) {
         await prefs.setString(
           await _getScopedKey('current_house_number'),
@@ -245,6 +252,7 @@ class LocationProvider with ChangeNotifier {
   void clearData() {
     _savedLocations = [];
     _currentAddress = null;
+    _currentLabel = null;
     _currentHouseNumber = null;
     _currentLandmark = null;
     _currentLatitude = null;

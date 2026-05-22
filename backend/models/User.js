@@ -53,10 +53,26 @@ const UserSchema = new mongoose.Schema({
         date: { type: Date, default: Date.now },
         relatedBooking: { type: mongoose.Schema.Types.ObjectId, ref: 'Booking' }
     }],
+    referralCode: {
+        type: String,
+        unique: true,
+        sparse: true
+    },
+    referredBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+    },
     createdAt: {
         type: Date,
         default: Date.now
     }
+});
+
+UserSchema.pre('save', function(next) {
+    if (!this.referralCode) {
+        this.referralCode = 'WILL' + this._id.toString().substring(0, 5).toUpperCase();
+    }
+    next();
 });
 
 UserSchema.index({ email: 1, role: 1 }, { unique: true, sparse: true });

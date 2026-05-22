@@ -430,6 +430,7 @@ const styles = {
     },
     priceRow: {
         display: 'flex',
+        flexWrap: 'wrap',
         gap: '1.5rem',
         padding: '1rem 0',
         borderTop: '1px solid #f1f5f9',

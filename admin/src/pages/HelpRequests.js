@@ -440,10 +440,11 @@ const styles = {
         background: 'white',
         borderRadius: '20px',
         border: '1px solid #e2e8f0',
-        overflow: 'hidden',
+        overflowX: 'auto',
     },
     table: {
         width: '100%',
+        minWidth: '800px',
         borderCollapse: 'collapse',
     },
     th: {

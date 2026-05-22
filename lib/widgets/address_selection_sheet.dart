@@ -81,6 +81,7 @@ class _AddressSelectionSheetState extends State<AddressSelectionSheet> {
           address: address,
           latitude: position.latitude,
           longitude: position.longitude,
+          label: 'Current Location',
         );
         Navigator.pop(context);
       }
@@ -177,6 +178,7 @@ class _AddressSelectionSheetState extends State<AddressSelectionSheet> {
                             landmark: landmarkController.text,
                             latitude: lat,
                             longitude: lon,
+                            label: labelController.text,
                           );
 
                           Navigator.pop(dialogContext); // Close save dialog
@@ -200,6 +202,7 @@ class _AddressSelectionSheetState extends State<AddressSelectionSheet> {
             longitude: lon,
             houseNumber: '', 
             landmark: '',
+            label: 'Selected Location',
           );
           Navigator.pop(context);
         }
@@ -356,6 +359,7 @@ class _AddressSelectionSheetState extends State<AddressSelectionSheet> {
                         landmark: loc.landmark,
                         latitude: loc.latitude,
                         longitude: loc.longitude,
+                        label: loc.label,
                       );
                       if (mounted) {
                         Navigator.pop(context);

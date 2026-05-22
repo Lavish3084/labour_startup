@@ -362,7 +362,25 @@ class ApiService {
         },
         body: jsonEncode({'code': code}),
       );
-      return jsonDecode(response.body);
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (data is Map<String, dynamic>) {
+          return data;
+        }
+        return {'success': false, 'message': 'Invalid response format from server.'};
+      } else {
+        dynamic error;
+        try {
+          error = jsonDecode(response.body);
+        } catch (_) {
+          error = null;
+        }
+        final message = (error is Map && error.containsKey('message')) 
+            ? error['message'] 
+            : ((error is Map && error.containsKey('msg')) ? error['msg'] : 'Failed to apply referral.');
+        return {'success': false, 'message': message};
+      }
     } catch (e) {
       return {'success': false, 'message': ErrorHandler.getErrorMessage(e)};
     }

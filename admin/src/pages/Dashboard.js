@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { adminService } from '../services/api';
 import {
     Users,
@@ -10,10 +11,13 @@ import {
     Calendar,
     IndianRupee
 } from 'lucide-react';
+import BookingDetailsModal from '../components/BookingDetailsModal';
 
 const Dashboard = () => {
     const [data, setData] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [selectedBooking, setSelectedBooking] = useState(null);
+    const navigate = useNavigate();
 
     useEffect(() => {
         const fetchStats = async () => {
@@ -70,7 +74,7 @@ const Dashboard = () => {
                 <div style={styles.sectionCard}>
                     <div style={styles.sectionHeader}>
                         <h2 style={styles.sectionTitle}>Recent Bookings</h2>
-                        <button style={styles.viewAllBtn}>View All</button>
+                        <button style={styles.viewAllBtn} onClick={() => navigate('/bookings')}>View All</button>
                     </div>
                     <div style={styles.tableContainer}>
                         <table style={styles.table}>
@@ -84,7 +88,13 @@ const Dashboard = () => {
                             </thead>
                             <tbody>
                                 {data?.recentBookings?.map((booking) => (
-                                    <tr key={booking._id} style={styles.tr}>
+                                    <tr 
+                                        key={booking._id} 
+                                        style={{ ...styles.tr, cursor: 'pointer' }}
+                                        onClick={() => setSelectedBooking(booking)}
+                                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f8fafc'}
+                                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                                    >
                                         <td style={styles.td}>
                                             <div style={styles.userCell}>
                                                 <div style={styles.avatar}><User size={14} /></div>
@@ -113,6 +123,13 @@ const Dashboard = () => {
                     </div>
                 </div>
             </div>
+
+            {selectedBooking && (
+                <BookingDetailsModal 
+                    booking={selectedBooking} 
+                    onClose={() => setSelectedBooking(null)} 
+                />
+            )}
         </div>
     );
 };

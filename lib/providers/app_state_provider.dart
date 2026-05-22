@@ -300,8 +300,8 @@ class AppStateProvider with ChangeNotifier, WidgetsBindingObserver {
     // If zones are configured, use coordinate-based Haversine check
     if (zones.isNotEmpty) {
       if (lat == null || lng == null) {
-        // No coordinates available yet, assume active to prevent flicker
-        return true;
+        // No coordinates available yet, fallback to text check
+        return isCityEnabled(fallbackAddress);
       }
       for (final zone in zones) {
         final double? zoneLat = _toDouble(zone['lat']);

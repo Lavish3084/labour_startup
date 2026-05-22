@@ -10,10 +10,12 @@ import {
     XCircle,
     AlertCircle
 } from 'lucide-react';
+import BookingDetailsModal from '../components/BookingDetailsModal';
 
 const Bookings = () => {
     const [bookings, setBookings] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [selectedBooking, setSelectedBooking] = useState(null);
 
     useEffect(() => {
         const fetchBookings = async () => {
@@ -75,7 +77,13 @@ const Bookings = () => {
                     </thead>
                     <tbody>
                         {bookings.map((booking) => (
-                            <tr key={booking._id} style={styles.tr}>
+                            <tr 
+                                key={booking._id} 
+                                style={{ ...styles.tr, cursor: 'pointer' }}
+                                onClick={() => setSelectedBooking(booking)}
+                                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f8fafc'}
+                                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                            >
                                 <td style={styles.td}>
                                     <div style={styles.idCell}>
                                         <span style={styles.dateText}>{new Date(booking.date).toLocaleDateString()}</span>
@@ -123,6 +131,13 @@ const Bookings = () => {
                     </tbody>
                 </table>
             </div>
+
+            {selectedBooking && (
+                <BookingDetailsModal 
+                    booking={selectedBooking} 
+                    onClose={() => setSelectedBooking(null)} 
+                />
+            )}
         </div>
     );
 };
@@ -196,10 +211,11 @@ const styles = {
         background: 'white',
         borderRadius: '20px',
         border: '1px solid #e2e8f0',
-        overflow: 'hidden',
+        overflowX: 'auto',
     },
     table: {
         width: '100%',
+        minWidth: '800px',
         borderCollapse: 'collapse',
     },
     th: {

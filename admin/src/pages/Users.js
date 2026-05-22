@@ -9,10 +9,12 @@ import {
     MoreVertical,
     CheckCircle
 } from 'lucide-react';
+import UserDetailsModal from '../components/UserDetailsModal';
 
 const Users = () => {
     const [users, setUsers] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [selectedUser, setSelectedUser] = useState(null);
 
     useEffect(() => {
         const fetchUsers = async () => {
@@ -67,11 +69,17 @@ const Users = () => {
                     </thead>
                     <tbody>
                         {users.map((user) => (
-                            <tr key={user._id} style={styles.tr}>
+                            <tr 
+                                key={user._id} 
+                                style={{ ...styles.tr, cursor: 'pointer' }}
+                                onClick={() => setSelectedUser(user)}
+                                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f8fafc'}
+                                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                            >
                                 <td style={styles.td}>
                                     <div style={styles.userCell}>
                                         <div style={styles.avatar}>
-                                            {user.name.charAt(0)}
+                                            {user.name?.charAt(0) || '?'}
                                         </div>
                                         <div style={styles.userInfo}>
                                             <span style={styles.userName}>{user.name}</span>
@@ -107,6 +115,13 @@ const Users = () => {
                     </tbody>
                 </table>
             </div>
+
+            {selectedUser && (
+                <UserDetailsModal 
+                    user={selectedUser} 
+                    onClose={() => setSelectedUser(null)} 
+                />
+            )}
         </div>
     );
 };
@@ -158,10 +173,11 @@ const styles = {
         background: 'white',
         borderRadius: '20px',
         border: '1px solid #e2e8f0',
-        overflow: 'hidden',
+        overflowX: 'auto',
     },
     table: {
         width: '100%',
+        minWidth: '800px',
         borderCollapse: 'collapse',
     },
     th: {

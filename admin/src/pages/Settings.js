@@ -451,7 +451,7 @@ const styles = {
     zonesTable: {
         border: '1px solid #e2e8f0',
         borderRadius: '12px',
-        overflow: 'hidden',
+        overflowX: 'auto',
         marginBottom: '4px',
     },
     zonesTableHeader: {
@@ -465,6 +465,7 @@ const styles = {
         color: '#64748b',
         textTransform: 'uppercase',
         letterSpacing: '0.05em',
+        minWidth: '600px',
     },
     zoneRow: {
         display: 'flex',
@@ -473,6 +474,7 @@ const styles = {
         borderBottom: '1px solid #f1f5f9',
         fontSize: '14px',
         transition: 'background 0.15s',
+        minWidth: '600px',
     },
     zoneName: {
         fontWeight: '700',

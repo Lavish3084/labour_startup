@@ -46,6 +46,12 @@ router.get('/me', verifyToken, async (req, res) => {
             return res.status(404).json({ msg: 'User not found' });
         }
 
+        // Lazy generation for existing users
+        if (!user.referralCode) {
+            user.referralCode = 'WILL' + user._id.toString().substring(0, 5).toUpperCase();
+            await user.save();
+        }
+
         let profileData = { user };
 
         if (user.role === 'worker') {
@@ -530,6 +536,75 @@ router.post('/help', verifyToken, async (req, res) => {
     } catch (err) {
         console.error('Help Request Submission Error:', err.message);
         res.status(500).send('Server Error');
+    }
+});
+
+// @route   POST /api/profile/referral/apply
+// @desc    Apply a referral code
+// @access  Private
+router.post('/referral/apply', verifyToken, async (req, res) => {
+    const { code } = req.body;
+    if (!code) {
+        return res.status(400).json({ success: false, message: 'Referral code is required' });
+    }
+
+    try {
+        const currentUser = await User.findById(req.user.id);
+        if (!currentUser) {
+            return res.status(404).json({ success: false, message: 'User not found' });
+        }
+
+        // Check if referral code is already applied
+        if (currentUser.referredBy) {
+            return res.status(400).json({ success: false, message: 'You have already applied a referral code' });
+        }
+
+        // Find referrer by their referralCode (case-insensitive search)
+        const referrer = await User.findOne({ 
+            referralCode: { $regex: new RegExp(`^${code.trim()}$`, 'i') } 
+        });
+
+        if (!referrer) {
+            return res.status(400).json({ success: false, message: 'Invalid referral code' });
+        }
+
+        // Cannot refer yourself
+        if (referrer._id.toString() === currentUser._id.toString()) {
+            return res.status(400).json({ success: false, message: 'You cannot use your own referral code' });
+        }
+
+        // Apply referral reward
+        // Crediting current user (referred user) ₹100
+        currentUser.referredBy = referrer._id;
+        currentUser.walletBalance = (currentUser.walletBalance || 0) + 100;
+        currentUser.walletTransactions.push({
+            amount: 100,
+            type: 'credit',
+            description: `Referral bonus (Code applied: ${referrer.referralCode})`,
+            date: new Date()
+        });
+
+        // Crediting referrer ₹100
+        referrer.walletBalance = (referrer.walletBalance || 0) + 100;
+        referrer.walletTransactions.push({
+            amount: 100,
+            type: 'credit',
+            description: `Referral reward (Referred user: ${currentUser.name})`,
+            date: new Date()
+        });
+
+        await currentUser.save();
+        await referrer.save();
+
+        res.json({ 
+            success: true, 
+            message: 'Referral applied successfully!', 
+            walletBalance: currentUser.walletBalance 
+        });
+
+    } catch (err) {
+        console.error('Apply Referral Error:', err.message);
+        res.status(500).json({ success: false, message: 'Server error' });
     }
 });
 
