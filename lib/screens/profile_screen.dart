@@ -27,6 +27,7 @@ class ProfileScreen extends StatefulWidget {
 class _ProfileScreenState extends State<ProfileScreen> {
   bool _isPickingImage = false;
   AppStateProvider? _appState;
+  String? _lastProfileError;
 
   @override
   void initState() {
@@ -41,21 +42,27 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   void _errorListener() {
     if (!mounted || _appState == null) return;
-    if (_appState!.profileError != null) {
-      if (_appState!.profileError!.contains('Unauthorized')) {
+    final currentError = _appState!.profileError;
+    if (currentError != null && currentError != _lastProfileError) {
+      _lastProfileError = currentError;
+      if (currentError.contains('Unauthorized')) {
         _handleLogout();
         return;
       }
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(_appState!.profileError!),
-            backgroundColor: Colors.red.shade800,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-      });
+      if (_appState!.selectedTab == 3) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(currentError),
+              backgroundColor: Colors.red.shade800,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        });
+      }
+    } else if (currentError == null) {
+      _lastProfileError = null;
     }
   }
 

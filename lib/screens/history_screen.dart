@@ -17,6 +17,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
   bool _isRefreshing = false;
   final Set<String> _expandedBookingIds = {};
   AppStateProvider? _appState;
+  String? _lastBookingsError;
 
   @override
   void initState() {
@@ -31,14 +32,21 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
   void _errorListener() {
     if (!mounted || _appState == null) return;
-    if (_appState!.bookingsError != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(_appState!.bookingsError!),
-          backgroundColor: Colors.red.shade800,
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+    final currentError = _appState!.bookingsError;
+    if (currentError != null && currentError != _lastBookingsError) {
+      _lastBookingsError = currentError;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(currentError),
+            backgroundColor: Colors.red.shade800,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      });
+    } else if (currentError == null) {
+      _lastBookingsError = null;
     }
   }
 

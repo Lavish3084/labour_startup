@@ -70,7 +70,7 @@ const UserSchema = new mongoose.Schema({
 
 UserSchema.pre('save', function(next) {
     if (!this.referralCode) {
-        this.referralCode = 'WILL' + this._id.toString().substring(0, 5).toUpperCase();
+        this.referralCode = 'WILL' + this._id.toString().substring(18).toUpperCase();
     }
     next();
 });

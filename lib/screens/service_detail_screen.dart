@@ -2,8 +2,8 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../models/service_category.dart';
-import '../utils/app_theme.dart';
-import 'service_request_screen.dart';
+import '../models/labourer.dart';
+import '../services/api_service.dart';
 import 'task_instructions_screen.dart';
 
 class ServiceDetailScreen extends StatefulWidget {
@@ -19,15 +19,69 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
   bool _isDescriptionExpanded = false;
+  
+  List<LabourerReview> _allReviews = [];
+  double _averageRating = 0.0;
+  int _totalReviews = 0;
+  bool _isLoadingReviews = true;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
+    _tabController.addListener(_handleTabSelection);
+    _loadLabourerData();
+  }
+
+  void _handleTabSelection() {
+    setState(() {});
+  }
+
+  Future<void> _loadLabourerData() async {
+    try {
+      final labourers = await ApiService.getLabourers();
+      final categoryLabourers = labourers.where(
+        (l) => l.category.trim().toLowerCase() == widget.category.name.trim().toLowerCase()
+      ).toList();
+
+      List<LabourerReview> reviews = [];
+      double totalRating = 0.0;
+      int ratingCount = 0;
+
+      for (var l in categoryLabourers) {
+        if (l.reviews.isNotEmpty) {
+          for (var r in l.reviews) {
+            reviews.add(r);
+            totalRating += r.rating;
+            ratingCount++;
+          }
+        }
+      }
+
+      // Sort reviews by date descending
+      reviews.sort((a, b) => b.date.compareTo(a.date));
+
+      if (mounted) {
+        setState(() {
+          _allReviews = reviews;
+          _totalReviews = ratingCount;
+          _averageRating = ratingCount > 0 ? (totalRating / ratingCount) : 0.0;
+          _isLoadingReviews = false;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error loading reviews: $e');
+      if (mounted) {
+        setState(() {
+          _isLoadingReviews = false;
+        });
+      }
+    }
   }
 
   @override
   void dispose() {
+    _tabController.removeListener(_handleTabSelection);
     _tabController.dispose();
     super.dispose();
   }
@@ -56,11 +110,12 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen>
                       const SizedBox(height: 24),
                       _buildTabs(),
                       const SizedBox(height: 20),
-                      _buildTabContent(),
+                      _tabController.index == 0
+                          ? _buildAboutSection()
+                          : _buildReviewsSection(),
                     ],
                   ),
                 ),
-                const SizedBox(height: 100), // Spacing for sticky bottom bar
               ],
             ),
           ),
@@ -87,11 +142,9 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen>
               ),
             ),
           ),
-
-          // Sticky Bottom Bar
-          _buildBottomActionCard(),
         ],
       ),
+      bottomNavigationBar: _buildBottomActionCard(),
     );
   }
 
@@ -130,20 +183,26 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen>
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(
-          widget.category.name,
-          style: GoogleFonts.inter(
-            fontSize: 28,
-            fontWeight: FontWeight.w700,
-            color: Colors.black,
+        Expanded(
+          child: Text(
+            widget.category.name,
+            overflow: TextOverflow.ellipsis,
+            style: GoogleFonts.inter(
+              fontSize: 28,
+              fontWeight: FontWeight.w700,
+              color: Colors.black,
+            ),
           ),
         ),
+        const SizedBox(width: 12),
         Row(
           children: [
             const Icon(Icons.star, color: Color(0xFFFCD541), size: 20),
             const SizedBox(width: 4),
             Text(
-              '4.2 (186 reviews)',
+              _isLoadingReviews
+                  ? '... (...)'
+                  : '${_averageRating > 0 ? _averageRating.toStringAsFixed(1) : "0.0"} ($_totalReviews ${_totalReviews == 1 ? "review" : "reviews"})',
               style: GoogleFonts.inter(
                 fontSize: 14,
                 color: Colors.grey[600],
@@ -176,12 +235,185 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen>
     );
   }
 
-  Widget _buildTabContent() {
-    return SizedBox(
-      height: 600, // Fixed height for tab content scrolling
-      child: TabBarView(
-        controller: _tabController,
-        children: [_buildAboutSection(), _buildReviewsPlaceholder()],
+  Widget _buildReviewsSection() {
+    if (_isLoadingReviews) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.symmetric(vertical: 40.0),
+          child: CircularProgressIndicator(
+            valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF4A9782)),
+          ),
+        ),
+      );
+    }
+
+    if (_allReviews.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 40.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: const BoxDecoration(
+                  color: Color(0xFFE8F3F1),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.rate_review_outlined,
+                  color: Color(0xFF4A9782),
+                  size: 40,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'No reviews yet',
+                style: GoogleFonts.inter(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.black,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Be the first to book and rate this service!',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.inter(
+                  fontSize: 12,
+                  color: Colors.grey[600],
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'Customer Reviews ($_totalReviews)',
+              style: GoogleFonts.inter(
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+                color: Colors.black,
+              ),
+            ),
+            Row(
+              children: [
+                const Icon(Icons.star, color: Color(0xFFFCD541), size: 18),
+                const SizedBox(width: 4),
+                Text(
+                  _averageRating.toStringAsFixed(1),
+                  style: GoogleFonts.inter(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.black,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        ..._allReviews.map((review) => _buildReviewCard(review)),
+      ],
+    );
+  }
+
+  Widget _buildReviewCard(LabourerReview review) {
+    final dateStr = '${review.date.day.toString().padLeft(2, '0')}/${review.date.month.toString().padLeft(2, '0')}/${review.date.year}';
+    
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey[200]!),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.02),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  CircleAvatar(
+                    radius: 18,
+                    backgroundColor: const Color(0xFFE8F3F1),
+                    child: Text(
+                      review.userName.isNotEmpty ? review.userName[0].toUpperCase() : 'C',
+                      style: GoogleFonts.inter(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: const Color(0xFF4A9782),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        review.userName,
+                        style: GoogleFonts.inter(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.black,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Row(
+                        children: List.generate(5, (index) {
+                          return Icon(
+                            index < review.rating.floor()
+                                ? Icons.star
+                                : Icons.star_border,
+                            color: const Color(0xFFFCD541),
+                            size: 14,
+                          );
+                        }),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              Text(
+                dateStr,
+                style: GoogleFonts.inter(
+                  fontSize: 11,
+                  color: Colors.grey[500],
+                  fontWeight: FontWeight.w400,
+                ),
+              ),
+            ],
+          ),
+          if (review.comment.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            Text(
+              review.comment,
+              style: GoogleFonts.inter(
+                fontSize: 13,
+                color: Colors.grey[800],
+                height: 1.4,
+              ),
+            ),
+          ],
+        ],
       ),
     );
   }
@@ -322,101 +554,95 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen>
     );
   }
 
-  Widget _buildReviewsPlaceholder() {
-    return Center(
-      child: Text(
-        'No reviews yet',
-        style: GoogleFonts.inter(color: Colors.grey),
-      ),
-    );
-  }
+
 
   Widget _buildBottomActionCard() {
-    return Positioned(
-      bottom: 0,
-      left: 0,
-      right: 0,
-      child: Container(
-        height: 100,
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-        decoration: BoxDecoration(
-          color: const Color(0xFFF3F3F3),
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(40)),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 10,
-              offset: const Offset(0, -5),
-            ),
-          ],
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Starting from',
-                  style: GoogleFonts.inter(
-                    fontSize: 14,
-                    color: Colors.grey[600],
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                Text(
-                  '₹${widget.category.dailyRate.toInt()}/Day',
-                  style: GoogleFonts.inter(
-                    fontSize: 24,
-                    fontWeight: FontWeight.w900,
-                    color: const Color(0xFF4A9782),
-                  ),
-                ),
-              ],
-            ),
-            ElevatedButton.icon(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder:
-                        (context) =>
-                            TaskInstructionsScreen(category: widget.category),
-                  ),
-                );
-              },
-              icon: Container(
-                padding: const EdgeInsets.all(2),
-                decoration: const BoxDecoration(
-                  color: Colors.white,
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.check,
-                  size: 16,
-                  color: Color(0xFF4A9782),
+    final double bottomPadding = MediaQuery.of(context).padding.bottom;
+    return Container(
+      height: 100 + bottomPadding,
+      padding: EdgeInsets.only(
+        left: 24,
+        right: 24,
+        top: 16,
+        bottom: 16 + bottomPadding,
+      ),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF3F3F3),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(40)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, -5),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Starting from',
+                style: GoogleFonts.inter(
+                  fontSize: 14,
+                  color: Colors.grey[600],
+                  fontWeight: FontWeight.w500,
                 ),
               ),
-              label: const Text('Book Now'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF4A9782),
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 24,
-                  vertical: 14,
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                textStyle: GoogleFonts.inter(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
+              Text(
+                '₹${widget.category.dailyRate.toInt()}/Day',
+                style: GoogleFonts.inter(
+                  fontSize: 24,
+                  fontWeight: FontWeight.w900,
+                  color: const Color(0xFF4A9782),
                 ),
               ),
+            ],
+          ),
+          ElevatedButton.icon(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder:
+                      (context) =>
+                          TaskInstructionsScreen(category: widget.category),
+                ),
+              );
+            },
+            icon: Container(
+              padding: const EdgeInsets.all(2),
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.check,
+                size: 16,
+                color: Color(0xFF4A9782),
+              ),
             ),
-          ],
-        ),
+            label: const Text('Book Now'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF4A9782),
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(
+                horizontal: 24,
+                vertical: 14,
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              textStyle: GoogleFonts.inter(
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

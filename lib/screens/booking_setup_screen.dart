@@ -11,6 +11,8 @@ import 'package:razorpay_flutter/razorpay_flutter.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:provider/provider.dart';
 import '../providers/app_state_provider.dart';
+import '../widgets/concave_header_clipper.dart';
+import '../widgets/pattern_painter.dart';
 
 const String gpaySvg = '''
 <svg height="800px" width="800px" version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" 
@@ -284,34 +286,94 @@ class _BookingSetupScreenState extends State<BookingSetupScreen> {
     }
   }
 
+  static const double _headerHeight = 272;
+  /// White sheet starts below the header title (no overlap on load).
+  static const double _sheetOverlapTop = 224;
+
   @override
   Widget build(BuildContext context) {
+    final bottomBarPadding =
+        120.0 + MediaQuery.of(context).padding.bottom;
+
     return Scaffold(
-      backgroundColor: Colors.white,
-      body: Column(
-        children: [
-          Expanded(
-            child: SingleChildScrollView(
-              physics: const BouncingScrollPhysics(),
-              child: Column(
-                children: [
-                  _buildHeader(),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 20),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        _buildBookingDetailsCard(),
-                        const SizedBox(height: 20),
-                        _buildWalletSection(),
-                      ],
-                    ),
-                  ),
-                ],
+      backgroundColor: const Color(0xFF2E876E),
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          final viewportHeight = constraints.maxHeight;
+
+          return Stack(
+            children: [
+              Positioned(
+                top: 0,
+                left: 0,
+                right: 0,
+                height: _headerHeight,
+                child: _buildHeader(),
               ),
+              Positioned.fill(
+                child: SingleChildScrollView(
+                  physics: const ClampingScrollPhysics(),
+                  child: Column(
+                    children: [
+                      SizedBox(
+                        height: _sheetOverlapTop,
+                        child: const IgnorePointer(),
+                      ),
+                      _buildOverlappingSheet(
+                        bottomPadding: bottomBarPadding,
+                        minHeight: viewportHeight - _sheetOverlapTop,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              _buildHeaderBackButton(),
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: 0,
+                child: _buildBottomBar(),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildOverlappingSheet({
+    required double bottomPadding,
+    required double minHeight,
+  }) {
+    return Container(
+      width: double.infinity,
+      constraints: BoxConstraints(minHeight: minHeight),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.1),
+            blurRadius: 20,
+            offset: const Offset(0, -6),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          const SizedBox(height: 12),
+          Container(
+            width: 40,
+            height: 4,
+            decoration: BoxDecoration(
+              color: const Color(0xFFD9D9D9),
+              borderRadius: BorderRadius.circular(2),
             ),
           ),
-          _buildBottomBar(),
+          Padding(
+            padding: EdgeInsets.fromLTRB(20, 20, 20, bottomPadding),
+            child: _buildBookingDetailsCard(),
+          ),
         ],
       ),
     );
@@ -377,201 +439,376 @@ class _BookingSetupScreenState extends State<BookingSetupScreen> {
     );
   }
 
-  Widget _buildHeader() {
-    return Container(
-      width: double.infinity,
-      height: 240,
-      decoration: const BoxDecoration(
-        color: Color(0xFF2E876E),
-        borderRadius: BorderRadius.only(
-          bottomLeft: Radius.circular(30),
-          bottomRight: Radius.circular(30),
+  Widget _buildHeaderBackButton() {
+    return Positioned(
+      top: MediaQuery.of(context).padding.top + 10,
+      left: 16,
+      child: Material(
+        color: Colors.transparent,
+        child: CircleAvatar(
+          backgroundColor: Colors.white,
+          radius: 20,
+          child: IconButton(
+            icon: const Icon(Icons.arrow_back, color: Color(0xFF2E876E), size: 20),
+            onPressed: () => Navigator.pop(context),
+          ),
         ),
       ),
-      child: Stack(
-        children: [
-          Positioned(
-            top: MediaQuery.of(context).padding.top + 10,
-            left: 16,
-            child: CircleAvatar(
-              backgroundColor: Colors.white,
-              radius: 20,
-              child: IconButton(
-                icon: const Icon(Icons.arrow_back, color: Color(0xFF2E876E), size: 20),
-                onPressed: () => Navigator.pop(context),
+    );
+  }
+
+  Widget _buildHeader() {
+    return ClipPath(
+      clipper: const ConcaveBottomHeaderClipper(radius: 40),
+      child: Container(
+        width: double.infinity,
+        height: _headerHeight,
+        color: const Color(0xFF2E876E),
+        child: Stack(
+          children: [
+            Positioned.fill(
+              child: CustomPaint(
+                painter: DotPatternPainter(),
               ),
             ),
-          ),
-          Positioned(
-            bottom: 30,
-            left: 20,
-            right: 20,
-            child: Column(
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(Icons.check_circle_outline, color: Color(0xFF2E876E), size: 16),
-                      const SizedBox(width: 6),
-                      Text(
-                        '100% Refundable*',
-                        style: GoogleFonts.inter(
-                          color: const Color(0xFF2E876E),
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
+            Positioned(
+              bottom: 48,
+              left: 20,
+              right: 20,
+              child: Column(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.check_circle_outline, color: Color(0xFF2E876E), size: 16),
+                        const SizedBox(width: 6),
+                        Text(
+                          '100% Refundable*',
+                          style: GoogleFonts.inter(
+                            color: const Color(0xFF2E876E),
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  _finalFeeAmount <= 0 
-                    ? 'Confirm Your\n${widget.category.name} Booking'
-                    : 'Secure Your\nBooking For ₹$_finalFeeAmount',
-                  textAlign: TextAlign.center,
-                  style: GoogleFonts.inter(
-                    fontSize: 28,
-                    fontWeight: FontWeight.w800,
-                    color: Colors.white,
-                    height: 1.2,
+                  const SizedBox(height: 16),
+                  Text(
+                    _finalFeeAmount <= 0
+                        ? 'Confirm Your\n${widget.category.name} Booking'
+                        : 'Secure Your\nBooking For ₹$_finalFeeAmount',
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.inter(
+                      fontSize: 28,
+                      fontWeight: FontWeight.w800,
+                      color: Colors.white,
+                      height: 1.2,
+                    ),
                   ),
-                ),
-              ],
+                  const SizedBox(height: 16),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildBookingDetailsCard() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _buildDetailsSection(),
+        _buildTipSection(),
+        _buildPaymentSummarySection(),
+      ],
+    );
+  }
+
+  Widget _buildDetailsSection() {
     return Container(
+      margin: const EdgeInsets.only(bottom: 20),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: const Color(0xFFF4F4F4),
-        borderRadius: BorderRadius.circular(20),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+        border: Border.all(color: const Color(0xFFF0F0F0)),
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Padding(
-            padding: const EdgeInsets.all(20.0),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'Review Booking Details :',
-                  style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w700, color: Colors.black87),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Booking Details',
+                style: GoogleFonts.inter(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.black87,
                 ),
-                Text(
-                  'Edit',
-                  style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600, color: const Color(0xFF2E876E)),
-                ),
-              ],
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20.0),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildDetailItem('Service', widget.workType.isNotEmpty ? widget.workType : widget.category.name),
-                      const SizedBox(height: 20),
-                      _buildDetailItem('Date', DateFormat('dd MMMM').format(widget.scheduledTime)),
-                      const SizedBox(height: 20),
-                      _buildDetailItem('Arrival Time', DateFormat('hh:mm a').format(widget.scheduledTime)),
-                    ],
+              ),
+              GestureDetector(
+                onTap: () => Navigator.pop(context),
+                child: Text(
+                  'Change',
+                  style: GoogleFonts.inter(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: const Color(0xFF2E876E),
                   ),
                 ),
-                Container(
-                  width: 1,
-                  height: 130, // Approximate height for division
-                  color: Colors.black12,
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          const Divider(height: 1, color: Color(0xFFF0F0F0)),
+          const SizedBox(height: 16),
+          _buildDetailsRow(Icons.engineering_outlined, 'Service', widget.workType.isNotEmpty ? widget.workType : widget.category.name),
+          const SizedBox(height: 12),
+          _buildDetailsRow(Icons.calendar_today_outlined, 'Date & Time', '${DateFormat('dd MMMM yyyy').format(widget.scheduledTime)} • ${DateFormat('hh:mm a').format(widget.scheduledTime)}'),
+          const SizedBox(height: 12),
+          _buildDetailsRow(Icons.people_outline_rounded, 'Workers Required', '${widget.numberOfWorkers.toString().padLeft(2, '0')} Worker${widget.numberOfWorkers > 1 ? "s" : ""}'),
+          const SizedBox(height: 12),
+          _buildDetailsRow(Icons.access_time_rounded, 'Duration', widget.bookingMode == 'Hourly' ? '${widget.numberOfHours} Hours' : 'Daily'),
+          const SizedBox(height: 12),
+          _buildDetailsRow(Icons.location_on_outlined, 'Work Location', widget.address, maxLines: 3),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDetailsRow(IconData icon, String label, String value, {int maxLines = 1}) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: const Color(0xFFF1FAF7),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(icon, size: 18, color: const Color(0xFF2E876E)),
+        ),
+        const SizedBox(width: 14),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: GoogleFonts.inter(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.black54,
                 ),
-                const SizedBox(width: 20),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildDetailItem('No of Workers', widget.numberOfWorkers.toString().padLeft(2, '0')),
-                      const SizedBox(height: 20),
-                      _buildDetailItem('Duration', widget.bookingMode == 'Hourly' ? '${widget.numberOfHours} Hours' : 'Daily'),
-                      const SizedBox(height: 20),
-                      _buildDetailItem('Location', widget.address),
-                    ],
+              ),
+              const SizedBox(height: 2),
+              Text(
+                value,
+                maxLines: maxLines,
+                overflow: maxLines == 1 ? TextOverflow.ellipsis : null,
+                style: GoogleFonts.inter(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.black87,
+                  height: maxLines > 1 ? 1.3 : null,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTipSection() {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 20),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+        border: Border.all(color: const Color(0xFFF0F0F0)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Text(
+                'Support Your Worker',
+                style: GoogleFonts.inter(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.black87,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFE8F5E9),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Text(
+                  '100% to worker',
+                  style: GoogleFonts.inter(
+                    fontSize: 9,
+                    fontWeight: FontWeight.w600,
+                    color: const Color(0xFF2E876E),
                   ),
                 ),
-              ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Add a tip to show appreciation for their hard work and support.',
+            style: GoogleFonts.inter(
+              fontSize: 12,
+              color: Colors.black54,
             ),
           ),
-          const SizedBox(height: 20),
-          const Divider(height: 1, color: Colors.black12),
-          Padding(
-            padding: const EdgeInsets.all(20.0),
-            child: Column(
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('Total Amount :', style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w700, color: Colors.black87)),
-                        const SizedBox(height: 4),
-                        Text('Pay to worker after work completion', style: GoogleFonts.inter(fontSize: 11, color: Colors.black54)),
-                      ],
-                    ),
-                    Text(
-                      '₹${widget.amount.toInt()}',
-                      style: GoogleFonts.inter(fontSize: 28, fontWeight: FontWeight.w800, color: const Color(0xFF4A9782)),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 20),
-                Row(
-                  children: [
-                    Text('Add Tip :', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w500, color: Colors.black87)),
-                    const SizedBox(width: 12),
-                    _buildTipChip(50),
-                    const SizedBox(width: 8),
-                    _buildTipChip(100),
-                    const SizedBox(width: 8),
-                    _buildCustomTipChip(),
-                  ],
-                ),
-              ],
-            ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              _buildTipChip(50),
+              const SizedBox(width: 8),
+              _buildTipChip(100),
+              const SizedBox(width: 8),
+              _buildCustomTipChip(),
+            ],
           ),
         ],
       ),
     );
   }
 
-  Widget _buildDetailItem(String label, String value) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+  Widget _buildPaymentSummarySection() {
+    final workerAmount = widget.amount.toInt();
+    final bookingFee = _finalFeeAmount;
+    final totalPayable = workerAmount + bookingFee + _selectedTip;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 20),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+        border: Border.all(color: const Color(0xFFF0F0F0)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Payment Summary',
+            style: GoogleFonts.inter(
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+              color: Colors.black87,
+            ),
+          ),
+          const SizedBox(height: 16),
+          const Divider(height: 1, color: Color(0xFFF0F0F0)),
+          const SizedBox(height: 16),
+          _buildSummaryItem('Booking Fee (Pay Now)', '₹$bookingFee', isHighlight: true),
+          const SizedBox(height: 12),
+          _buildSummaryItem('Service Charges (Pay Worker Later)', '₹$workerAmount'),
+          if (_selectedTip > 0) ...[
+            const SizedBox(height: 12),
+            _buildSummaryItem('Worker Tip (Pay Worker Later)', '₹$_selectedTip'),
+          ],
+          const SizedBox(height: 16),
+          const Divider(height: 1, color: Color(0xFFF0F0F0)),
+          const SizedBox(height: 16),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Total Booking Value',
+                    style: GoogleFonts.inter(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.black87,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    'Incl. taxes and platform charges',
+                    style: GoogleFonts.inter(
+                      fontSize: 11,
+                      color: Colors.black54,
+                    ),
+                  ),
+                ],
+              ),
+              Text(
+                '₹$totalPayable',
+                style: GoogleFonts.inter(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w800,
+                  color: const Color(0xFF2E876E),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSummaryItem(String label, String value, {bool isHighlight = false}) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(
           label,
-          style: GoogleFonts.inter(fontSize: 10, color: Colors.black87, fontWeight: FontWeight.w500),
+          style: GoogleFonts.inter(
+            fontSize: 13,
+            fontWeight: isHighlight ? FontWeight.w600 : FontWeight.w500,
+            color: isHighlight ? const Color(0xFF2E876E) : Colors.black87,
+          ),
         ),
-        const SizedBox(height: 4),
         Text(
           value,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: GoogleFonts.inter(fontSize: 14, color: Colors.black, fontWeight: FontWeight.w400),
+          style: GoogleFonts.inter(
+            fontSize: 14,
+            fontWeight: FontWeight.w700,
+            color: isHighlight ? const Color(0xFF2E876E) : Colors.black87,
+          ),
         ),
       ],
     );
@@ -626,6 +863,218 @@ class _BookingSetupScreenState extends State<BookingSetupScreen> {
     );
   }
 
+  void _showPaymentSelectionSheet() {
+    final appState = Provider.of<AppStateProvider>(context, listen: false);
+    final walletBalance = appState.walletBalance;
+    final hasEnoughBalance = walletBalance >= _finalFeeAmount;
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) {
+        return Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+          ),
+          padding: EdgeInsets.fromLTRB(24, 16, 24, MediaQuery.of(context).padding.bottom + 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[300],
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 24),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Choose Payment Method',
+                    style: GoogleFonts.inter(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.black,
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () => Navigator.pop(context),
+                    icon: const Icon(Icons.close, color: Colors.black54),
+                    style: IconButton.styleFrom(
+                      backgroundColor: Colors.grey[100],
+                      padding: const EdgeInsets.all(8),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Select how you would like to secure your booking fee of ₹$_finalFeeAmount',
+                style: GoogleFonts.inter(
+                  fontSize: 13,
+                  color: Colors.grey[600],
+                ),
+              ),
+              const SizedBox(height: 24),
+              
+              // Pay with Wallet Option
+              InkWell(
+                onTap: !hasEnoughBalance
+                    ? null
+                    : () {
+                        Navigator.pop(context);
+                        setState(() {
+                          _useWallet = true;
+                        });
+                        _handleBookNow();
+                      },
+                borderRadius: BorderRadius.circular(16),
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: hasEnoughBalance ? const Color(0xFFE5E7EB) : Colors.grey[200]!,
+                    ),
+                    color: hasEnoughBalance ? Colors.white : const Color(0xFFF9FAFB),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: hasEnoughBalance
+                              ? const Color(0xFFE8F5E9)
+                              : Colors.grey[100],
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          Icons.account_balance_wallet_rounded,
+                          color: hasEnoughBalance
+                              ? const Color(0xFF2E876E)
+                              : Colors.grey[400],
+                          size: 24,
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Pay with Wallet',
+                              style: GoogleFonts.inter(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w600,
+                                color: hasEnoughBalance ? Colors.black87 : Colors.grey[400],
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              hasEnoughBalance
+                                  ? 'Balance: ₹${walletBalance.toStringAsFixed(2)}'
+                                  : 'Insufficient Balance: ₹${walletBalance.toStringAsFixed(2)}',
+                              style: GoogleFonts.inter(
+                                fontSize: 12,
+                                color: hasEnoughBalance
+                                    ? const Color(0xFF4A9782)
+                                    : Colors.red[400],
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Icon(
+                        Icons.arrow_forward_ios,
+                        size: 14,
+                        color: hasEnoughBalance ? Colors.black54 : Colors.grey[300],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // Razorpay / Continue to Pay Option
+              InkWell(
+                onTap: () {
+                  Navigator.pop(context);
+                  setState(() {
+                    _useWallet = false;
+                  });
+                  _handleBookNow();
+                },
+                borderRadius: BorderRadius.circular(16),
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: const Color(0xFFE5E7EB)),
+                    color: Colors.white,
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: const BoxDecoration(
+                          color: Color(0xFFFFF4EB),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.payment_rounded,
+                          color: Color(0xFFFF6B00),
+                          size: 24,
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Continue to Pay',
+                              style: GoogleFonts.inter(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.black87,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'UPI, Cards, NetBanking, etc. via Razorpay',
+                              style: GoogleFonts.inter(
+                                fontSize: 12,
+                                color: Colors.grey[500],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const Icon(
+                        Icons.arrow_forward_ios,
+                        size: 14,
+                        color: Colors.black54,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   Widget _buildBottomBar() {
     return Container(
       color: const Color(0xFFF9F9F9),
@@ -633,6 +1082,7 @@ class _BookingSetupScreenState extends State<BookingSetupScreen> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
+          /*
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -654,6 +1104,7 @@ class _BookingSetupScreenState extends State<BookingSetupScreen> {
             ],
           ),
           const SizedBox(height: 20),
+          */
           Row(
             children: [
               Expanded(
@@ -661,7 +1112,7 @@ class _BookingSetupScreenState extends State<BookingSetupScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(_useWallet ? 'Wallet Payment' : 'Booking Fee', style: GoogleFonts.inter(fontSize: 12, color: Colors.black54)),
+                    Text('Booking Fee', style: GoogleFonts.inter(fontSize: 12, color: Colors.black54)),
                     const SizedBox(height: 4),
                     Text('₹$_finalFeeAmount', style: GoogleFonts.inter(fontSize: 24, fontWeight: FontWeight.w800, color: const Color(0xFF4A9782))),
                   ],
@@ -672,7 +1123,15 @@ class _BookingSetupScreenState extends State<BookingSetupScreen> {
                 child: SizedBox(
                   height: 50,
                   child: ElevatedButton(
-                    onPressed: _isLoading ? null : _handleBookNow,
+                    onPressed: _isLoading
+                        ? null
+                        : () {
+                            if (_finalFeeAmount <= 0) {
+                              _handleBookNow();
+                            } else {
+                              _showPaymentSelectionSheet();
+                            }
+                          },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF4A9782),
                       foregroundColor: Colors.white,
@@ -685,7 +1144,7 @@ class _BookingSetupScreenState extends State<BookingSetupScreen> {
                             height: 24,
                             child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
                         : Text(
-                            _finalFeeAmount <= 0 ? 'Confirm Booking' : 'Pay Now',
+                            'Confirm Booking',
                             style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w600),
                           ),
                   ),
@@ -695,17 +1154,6 @@ class _BookingSetupScreenState extends State<BookingSetupScreen> {
           )
         ],
       ),
-    );
-  }
-  
-  Widget _buildMockWalletIcon() {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        const Icon(Icons.account_balance_wallet_outlined, color: Color(0xFF4A9782), size: 16),
-        const SizedBox(width: 4),
-        Text('Wallet', style: TextStyle(color: Colors.black87, fontWeight: FontWeight.w600, fontSize: 12)),
-      ],
     );
   }
 }

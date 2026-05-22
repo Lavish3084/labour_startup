@@ -17,6 +17,7 @@ class AddressSelectionSheet extends StatefulWidget {
 class _AddressSelectionSheetState extends State<AddressSelectionSheet> {
   bool _isLoading = false;
   LocationProvider? _locationProvider;
+  String? _lastLocationError;
 
   @override
   void initState() {
@@ -32,14 +33,21 @@ class _AddressSelectionSheetState extends State<AddressSelectionSheet> {
 
   void _errorListener() {
     if (!mounted || _locationProvider == null) return;
-    if (_locationProvider!.error != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(_locationProvider!.error!),
-          backgroundColor: Colors.red.shade800,
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+    final currentError = _locationProvider!.error;
+    if (currentError != null && currentError != _lastLocationError) {
+      _lastLocationError = currentError;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(currentError),
+            backgroundColor: Colors.red.shade800,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      });
+    } else if (currentError == null) {
+      _lastLocationError = null;
     }
   }
 

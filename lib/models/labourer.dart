@@ -1,3 +1,39 @@
+class LabourerReview {
+  final String? userId;
+  final String userName;
+  final double rating;
+  final String comment;
+  final DateTime date;
+
+  LabourerReview({
+    this.userId,
+    required this.userName,
+    required this.rating,
+    required this.comment,
+    required this.date,
+  });
+
+  factory LabourerReview.fromJson(Map<String, dynamic> json) {
+    return LabourerReview(
+      userId: json['user']?.toString(),
+      userName: json['userName'] ?? 'Customer',
+      rating: (json['rating'] ?? 0).toDouble(),
+      comment: json['comment'] ?? '',
+      date: json['date'] != null ? DateTime.parse(json['date']) : DateTime.now(),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'user': userId,
+      'userName': userName,
+      'rating': rating,
+      'comment': comment,
+      'date': date.toIso8601String(),
+    };
+  }
+}
+
 class Labourer {
   final String id;
   final String name;
@@ -12,6 +48,7 @@ class Labourer {
   final int experienceYears;
   final String? upiId;
   final String? phoneNumber;
+  final List<LabourerReview> reviews;
 
   Labourer({
     required this.id,
@@ -27,6 +64,7 @@ class Labourer {
     required this.experienceYears,
     this.upiId,
     this.phoneNumber,
+    this.reviews = const [],
   });
 
   factory Labourer.fromJson(Map<String, dynamic> json) {
@@ -43,7 +81,12 @@ class Labourer {
       skills: List<String>.from(json['skills'] ?? []),
       experienceYears: json['experienceYears'] ?? 0,
       upiId: json['upiId'],
-      phoneNumber: json['user'] != null ? json['user']['phoneNumber'] : json['phoneNumber'],
+      phoneNumber: (json['user'] is Map) ? json['user']['phoneNumber'] : json['phoneNumber'],
+      reviews: json['reviews'] != null
+          ? (json['reviews'] as List)
+              .map((item) => LabourerReview.fromJson(item))
+              .toList()
+          : [],
     );
   }
 
@@ -62,6 +105,7 @@ class Labourer {
       'experienceYears': experienceYears,
       'upiId': upiId,
       'phoneNumber': phoneNumber,
+      'reviews': reviews.map((r) => r.toJson()).toList(),
     };
   }
 }

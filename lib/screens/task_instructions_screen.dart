@@ -8,6 +8,7 @@ import 'package:record/record.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:audioplayers/audioplayers.dart';
 import '../models/service_category.dart';
+import '../widgets/concave_header_clipper.dart';
 import 'service_request_screen.dart';
 
 enum DescribeMode { photo, voice, text }
@@ -21,15 +22,19 @@ class TaskInstructionsScreen extends StatefulWidget {
   State<TaskInstructionsScreen> createState() => _TaskInstructionsScreenState();
 }
 
-class _TaskInstructionsScreenState extends State<TaskInstructionsScreen> {
+class _TaskInstructionsScreenState extends State<TaskInstructionsScreen>
+    with SingleTickerProviderStateMixin {
   int _workerCount = 1;
   String? _selectedWorkType;
-  final List<String> _workTypes = [
+  late final AnimationController _selectorAnimController;
+  late final Animation<double> _chevronRotation;
+
+  static const List<String> _workTypes = [
     'Emergency Repair',
     'Standard Maintenance',
     'New Installation',
     'Periodic Checkup',
-    'Other (please specify)'
+    'Other (please specify)',
   ];
   final List<String> _taskImagesBase64 = [];
   String? _taskAudioBase64;
@@ -50,6 +55,13 @@ class _TaskInstructionsScreenState extends State<TaskInstructionsScreen> {
   @override
   void initState() {
     super.initState();
+    _selectorAnimController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 280),
+    );
+    _chevronRotation = Tween<double>(begin: 0, end: 0.5).animate(
+      CurvedAnimation(parent: _selectorAnimController, curve: Curves.easeOutCubic),
+    );
     _audioPlayer.onPlayerStateChanged.listen((state) {
       if (mounted) {
         setState(() {
@@ -61,10 +73,27 @@ class _TaskInstructionsScreenState extends State<TaskInstructionsScreen> {
 
   @override
   void dispose() {
+    _selectorAnimController.dispose();
     _audioRecorder.dispose();
     _audioPlayer.dispose();
     _msgController.dispose();
     super.dispose();
+  }
+
+  Future<void> _showWorkTypePicker() async {
+    final picked = await showModalBottomSheet<String>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) => _WorkTypePickerSheet(
+        options: _workTypes,
+        selected: _selectedWorkType,
+      ),
+    );
+    if (picked != null && mounted) {
+      setState(() => _selectedWorkType = picked);
+      _selectorAnimController.forward();
+    }
   }
 
   Future<void> _showImagePickerBottomSheet() async {
@@ -225,108 +254,119 @@ class _TaskInstructionsScreenState extends State<TaskInstructionsScreen> {
   }
 
   Widget _buildHeader() {
-    return Container(
-      width: double.infinity,
-      height: 280,
-      decoration: const BoxDecoration(
-        color: Color(0xFF2E876E),
-        borderRadius: BorderRadius.only(
-          bottomLeft: Radius.circular(40),
-          bottomRight: Radius.circular(40),
-        ),
-      ),
-      child: Stack(
-        children: [
-          // Subtle dotted pattern
-          Positioned.fill(
-            child: CustomPaint(
-              painter: DotPatternPainter(),
+    return ClipPath(
+      clipper: const ConcaveBottomHeaderClipper(radius: 40),
+      child: Container(
+        width: double.infinity,
+        height: 280,
+        color: const Color(0xFF2E876E),
+        child: Stack(
+          children: [
+            // Subtle dotted pattern
+            Positioned.fill(
+              child: CustomPaint(
+                painter: DotPatternPainter(),
+              ),
             ),
-          ),
-          SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  GestureDetector(
-                    onTap: () => Navigator.pop(context),
-                    child: Container(
-                      height: 38,
-                      width: 38,
-                      decoration: const BoxDecoration(
-                        color: Colors.white,
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.arrow_back, 
-                        color: Color(0xFF2E876E), 
-                        size: 20,
-                      ),
-                    ),
-                  ),
-                  const Spacer(),
-                  Center(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 24),
-                      child: Text(
-                        'Help the workers\nunderstand the task.',
-                        textAlign: TextAlign.center,
-                        style: GoogleFonts.inter(
-                          fontSize: 28,
-                          fontWeight: FontWeight.w700,
+            SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    GestureDetector(
+                      onTap: () => Navigator.pop(context),
+                      child: Container(
+                        height: 38,
+                        width: 38,
+                        decoration: const BoxDecoration(
                           color: Colors.white,
-                          height: 1.3,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.arrow_back,
+                          color: Color(0xFF2E876E),
+                          size: 20,
                         ),
                       ),
                     ),
-                  ),
-                  const Spacer(),
-                ],
+                    const Spacer(),
+                    Center(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 24),
+                        child: Text(
+                          'Help the workers\nunderstand the task.',
+                          textAlign: TextAlign.center,
+                          style: GoogleFonts.inter(
+                            fontSize: 28,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white,
+                            height: 1.3,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const Spacer(),
+                  ],
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildWorkTypeDropdown() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 6),
-      decoration: BoxDecoration(
-        color: const Color(0xFFEBEBEB),
+    final hasSelection = _selectedWorkType != null;
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: _showWorkTypePicker,
         borderRadius: BorderRadius.circular(30),
-      ),
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton<String>(
-          value: _selectedWorkType,
-          hint: Text(
-            'Select most relevant work type *',
-            style: GoogleFonts.inter(
-              color: const Color(0xFF6F6F6F),
-              fontSize: 15,
-              fontWeight: FontWeight.w500,
-            ),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 280),
+          curve: Curves.easeOutCubic,
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+          decoration: BoxDecoration(
+            color: const Color(0xFFEBEBEB),
+            borderRadius: BorderRadius.circular(30),
+            border: hasSelection
+                ? Border.all(color: const Color(0xFF4A9782), width: 1.2)
+                : null,
           ),
-          isExpanded: true,
-          icon: const Icon(Icons.arrow_drop_down, color: Colors.black, size: 28),
-          items: _workTypes.map((String value) {
-            return DropdownMenuItem<String>(
-              value: value,
-              child: Text(
-                value, 
-                style: GoogleFonts.inter(
-                  fontSize: 15,
-                  color: Colors.black,
-                  fontWeight: FontWeight.w500,
+          child: Row(
+            children: [
+              Expanded(
+                child: AnimatedDefaultTextStyle(
+                  duration: const Duration(milliseconds: 220),
+                  style: GoogleFonts.inter(
+                    fontSize: 15,
+                    fontWeight: hasSelection ? FontWeight.w600 : FontWeight.w500,
+                    color: hasSelection
+                        ? Colors.black
+                        : const Color(0xFF6F6F6F),
+                  ),
+                  child: Text(
+                    hasSelection
+                        ? _selectedWorkType!
+                        : 'Select most relevant work type *',
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
               ),
-            );
-          }).toList(),
-          onChanged: (newValue) {
-            setState(() => _selectedWorkType = newValue);
-          },
+              RotationTransition(
+                turns: _chevronRotation,
+                child: const Icon(
+                  Icons.keyboard_arrow_down_rounded,
+                  color: Colors.black87,
+                  size: 28,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -829,6 +869,164 @@ class _TaskInstructionsScreenState extends State<TaskInstructionsScreen> {
             fontWeight: FontWeight.bold,
             fontSize: 16,
             letterSpacing: 0.8,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _WorkTypePickerSheet extends StatefulWidget {
+  final List<String> options;
+  final String? selected;
+
+  const _WorkTypePickerSheet({
+    required this.options,
+    required this.selected,
+  });
+
+  @override
+  State<_WorkTypePickerSheet> createState() => _WorkTypePickerSheetState();
+}
+
+class _WorkTypePickerSheetState extends State<_WorkTypePickerSheet>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _entryController;
+
+  @override
+  void initState() {
+    super.initState();
+    _entryController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 520),
+    )..forward();
+  }
+
+  @override
+  void dispose() {
+    _entryController.dispose();
+    super.dispose();
+  }
+
+  Animation<double> _itemAnim(int index) {
+    final start = (index * 0.08).clamp(0.0, 0.55);
+    final end = (start + 0.42).clamp(0.0, 1.0);
+    return CurvedAnimation(
+      parent: _entryController,
+      curve: Interval(start, end, curve: Curves.easeOutCubic),
+    );
+  }
+
+  void _selectOption(String label) {
+    Navigator.pop(context, label);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+
+    return Padding(
+      padding: EdgeInsets.only(bottom: bottomInset),
+      child: Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: SafeArea(
+          top: false,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(height: 12),
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFD9D9D9),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(height: 20),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Text(
+                  'Select most relevant work type',
+                  style: GoogleFonts.inter(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.black,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Flexible(
+                child: ListView.builder(
+                  shrinkWrap: true,
+                  physics: const BouncingScrollPhysics(),
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+                  itemCount: widget.options.length,
+                  itemBuilder: (context, index) {
+                    final label = widget.options[index];
+                    final isSelected = widget.selected == label;
+                    final anim = _itemAnim(index);
+
+                    return AnimatedBuilder(
+                      animation: anim,
+                      builder: (context, child) {
+                        final t = anim.value;
+                        return Transform.translate(
+                          offset: Offset(0, 16 * (1 - t)),
+                          child: Opacity(opacity: t, child: child),
+                        );
+                      },
+                      child: Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          onTap: () => _selectOption(label),
+                          borderRadius: BorderRadius.circular(12),
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 200),
+                            margin: const EdgeInsets.symmetric(vertical: 4),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 14,
+                            ),
+                            decoration: BoxDecoration(
+                              color: isSelected
+                                  ? const Color(0xFFEBEBEB)
+                                  : Colors.transparent,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    label,
+                                    style: GoogleFonts.inter(
+                                      fontSize: 15,
+                                      fontWeight: isSelected
+                                          ? FontWeight.w600
+                                          : FontWeight.w500,
+                                      color: Colors.black,
+                                    ),
+                                  ),
+                                ),
+                                if (isSelected)
+                                  const Icon(
+                                    Icons.check,
+                                    color: Color(0xFF468A73),
+                                    size: 22,
+                                  ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
           ),
         ),
       ),

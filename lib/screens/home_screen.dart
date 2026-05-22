@@ -38,6 +38,7 @@ class _HomeScreenState extends State<HomeScreen> {
   
   final TextEditingController _searchController = TextEditingController();
   int _currentActiveBookingPage = 0;
+  String? _lastCategoriesError;
 
   @override
   void initState() {
@@ -53,14 +54,23 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _errorListener() {
     if (!mounted || _appState == null) return;
-    if (_appState!.categoriesError != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(_appState!.categoriesError!),
-          backgroundColor: Colors.red.shade800,
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+    final currentError = _appState!.categoriesError;
+    if (currentError != null && currentError != _lastCategoriesError) {
+      _lastCategoriesError = currentError;
+      if (_appState!.selectedTab == 0) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(currentError),
+              backgroundColor: Colors.red.shade800,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        });
+      }
+    } else if (currentError == null) {
+      _lastCategoriesError = null;
     }
   }
 
@@ -352,7 +362,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           const SizedBox(height: 8),
           Text(
-            "Are you looking for reliable help with home repairs, construction work, or professional cleaning? Or are you a skilled worker looking for your next gig? Will connects experts with those who need them in just a few taps.",
+            """Built for every job, big or small — Will connects trusted skilled workers with people who need reliable help, anytime and anywhere.""",
             style: GoogleFonts.inter(
               fontSize: 12,
               fontWeight: FontWeight.w400,
@@ -484,7 +494,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 48),
+                const SizedBox(height: 74),
                 Container(
                   height: 56, // Matching Figma
                   decoration: BoxDecoration(

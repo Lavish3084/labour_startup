@@ -48,7 +48,7 @@ router.get('/me', verifyToken, async (req, res) => {
 
         // Lazy generation for existing users
         if (!user.referralCode) {
-            user.referralCode = 'WILL' + user._id.toString().substring(0, 5).toUpperCase();
+            user.referralCode = 'WILL' + user._id.toString().substring(18).toUpperCase();
             await user.save();
         }
 
