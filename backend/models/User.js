@@ -68,11 +68,10 @@ const UserSchema = new mongoose.Schema({
     }
 });
 
-UserSchema.pre('save', function(next) {
+UserSchema.pre('save', function() {
     if (!this.referralCode) {
         this.referralCode = 'WILL' + this._id.toString().substring(18).toUpperCase();
     }
-    next();
 });
 
 UserSchema.index({ email: 1, role: 1 }, { unique: true, sparse: true });
