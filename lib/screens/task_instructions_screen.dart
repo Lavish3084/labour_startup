@@ -224,31 +224,145 @@ class _TaskInstructionsScreenState extends State<TaskInstructionsScreen>
     }
   }
 
+  static const double _headerHeight = 280;
+  static const double _sheetOverlapTop = 236;
+
   @override
   Widget build(BuildContext context) {
+    final bottomInset = MediaQuery.of(context).padding.bottom;
+    const bottomBarPadding = 88.0;
+
     return Scaffold(
-      backgroundColor: const Color(0xFFFCFCFC),
-      body: Column(
-        children: [
-          _buildHeader(),
-          Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
-              child: Column(
-                children: [
-                  _buildWorkTypeDropdown(),
-                  const SizedBox(height: 24),
-                  _buildDescribeSection(),
-                  const SizedBox(height: 24),
-                  _buildWorkerSelector(),
-                  const SizedBox(height: 32),
-                  _buildNextButton(),
-                  const SizedBox(height: 20),
-                ],
+      backgroundColor: const Color(0xFF2E876E),
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          final viewportHeight = constraints.maxHeight;
+
+          return Stack(
+            children: [
+              Positioned(
+                top: 0,
+                left: 0,
+                right: 0,
+                height: _headerHeight,
+                child: _buildHeader(),
               ),
+              Positioned.fill(
+                child: SingleChildScrollView(
+                  physics: const ClampingScrollPhysics(),
+                  child: Column(
+                    children: [
+                      SizedBox(
+                        height: _sheetOverlapTop,
+                        child: const IgnorePointer(),
+                      ),
+                      _buildOverlappingSheet(
+                        bottomPadding: bottomBarPadding + bottomInset,
+                        minHeight: viewportHeight - _sheetOverlapTop,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              _buildHeaderBackButton(),
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: 0,
+                child: _buildBottomBar(bottomInset),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildOverlappingSheet({
+    required double bottomPadding,
+    required double minHeight,
+  }) {
+    return Container(
+      width: double.infinity,
+      constraints: BoxConstraints(minHeight: minHeight),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFCFCFC),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.1),
+            blurRadius: 20,
+            offset: const Offset(0, -6),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          const SizedBox(height: 12),
+          Container(
+            width: 40,
+            height: 4,
+            decoration: BoxDecoration(
+              color: const Color(0xFFD9D9D9),
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          Padding(
+            padding: EdgeInsets.fromLTRB(24, 20, 24, bottomPadding),
+            child: Column(
+              children: [
+                _buildWorkTypeDropdown(),
+                const SizedBox(height: 24),
+                _buildDescribeSection(),
+                const SizedBox(height: 24),
+                _buildWorkerSelector(),
+              ],
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildBottomBar(double bottomInset) {
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color(0xFFFCFCFC),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.06),
+            blurRadius: 10,
+            offset: const Offset(0, -4),
+          ),
+        ],
+      ),
+      padding: EdgeInsets.fromLTRB(24, 12, 24, bottomInset + 16),
+      child: _buildNextButton(),
+    );
+  }
+
+  Widget _buildHeaderBackButton() {
+    return Positioned(
+      top: MediaQuery.of(context).padding.top + 10,
+      left: 20,
+      child: Material(
+        color: Colors.transparent,
+        child: GestureDetector(
+          onTap: () => Navigator.pop(context),
+          child: Container(
+            height: 38,
+            width: 38,
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.arrow_back,
+              color: Color(0xFF2E876E),
+              size: 20,
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -258,11 +372,10 @@ class _TaskInstructionsScreenState extends State<TaskInstructionsScreen>
       clipper: const ConcaveBottomHeaderClipper(radius: 40),
       child: Container(
         width: double.infinity,
-        height: 280,
+        height: _headerHeight,
         color: const Color(0xFF2E876E),
         child: Stack(
           children: [
-            // Subtle dotted pattern
             Positioned.fill(
               child: CustomPaint(
                 painter: DotPatternPainter(),
@@ -270,43 +383,27 @@ class _TaskInstructionsScreenState extends State<TaskInstructionsScreen>
             ),
             SafeArea(
               child: Padding(
-                padding: const EdgeInsets.all(20),
+                padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    GestureDetector(
-                      onTap: () => Navigator.pop(context),
-                      child: Container(
-                        height: 38,
-                        width: 38,
-                        decoration: const BoxDecoration(
-                          color: Colors.white,
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.arrow_back,
-                          color: Color(0xFF2E876E),
-                          size: 20,
-                        ),
-                      ),
-                    ),
-                    const Spacer(),
-                    Center(
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 24),
-                        child: Text(
-                          'Help the workers\nunderstand the task.',
-                          textAlign: TextAlign.center,
-                          style: GoogleFonts.inter(
-                            fontSize: 28,
-                            fontWeight: FontWeight.w700,
-                            color: Colors.white,
-                            height: 1.3,
+                    const SizedBox(height: 48),
+                    Expanded(
+                      child: Center(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 24),
+                          child: Text(
+                            'Help the workers\nunderstand the task.',
+                            textAlign: TextAlign.center,
+                            style: GoogleFonts.inter(
+                              fontSize: 28,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.white,
+                              height: 1.3,
+                            ),
                           ),
                         ),
                       ),
                     ),
-                    const Spacer(),
                   ],
                 ),
               ),

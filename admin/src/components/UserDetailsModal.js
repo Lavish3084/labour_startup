@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, User, Mail, Phone, Calendar, Shield, MapPin, CheckCircle, Briefcase } from 'lucide-react';
+import { X, User, Mail, Phone, Calendar, Shield, CheckCircle, Briefcase } from 'lucide-react';
 
 const UserDetailsModal = ({ user, onClose }) => {
     if (!user) return null;
