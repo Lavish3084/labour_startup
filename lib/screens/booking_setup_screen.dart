@@ -61,6 +61,7 @@ class BookingSetupScreen extends StatefulWidget {
   final ServiceCategory category;
   final String bookingMode;
   final DateTime scheduledTime;
+  final bool isInstant;
   final int? numberOfHours;
   final String address;
   final double latitude;
@@ -77,6 +78,7 @@ class BookingSetupScreen extends StatefulWidget {
     required this.category,
     required this.bookingMode,
     required this.scheduledTime,
+    this.isInstant = false,
     this.numberOfHours,
     required this.address,
     required this.latitude,
@@ -581,7 +583,13 @@ class _BookingSetupScreenState extends State<BookingSetupScreen> {
           const SizedBox(height: 16),
           _buildDetailsRow(Icons.engineering_outlined, 'Service', widget.workType.isNotEmpty ? widget.workType : widget.category.name),
           const SizedBox(height: 12),
-          _buildDetailsRow(Icons.calendar_today_outlined, 'Date & Time', '${DateFormat('dd MMMM yyyy').format(widget.scheduledTime)} • ${DateFormat('hh:mm a').format(widget.scheduledTime)}'),
+          _buildDetailsRow(
+            Icons.calendar_today_outlined,
+            'Date & Time',
+            widget.isInstant
+                ? 'As Soon As Possible (ASAP)'
+                : '${DateFormat('dd MMMM yyyy').format(widget.scheduledTime)} • ${DateFormat('hh:mm a').format(widget.scheduledTime)}',
+          ),
           const SizedBox(height: 12),
           _buildDetailsRow(Icons.people_outline_rounded, 'Workers Required', '${widget.numberOfWorkers.toString().padLeft(2, '0')} Worker${widget.numberOfWorkers > 1 ? "s" : ""}'),
           const SizedBox(height: 12),

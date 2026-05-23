@@ -92,7 +92,6 @@ class _MainScreenState extends State<MainScreen>
   static const List<Widget> _pages = <Widget>[
     HomeScreen(),
     BookingsScreen(),
-    WalletScreen(),
     ProfileScreen(),
   ];
 
@@ -120,10 +119,8 @@ class _MainScreenState extends State<MainScreen>
       ),
       bottomNavigationBar: LayoutBuilder(
         builder: (context, navBarConstraints) {
-          // Slightly wider for 4 items: 90% of screen width
-          // Figma reference: 88% width (left: 24 on 402px)
-          final double actualWidth = navBarConstraints.maxWidth * 0.88;
-          final double sectionWidth = actualWidth / 4;
+          final double screenWidth = navBarConstraints.maxWidth;
+          final double sectionWidth = screenWidth / 3;
 
           return GestureDetector(
             onHorizontalDragStart: (_) {
@@ -132,18 +129,16 @@ class _MainScreenState extends State<MainScreen>
             },
             onHorizontalDragUpdate: (details) {
               if (_pageController.hasClients) {
-                // Move pill independently within the navbar (Independent Grab & Slide)
                 _displayPage.value = (_displayPage.value +
                         details.delta.dx / sectionWidth)
-                    .clamp(0.0, 3.0);
+                    .clamp(0.0, 2.0);
               }
             },
             onHorizontalDragEnd: (details) {
               if (_pageController.hasClients) {
                 final double startPage = _displayPage.value;
-                final int targetPage = startPage.round().clamp(0, 3);
+                final int targetPage = startPage.round().clamp(0, 2);
 
-                // Create a smooth animation for the pill from its release point to the target
                 _pillAnimation = Tween<double>(
                   begin: startPage,
                   end: targetPage.toDouble(),
@@ -167,7 +162,6 @@ class _MainScreenState extends State<MainScreen>
                   }
                 });
 
-                // Simultaneously animate the PageView (the body)
                 _pageController.animateToPage(
                   targetPage,
                   duration: const Duration(milliseconds: 500),
@@ -178,73 +172,44 @@ class _MainScreenState extends State<MainScreen>
             child: Align(
               alignment: Alignment.bottomCenter,
               child: Container(
-                height: 75,
-                width: actualWidth,
-                margin: const EdgeInsets.only(bottom: 30),
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.08),
+                      blurRadius: 20,
+                      offset: const Offset(0, -4),
+                    ),
+                  ],
+                ),
                 child: ClipRRect(
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
                   child: BackdropFilter(
                     filter: ImageFilter.blur(
                       sigmaX: 18,
                       sigmaY: 18,
-                    ), // Increased blur for a deeper glass effect
-                    child: Container(
-                        decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                          color: Colors.black.withValues(alpha: 0.05),
-                          width: 1.0,
+                    ),
+                    child: SafeArea(
+                      top: false,
+                      child: Container(
+                        height: 70,
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: ListenableBuilder(
+                          listenable: _displayPage,
+                          builder: (context, _) {
+                            double page = _displayPage.value;
+
+                            return Row(
+                              children: [
+                                _buildNavItem(0, page, Icons.home_rounded, Icons.home_outlined, 'Home'),
+                                _buildNavItem(1, page, Icons.assignment_rounded, Icons.assignment_outlined, 'Bookings'),
+                                _buildNavItem(2, page, Icons.person_rounded, Icons.person_outlined, 'Profile'),
+                              ],
+                            );
+                          },
                         ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.08),
-                            blurRadius: 20,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
-                      ),
-                      child: LayoutBuilder(
-                        builder: (context, constraints) {
-                          return ListenableBuilder(
-                            listenable: _displayPage,
-                            builder: (context, _) {
-                              final double width = constraints.maxWidth;
-                              // Uniform padding for perfect symmetry
-                              const double horizontalPadding = 24;
-                              final double sectionWidthInner = (width - (horizontalPadding * 2)) / 4;
-                              double page = _displayPage.value;
-
-                              // Advanced stretching pill logic
-                              double fraction = (page % 1.0).abs();
-                              // Correctly handle the edges
-                              if (page < 0) fraction = 0;
-                              if (page > 3) fraction = 0;
-
-                              double stretchFactor = (0.5 - (fraction - 0.5).abs()) * 2.0;
-                              double basePillWidth = 14;
-                              // The pill stretches significantly when moving between tabs
-                              double stretchMax = sectionWidthInner * 0.7;
-                              double currentWidth = basePillWidth + (stretchMax * stretchFactor);
-
-                              // Calculate center position relative to the row items
-                              double centerX = horizontalPadding + (page + 0.5) * sectionWidthInner;
-                              double leftPos = centerX - (currentWidth / 2);
-
-                              return Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: horizontalPadding),
-                                child: Row(
-                                  children: [
-                                    _buildNavItem(0, page, Icons.home_rounded, Icons.home_outlined, 'Home'),
-                                    _buildNavItem(1, page, Icons.assignment_rounded, Icons.assignment_outlined, 'Bookings'),
-                                    _buildNavItem(2, page, Icons.account_balance_wallet_rounded, Icons.account_balance_wallet_outlined, 'Wallet'),
-                                    _buildNavItem(3, page, Icons.person_rounded, Icons.person_outlined, 'Profile'),
-                                  ],
-                                ),
-                              );
-                            },
-                          );
-                        },
                       ),
                     ),
                   ),
@@ -284,30 +249,40 @@ class _MainScreenState extends State<MainScreen>
           _appState.setTab(index);
         },
         behavior: HitTestBehavior.opaque,
-        child: Container(
-          color: Colors.transparent,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Transform.scale(
-                scale: 1.0 + (0.1 * activeProgress),
-                child: Icon(
-                  activeIcon, // Always filled icons
-                  color: isActive ? AppTheme.brandGreenMain : AppTheme.textMuted.withValues(alpha: 0.5),
-                  size: 33, // Slightly larger
+        child: Center(
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 250),
+            curve: Curves.easeInOut,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            decoration: BoxDecoration(
+              color: isActive
+                  ? AppTheme.brandGreenMain.withOpacity(0.12) // Soft mint green highlight
+                  : Colors.transparent,
+              borderRadius: BorderRadius.circular(100),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Icon(
+                  isActive ? activeIcon : inactiveIcon, // Swap outline/filled icons dynamically
+                  color: isActive
+                      ? AppTheme.brandGreenMain
+                      : AppTheme.textMuted.withOpacity(0.7),
+                  size: 22,
                 ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                label,
-                style: GoogleFonts.inter(
-                  fontSize: 10,
-                  fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
-                  color: isActive ? const Color(0xFF4A9782) : AppTheme.textMuted,
+                const SizedBox(width: 8),
+                Text(
+                  label,
+                  style: GoogleFonts.inter(
+                    fontSize: 13,
+                    fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
+                    color: isActive ? AppTheme.brandGreenMain : AppTheme.textMuted,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

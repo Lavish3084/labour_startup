@@ -23,6 +23,7 @@ import '../models/labourer.dart';
 import '../widgets/pattern_painter.dart';
 import 'settings_screen.dart';
 import 'refer_earn_screen.dart';
+import 'wallet_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -35,10 +36,11 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _isRefreshing = false;
   AppStateProvider? _appState;
   bool _showAllCategories = false;
-  
+
   final TextEditingController _searchController = TextEditingController();
   int _currentActiveBookingPage = 0;
   String? _lastCategoriesError;
+  int? _selectedCategoryIndex;
 
   @override
   void initState() {
@@ -130,7 +132,9 @@ class _HomeScreenState extends State<HomeScreen> {
         }
       }
     } catch (e) {
-      debugPrint(ErrorHandler.getErrorMessage(e, action: 'Location fetch failed'));
+      debugPrint(
+        ErrorHandler.getErrorMessage(e, action: 'Location fetch failed'),
+      );
     }
   }
 
@@ -144,79 +148,117 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildComingSoonState(String cityName) {
-    final String resolvedCity = (cityName.isNotEmpty && cityName != 'Enable location') ? cityName : 'your area';
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
-      child: GlassCard(
-        radius: 24,
-        blur: 15,
-        opacity: 0.8,
-        borderColor: AppTheme.brandGreenMain.withOpacity(0.15),
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: AppTheme.brandGreenMain.withOpacity(0.1),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.rocket_launch_rounded,
-                color: AppTheme.brandGreenMain,
-                size: 48,
-              ),
+    final String resolvedCity =
+        (cityName.isNotEmpty && cityName != 'Enable location')
+            ? cityName
+            : 'your area';
+    return Stack(
+      children: [
+        Positioned(
+          left: 0,
+          top: 40,
+          bottom: 40,
+          width: 32,
+          child: CustomPaint(
+            painter: DotPatternPainter(
+              color: const Color(0xFF6B7280).withOpacity(0.08),
+              spacing: 10.0,
+              radius: 1.2,
             ),
-            const SizedBox(height: 20),
-            Text(
-              "Coming Soon!",
-              style: GoogleFonts.inter(
-                fontSize: 22,
-                fontWeight: FontWeight.w800,
-                color: AppTheme.figmaHeaderEnd,
-                letterSpacing: -0.5,
-              ),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              "We are not active in $resolvedCity yet. Choose another location to explore our services.",
-              textAlign: TextAlign.center,
-              style: GoogleFonts.inter(
-                fontSize: 14,
-                color: AppTheme.textSecondary,
-                fontWeight: FontWeight.w400,
-                height: 1.5,
-              ),
-            ),
-            const SizedBox(height: 24),
-            SizedBox(
-              width: double.infinity,
-              height: 52,
-              child: ElevatedButton.icon(
-                onPressed: _showAddressSelectionBottomSheet,
-                icon: const Icon(Icons.map_rounded, color: Colors.white, size: 20),
-                label: Text(
-                  "Select Other Location",
-                  style: GoogleFonts.inter(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white,
-                  ),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppTheme.brandGreenMain,
-                  elevation: 0,
-                  shadowColor: Colors.transparent,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                ),
-              ),
-            ),
-          ],
+          ),
         ),
-      ),
+        Positioned(
+          right: 0,
+          top: 40,
+          bottom: 40,
+          width: 32,
+          child: CustomPaint(
+            painter: DotPatternPainter(
+              color: const Color(0xFF6B7280).withOpacity(0.08),
+              spacing: 10.0,
+              radius: 1.2,
+            ),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 40),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Text(
+                "WE ARE",
+                style: GoogleFonts.inter(
+                  fontSize: 24,
+                  fontWeight: FontWeight.w800,
+                  color: const Color(0xFF9CA3AF),
+                  letterSpacing: 1.5,
+                  height: 1.2,
+                ),
+              ),
+              const SizedBox(height: 2),
+              RichText(
+                text: TextSpan(
+                  children: [
+                    TextSpan(
+                      text: "COMING ",
+                      style: GoogleFonts.inter(
+                        fontSize: 32,
+                        fontWeight: FontWeight.w900,
+                        color: const Color(0xFF9CA3AF),
+                        letterSpacing: -0.5,
+                      ),
+                    ),
+                    TextSpan(
+                      text: "SOON",
+                      style: GoogleFonts.inter(
+                        fontSize: 32,
+                        fontWeight: FontWeight.w900,
+                        color: AppTheme.brandGreenMain,
+                        letterSpacing: -0.5,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Text(
+                  "We're currently live in select areas and expanding quickly. Get notified when we are near you!",
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.inter(
+                    fontSize: 14,
+                    color: const Color(0xFF6B7280),
+                    fontWeight: FontWeight.w400,
+                    height: 1.5,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 32),
+              GestureDetector(
+                onTap: _showAddressSelectionBottomSheet,
+                child: CustomPaint(
+                  painter: DashedUnderlinePainter(
+                    color: AppTheme.brandGreenMain,
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.only(bottom: 2),
+                    child: Text(
+                      "Change location",
+                      style: GoogleFonts.inter(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: AppTheme.brandGreenMain,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 
@@ -230,7 +272,10 @@ class _HomeScreenState extends State<HomeScreen> {
         body: RefreshIndicator(
           onRefresh: () async {
             setState(() => _isRefreshing = true);
-            final appState = Provider.of<AppStateProvider>(context, listen: false);
+            final appState = Provider.of<AppStateProvider>(
+              context,
+              listen: false,
+            );
             await appState.fetchCategories();
             if (mounted) setState(() => _isRefreshing = false);
           },
@@ -239,16 +284,23 @@ class _HomeScreenState extends State<HomeScreen> {
             physics: const AlwaysScrollableScrollPhysics(),
             child: Consumer<AppStateProvider>(
               builder: (context, appState, _) {
-                final activeBookings = appState.bookings.where((b) {
-                  final status = b['status'].toString().toLowerCase();
-                  if (status == 'completed' || status == 'cancelled') return false;
-                  final date = DateTime.parse(b['date'].toString()).toLocal();
-                  final hours = int.tryParse(b['numberOfHours']?.toString() ?? '2') ?? 2;
-                  final endTime = date.add(Duration(hours: hours));
-                  if (DateTime.now().isAfter(endTime)) return false;
-                  return status == 'confirmed' || status == 'pending' || status == 'arrived';
-                }).toList();
-                
+                final activeBookings =
+                    appState.bookings.where((b) {
+                      final status = b['status'].toString().toLowerCase();
+                      if (status == 'completed' || status == 'cancelled')
+                        return false;
+                      final date =
+                          DateTime.parse(b['date'].toString()).toLocal();
+                      final hours =
+                          int.tryParse(b['numberOfHours']?.toString() ?? '2') ??
+                          2;
+                      final endTime = date.add(Duration(hours: hours));
+                      if (DateTime.now().isAfter(endTime)) return false;
+                      return status == 'confirmed' ||
+                          status == 'pending' ||
+                          status == 'arrived';
+                    }).toList();
+
                 final hasActive = activeBookings.isNotEmpty;
                 final hasCategories = appState.categories.isNotEmpty;
 
@@ -259,21 +311,60 @@ class _HomeScreenState extends State<HomeScreen> {
                   fallbackAddress: locationProvider.currentAddress,
                 );
                 final rawAddress = locationProvider.currentAddress ?? '';
-                final cityName = rawAddress.contains(',') ? rawAddress.split(',').first.trim() : rawAddress;
+                final cityName =
+                    rawAddress.contains(',')
+                        ? rawAddress.split(',').first.trim()
+                        : rawAddress;
 
                 return Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _buildGreenHeader(),
-                    if (hasActive) ...[
+                    _buildLocationHeader(isCityActive: isCityActive),
+                    if (hasActive && isCityActive) ...[
                       const SizedBox(height: 32),
                       _buildActiveBookingList(activeBookings),
                     ],
-                    if (!isCityActive)
-                      _buildComingSoonState(cityName)
-                    else ...[
+                    if (!isCityActive) ...[
+                      _buildComingSoonState(cityName),
+                      const SizedBox(height: 24),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        child: Text(
+                          'Top Reasons to Choose',
+                          style: GoogleFonts.roboto(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.black,
+                            height: 1.5,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      _buildTrustBanner(),
+                      const SizedBox(height: 24),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        child: Text(
+                          'Refer & Earn',
+                          style: GoogleFonts.roboto(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.black,
+                            height: 1.5,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      _buildReferEarnSection(),
+                      const SizedBox(height: 12),
+                      _buildBrandingFooter(),
+                    ] else ...[
                       if (hasCategories) ...[
+                        const SizedBox(height: 32),
+                        _buildBookingOptionTiles(),
                         const SizedBox(height: 32),
                         _buildCategoriesSection(activeBookings),
                       ],
@@ -309,9 +400,9 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                       const SizedBox(height: 6),
                       _buildReferEarnSection(),
+                      const SizedBox(height: 12),
+                      _buildBrandingFooter(),
                     ],
-                    const SizedBox(height: 12),
-                    _buildBrandingFooter(),
                   ],
                 );
               },
@@ -326,9 +417,15 @@ class _HomeScreenState extends State<HomeScreen> {
     return Container(
       width: double.infinity,
       color: AppTheme.scaffoldBg, // Same as rest of the screen (light theme)
-      padding: const EdgeInsets.fromLTRB(24, 12, 24, 120), // 120 bottom padding to clear navigation bar
+      padding: const EdgeInsets.fromLTRB(
+        24,
+        12,
+        24,
+        120,
+      ), // 120 bottom padding to clear navigation bar
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start, // Align all items to the left!
+        crossAxisAlignment:
+            CrossAxisAlignment.start, // Align all items to the left!
         children: [
           Text(
             "India's premium local workforce app ❤️",
@@ -376,9 +473,10 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildGreenHeader() {
+  Widget _buildLocationHeader({required bool isCityActive}) {
     final locationProvider = Provider.of<LocationProvider>(context);
-    final String rawAddress = locationProvider.currentAddress ?? 'Enable location';
+    final String rawAddress =
+        locationProvider.currentAddress ?? 'Enable location';
     final String rawLabel = locationProvider.currentLabel ?? '';
     final String rawHouseNumber = locationProvider.currentHouseNumber ?? '';
 
@@ -389,9 +487,9 @@ class _HomeScreenState extends State<HomeScreen> {
     if (rawHouseNumber.isNotEmpty) {
       displayLabel = rawHouseNumber;
     } else if (rawLabel.isNotEmpty &&
-               rawLabel != 'Saved Location' &&
-               rawLabel != 'Selected Location' &&
-               rawLabel != 'Current Location') {
+        rawLabel != 'Saved Location' &&
+        rawLabel != 'Selected Location' &&
+        rawLabel != 'Current Location') {
       displayLabel = rawLabel;
     } else if (rawLabel == 'Saved Location') {
       displayLabel = 'Saved Location';
@@ -402,10 +500,122 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     // Clean up address to avoid duplicating the house number description
-    if (rawHouseNumber.isNotEmpty && displayAddress.startsWith(rawHouseNumber)) {
-      displayAddress = displayAddress.substring(rawHouseNumber.length).replaceAll(RegExp(r'^[\s,]+'), '');
+    if (rawHouseNumber.isNotEmpty &&
+        displayAddress.startsWith(rawHouseNumber)) {
+      displayAddress = displayAddress
+          .substring(rawHouseNumber.length)
+          .replaceAll(RegExp(r'^[\s,]+'), '');
     }
 
+    if (!isCityActive) {
+      // White location header
+      return Container(
+        width: double.infinity,
+        color: Colors.white,
+        padding: EdgeInsets.fromLTRB(
+          20,
+          MediaQuery.of(context).padding.top + 8,
+          20,
+          12,
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            GestureDetector(
+              onTap: _showAddressSelectionBottomSheet,
+              behavior: HitTestBehavior.opaque,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  const Icon(
+                    Icons.location_on_rounded,
+                    color: AppTheme.brandGreenMain, // Brand Green
+                    size: 28,
+                  ),
+                  const SizedBox(width: 8),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            displayLabel,
+                            style: GoogleFonts.inter(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w800,
+                              color: const Color(0xFF1E293B), // Slate-800
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          const Icon(
+                            Icons.keyboard_arrow_down_rounded,
+                            color: const Color(0xFF1E293B),
+                            size: 18,
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 2),
+                      SizedBox(
+                        width: MediaQuery.of(context).size.width * 0.52,
+                        child: Text(
+                          displayAddress,
+                          style: GoogleFonts.inter(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w500,
+                            color: const Color(0xFF64748B), // Slate-500
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const Spacer(),
+            GestureDetector(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const WalletScreen(),
+                  ),
+                );
+              },
+              behavior: HitTestBehavior.opaque,
+              child: const Icon(
+                Icons.account_balance_wallet_outlined,
+                color: Color(0xFF1E293B),
+                size: 24,
+              ),
+            ),
+            const SizedBox(width: 16),
+            GestureDetector(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const SettingsScreen(),
+                  ),
+                );
+              },
+              behavior: HitTestBehavior.opaque,
+              child: const Icon(
+                Icons.settings_outlined,
+                color: const Color(0xFF1E293B),
+                size: 24,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    // Default green header (unchanged, with search bar)
     return Container(
       width: double.infinity,
       height: 265,
@@ -426,7 +636,12 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
           Padding(
-            padding: EdgeInsets.fromLTRB(20, MediaQuery.of(context).padding.top + 8, 20, 24),
+            padding: EdgeInsets.fromLTRB(
+              20,
+              MediaQuery.of(context).padding.top + 8,
+              20,
+              24,
+            ),
             child: Column(
               children: [
                 Row(
@@ -439,7 +654,11 @@ class _HomeScreenState extends State<HomeScreen> {
                         mainAxisSize: MainAxisSize.min,
                         crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
-                          const Icon(Icons.location_on_rounded, color: AppTheme.brandYellow, size: 28),
+                          const Icon(
+                            Icons.location_on_rounded,
+                            color: AppTheme.brandYellow,
+                            size: 28,
+                          ),
                           const SizedBox(width: 8),
                           Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -457,7 +676,11 @@ class _HomeScreenState extends State<HomeScreen> {
                                     ),
                                   ),
                                   const SizedBox(width: 4),
-                                  const Icon(Icons.keyboard_arrow_down_rounded, color: Colors.white, size: 18),
+                                  const Icon(
+                                    Icons.keyboard_arrow_down_rounded,
+                                    color: Colors.white,
+                                    size: 18,
+                                  ),
                                 ],
                               ),
                               const SizedBox(height: 2),
@@ -480,17 +703,38 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     ),
                     const Spacer(),
-                    const Icon(Icons.notifications_none_rounded, color: Colors.white, size: 24),
+                    GestureDetector(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const WalletScreen(),
+                          ),
+                        );
+                      },
+                      behavior: HitTestBehavior.opaque,
+                      child: const Icon(
+                        Icons.account_balance_wallet_outlined,
+                        color: Colors.white,
+                        size: 24,
+                      ),
+                    ),
                     const SizedBox(width: 16),
                     GestureDetector(
                       onTap: () {
                         Navigator.push(
                           context,
-                          MaterialPageRoute(builder: (context) => const SettingsScreen()),
+                          MaterialPageRoute(
+                            builder: (context) => const SettingsScreen(),
+                          ),
                         );
                       },
                       behavior: HitTestBehavior.opaque,
-                      child: const Icon(Icons.settings_outlined, color: Colors.white, size: 24),
+                      child: const Icon(
+                        Icons.settings_outlined,
+                        color: Colors.white,
+                        size: 24,
+                      ),
                     ),
                   ],
                 ),
@@ -507,7 +751,11 @@ class _HomeScreenState extends State<HomeScreen> {
                       Expanded(
                         child: TextField(
                           controller: _searchController,
-                          onChanged: (value) => Provider.of<AppStateProvider>(context, listen: false).setSearchQuery(value),
+                          onChanged:
+                              (value) => Provider.of<AppStateProvider>(
+                                context,
+                                listen: false,
+                              ).setSearchQuery(value),
                           decoration: InputDecoration(
                             hintText: 'Explore Services',
                             hintStyle: GoogleFonts.inter(
@@ -534,55 +782,62 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildActiveBookingList(List<dynamic> activeBookings) {
     if (activeBookings.isEmpty) return const SizedBox.shrink();
 
-    return Builder(builder: (context) {
-      if (activeBookings.length == 1) {
+    return Builder(
+      builder: (context) {
+        if (activeBookings.length == 1) {
+          return Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: _buildBookingCard(activeBookings.first),
+              ),
+              const SizedBox(height: 20),
+              _buildBookingDots(1, 0),
+            ],
+          );
+        }
+
         return Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: _buildBookingCard(activeBookings.first),
+            SizedBox(
+              height: 80,
+              child: PageView.builder(
+                controller: PageController(viewportFraction: 0.85),
+                itemCount: activeBookings.length,
+                onPageChanged: (index) {
+                  setState(() {
+                    _currentActiveBookingPage = index;
+                  });
+                },
+                itemBuilder: (context, index) {
+                  return _buildBookingCard(activeBookings[index]);
+                },
+              ),
             ),
             const SizedBox(height: 20),
-            _buildBookingDots(1, 0),
+            _buildBookingDots(activeBookings.length, _currentActiveBookingPage),
           ],
         );
-      }
-
-      return Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          SizedBox(
-            height: 80,
-            child: PageView.builder(
-              controller: PageController(viewportFraction: 0.85),
-              itemCount: activeBookings.length,
-              onPageChanged: (index) {
-                setState(() {
-                  _currentActiveBookingPage = index;
-                });
-              },
-              itemBuilder: (context, index) {
-                return _buildBookingCard(activeBookings[index]);
-              },
-            ),
-          ),
-          const SizedBox(height: 20),
-          _buildBookingDots(activeBookings.length, _currentActiveBookingPage),
-        ],
-      );
-    });
+      },
+    );
   }
 
   Widget _buildBookingCard(Map<String, dynamic> booking) {
     final dynamic categoryData = booking['category'];
-    final String serviceName = categoryData is Map ? (categoryData['name'] ?? 'Service') : (categoryData?.toString() ?? 'Service');
-    
+    final String serviceName =
+        categoryData is Map
+            ? (categoryData['name'] ?? 'Service')
+            : (categoryData?.toString() ?? 'Service');
+
     String dateStr = 'Upcoming';
     if (booking['date'] != null) {
       try {
-        final DateTime dt = DateTime.parse(booking['date'].toString()).toLocal();
-        dateStr = "${dt.day} ${_getMonthName(dt.month)} at ${dt.hour % 12 == 0 ? 12 : dt.hour % 12}:${dt.minute.toString().padLeft(2, '0')} ${dt.hour >= 12 ? 'PM' : 'AM'}";
+        final DateTime dt =
+            DateTime.parse(booking['date'].toString()).toLocal();
+        dateStr =
+            "${dt.day} ${_getMonthName(dt.month)} at ${dt.hour % 12 == 0 ? 12 : dt.hour % 12}:${dt.minute.toString().padLeft(2, '0')} ${dt.hour >= 12 ? 'PM' : 'AM'}";
       } catch (_) {
         dateStr = booking['date'].toString();
       }
@@ -596,7 +851,10 @@ class _HomeScreenState extends State<HomeScreen> {
       decoration: BoxDecoration(
         color: const Color(0xFFF7F8FA),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFF4A9782).withOpacity(0.3), width: 1),
+        border: Border.all(
+          color: const Color(0xFF4A9782).withOpacity(0.3),
+          width: 1,
+        ),
       ),
       child: Row(
         children: [
@@ -630,36 +888,44 @@ class _HomeScreenState extends State<HomeScreen> {
               ],
             ),
           ),
-          Icon(Icons.play_arrow_rounded, size: 18, color: const Color(0xFF4A9782).withOpacity(0.8)),
+          Icon(
+            Icons.play_arrow_rounded,
+            size: 18,
+            color: const Color(0xFF4A9782).withOpacity(0.8),
+          ),
         ],
       ),
     );
 
     return GestureDetector(
       onTap: () {
-        final DateTime scheduledTime = DateTime.parse(booking['date'].toString()).toLocal();
+        final DateTime scheduledTime =
+            DateTime.parse(booking['date'].toString()).toLocal();
         final now = DateTime.now();
         final difference = scheduledTime.difference(now);
 
         // Find the ServiceCategory object for the search screen
-        final allCategories = Provider.of<AppStateProvider>(context, listen: false).categories;
-        final categoryName = booking['category'] is Map 
-            ? (booking['category']['name'] ?? 'Service') 
-            : (booking['category']?.toString() ?? 'Service');
-        
+        final allCategories =
+            Provider.of<AppStateProvider>(context, listen: false).categories;
+        final categoryName =
+            booking['category'] is Map
+                ? (booking['category']['name'] ?? 'Service')
+                : (booking['category']?.toString() ?? 'Service');
+
         final categoryObj = allCategories.firstWhere(
           (c) => c.name == categoryName,
-          orElse: () => ServiceCategory(
-            name: categoryName,
-            icon: Icons.category,
-            description: '',
-            supportedModes: ['Hourly'],
-            hourlyRate: 0,
-            dailyRate: 0,
-            minHourlyRate: 0,
-            maxHourlyRate: 0,
-            commissionPercentage: 0,
-          ),
+          orElse:
+              () => ServiceCategory(
+                name: categoryName,
+                icon: Icons.category,
+                description: '',
+                supportedModes: ['Hourly'],
+                hourlyRate: 0,
+                dailyRate: 0,
+                minHourlyRate: 0,
+                maxHourlyRate: 0,
+                commissionPercentage: 0,
+              ),
         );
 
         // 1. If worker is already assigned, go to TrackStatusScreen
@@ -668,7 +934,8 @@ class _HomeScreenState extends State<HomeScreen> {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => TrackStatusScreen(bookingId: booking['_id']),
+              builder:
+                  (context) => TrackStatusScreen(bookingId: booking['_id']),
             ),
           );
           return;
@@ -679,26 +946,29 @@ class _HomeScreenState extends State<HomeScreen> {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => SearchingWorkerScreen(
-                category: categoryObj,
-                address: booking['address'] ?? '',
-                scheduledTime: scheduledTime,
-                latitude: (booking['latitude'] as num?)?.toDouble() ?? 0.0,
-                longitude: (booking['longitude'] as num?)?.toDouble() ?? 0.0,
-                bookingData: booking,
-              ),
+              builder:
+                  (context) => SearchingWorkerScreen(
+                    category: categoryObj,
+                    address: booking['address'] ?? '',
+                    scheduledTime: scheduledTime,
+                    latitude: (booking['latitude'] as num?)?.toDouble() ?? 0.0,
+                    longitude:
+                        (booking['longitude'] as num?)?.toDouble() ?? 0.0,
+                    bookingData: booking,
+                  ),
             ),
           );
         } else {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => BookingAcceptedScreen(
-                category: categoryObj,
-                address: booking['address'] ?? '',
-                scheduledTime: scheduledTime,
-                bookingData: booking,
-              ),
+              builder:
+                  (context) => BookingAcceptedScreen(
+                    category: categoryObj,
+                    address: booking['address'] ?? '',
+                    scheduledTime: scheduledTime,
+                    bookingData: booking,
+                  ),
             ),
           );
         }
@@ -729,8 +999,18 @@ class _HomeScreenState extends State<HomeScreen> {
 
   String _getMonthName(int month) {
     const months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
     ];
     return (month >= 1 && month <= 12) ? months[month - 1] : '';
   }
@@ -773,7 +1053,10 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               if (hasMoreThan4)
                 GestureDetector(
-                  onTap: () => setState(() => _showAllCategories = !_showAllCategories),
+                  onTap:
+                      () => setState(
+                        () => _showAllCategories = !_showAllCategories,
+                      ),
                   child: Text(
                     _showAllCategories ? 'See Less' : 'See All',
                     style: GoogleFonts.inter(
@@ -790,9 +1073,10 @@ class _HomeScreenState extends State<HomeScreen> {
         const SizedBox(height: 28),
         Builder(
           builder: (context) {
-            final categoriesToShow = _showAllCategories
-                ? allCategories
-                : allCategories.take(4).toList();
+            final categoriesToShow =
+                _showAllCategories
+                    ? allCategories
+                    : allCategories.take(4).toList();
 
             if (_showAllCategories) {
               return Padding(
@@ -801,12 +1085,13 @@ class _HomeScreenState extends State<HomeScreen> {
                   alignment: WrapAlignment.start,
                   runSpacing: 20,
                   spacing: 0,
-                  children: categoriesToShow.map((cat) {
-                    return SizedBox(
-                      width: (MediaQuery.of(context).size.width - 20) / 4,
-                      child: _buildCategoryItem(cat),
-                    );
-                  }).toList(),
+                  children:
+                      categoriesToShow.map((cat) {
+                        return SizedBox(
+                          width: (MediaQuery.of(context).size.width - 20) / 4,
+                          child: _buildCategoryItem(cat),
+                        );
+                      }).toList(),
                 ),
               );
             }
@@ -815,7 +1100,10 @@ class _HomeScreenState extends State<HomeScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 10),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: categoriesToShow.map((cat) => _buildCategoryItem(cat)).toList(),
+                children:
+                    categoriesToShow
+                        .map((cat) => _buildCategoryItem(cat))
+                        .toList(),
               ),
             );
           },
@@ -827,15 +1115,24 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildCategoryItem(ServiceCategory category) {
     IconData icon;
     String name = category.name.toLowerCase();
-    if (name.contains('mason')) icon = Icons.construction_rounded;
-    else if (name.contains('clean')) icon = Icons.cleaning_services_rounded;
-    else if (name.contains('plumb')) icon = Icons.plumbing_rounded;
-    else if (name.contains('elect')) icon = Icons.electric_bolt_rounded;
-    else if (name.contains('paint')) icon = Icons.format_paint_rounded;
-    else if (name.contains('carpent')) icon = Icons.carpenter_rounded;
-    else if (name.contains('garden')) icon = Icons.yard_rounded;
-    else if (name.contains('ac') || name.contains('repair')) icon = Icons.handyman_rounded;
-    else icon = Icons.miscellaneous_services_rounded;
+    if (name.contains('mason'))
+      icon = Icons.construction_rounded;
+    else if (name.contains('clean'))
+      icon = Icons.cleaning_services_rounded;
+    else if (name.contains('plumb'))
+      icon = Icons.plumbing_rounded;
+    else if (name.contains('elect'))
+      icon = Icons.electric_bolt_rounded;
+    else if (name.contains('paint'))
+      icon = Icons.format_paint_rounded;
+    else if (name.contains('carpent'))
+      icon = Icons.carpenter_rounded;
+    else if (name.contains('garden'))
+      icon = Icons.yard_rounded;
+    else if (name.contains('ac') || name.contains('repair'))
+      icon = Icons.handyman_rounded;
+    else
+      icon = Icons.miscellaneous_services_rounded;
 
     return GestureDetector(
       onTap: () => _navigateToRequest(category),
@@ -896,7 +1193,10 @@ class _HomeScreenState extends State<HomeScreen> {
                 return Container(
                   color: AppTheme.primaryGreen.withOpacity(0.1),
                   child: const Center(
-                    child: Icon(Icons.broken_image_rounded, color: AppTheme.primaryGreen),
+                    child: Icon(
+                      Icons.broken_image_rounded,
+                      color: AppTheme.primaryGreen,
+                    ),
                   ),
                 );
               },
@@ -914,9 +1214,7 @@ class _HomeScreenState extends State<HomeScreen> {
         onTap: () {
           Navigator.push(
             context,
-            MaterialPageRoute(
-              builder: (context) => const ReferEarnScreen(),
-            ),
+            MaterialPageRoute(builder: (context) => const ReferEarnScreen()),
           );
         },
         child: Container(
@@ -985,7 +1283,9 @@ class _HomeScreenState extends State<HomeScreen> {
                         shape: BoxShape.circle,
                         boxShadow: [
                           BoxShadow(
-                            color: const Color(0xFF4A9782).withValues(alpha: 0.15),
+                            color: const Color(
+                              0xFF4A9782,
+                            ).withValues(alpha: 0.15),
                             blurRadius: 12,
                             offset: const Offset(0, 4),
                           ),
@@ -1006,9 +1306,14 @@ class _HomeScreenState extends State<HomeScreen> {
                         children: [
                           // Elegant Badge
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 3,
+                            ),
                             decoration: BoxDecoration(
-                              color: const Color(0xFF4A9782).withValues(alpha: 0.1),
+                              color: const Color(
+                                0xFF4A9782,
+                              ).withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(6),
                             ),
                             child: Text(
@@ -1054,7 +1359,9 @@ class _HomeScreenState extends State<HomeScreen> {
                         shape: BoxShape.circle,
                         boxShadow: [
                           BoxShadow(
-                            color: const Color(0xFF4A9782).withValues(alpha: 0.3),
+                            color: const Color(
+                              0xFF4A9782,
+                            ).withValues(alpha: 0.3),
                             blurRadius: 8,
                             offset: const Offset(0, 3),
                           ),
@@ -1147,7 +1454,10 @@ class _HomeScreenState extends State<HomeScreen> {
                       top: 8,
                       right: 8,
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 3,
+                        ),
                         decoration: BoxDecoration(
                           color: Colors.white.withValues(alpha: 0.95),
                           borderRadius: BorderRadius.circular(6),
@@ -1162,11 +1472,19 @@ class _HomeScreenState extends State<HomeScreen> {
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            const Icon(Icons.star_rounded, color: Color(0xFFFFB300), size: 10),
+                            const Icon(
+                              Icons.star_rounded,
+                              color: Color(0xFFFFB300),
+                              size: 10,
+                            ),
                             const SizedBox(width: 2),
                             Text(
                               '4.9',
-                              style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w800, color: AppTheme.textPrimary),
+                              style: GoogleFonts.inter(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w800,
+                                color: AppTheme.textPrimary,
+                              ),
                             ),
                           ],
                         ),
@@ -1234,7 +1552,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return Consumer<AppStateProvider>(
       builder: (context, appState, _) {
         final categories = appState.categories;
-        
+
         if (_isRefreshing) {
           return _buildSkeletonGrid();
         }
@@ -1311,11 +1629,585 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _navigateToRequest(ServiceCategory category) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => ServiceDetailScreen(category: category),
+    _showBookingModeSelectionSheet(category);
+  }
+
+  Widget _buildBookingOptionTiles() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Row(
+        children: [
+          Expanded(
+            child: GestureDetector(
+              onTap: () => _showCategorySelectionSheet(true),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: const Color(0xFF4A9782).withOpacity(0.12),
+                    width: 1.5,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.03),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: const BoxDecoration(
+                        color: Color(0xFFE8F3F1),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.flash_on_rounded,
+                        color: Color(0xFF4A9782),
+                        size: 20,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Instant Help',
+                            style: GoogleFonts.inter(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
+                              color: const Color(0xFF1E293B),
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            'Arriving ASAP',
+                            style: GoogleFonts.inter(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.black54,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: GestureDetector(
+              onTap: () => _showCategorySelectionSheet(false),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: Colors.black.withOpacity(0.04),
+                    width: 1.5,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.03),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: const BoxDecoration(
+                        color: Color(0xFFFFF8E1),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.calendar_month_rounded,
+                        color: Color(0xFFFFB300),
+                        size: 20,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Scheduled',
+                            style: GoogleFonts.inter(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
+                              color: const Color(0xFF1E293B),
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            'Book for later',
+                            style: GoogleFonts.inter(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.black54,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
+    );
+  }
+
+  void _showCategorySelectionSheet(bool isInstant) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        final categories = Provider.of<AppStateProvider>(context, listen: false).categories;
+        if (categories.isEmpty) return const SizedBox.shrink();
+        
+        return StatefulBuilder(
+          builder: (context, setStateSheet) {
+            _selectedCategoryIndex ??= 0;
+            if (_selectedCategoryIndex! >= categories.length) {
+              _selectedCategoryIndex = 0;
+            }
+            final selectedCategory = categories[_selectedCategoryIndex!];
+
+            return Container(
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+              ),
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(context).padding.bottom + 20,
+                top: 12,
+                left: 20,
+                right: 20,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFD9D9D9),
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+                  Text(
+                    isInstant ? 'Instant Help (ASAP)' : 'Schedule Help',
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.inter(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w800,
+                      color: const Color(0xFF1E293B),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    isInstant 
+                        ? 'Select a service and view description' 
+                        : 'Select a service to schedule for later',
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.inter(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.black54,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  
+                  // Horizontal scroll view for categories
+                  SizedBox(
+                    height: 68,
+                    child: ListView.builder(
+                      scrollDirection: Axis.horizontal,
+                      physics: const BouncingScrollPhysics(),
+                      itemCount: categories.length,
+                      itemBuilder: (context, index) {
+                        final category = categories[index];
+                        final isSelected = index == _selectedCategoryIndex;
+                        
+                        IconData icon;
+                        String name = category.name.toLowerCase();
+                        if (name.contains('mason'))
+                          icon = Icons.construction_rounded;
+                        else if (name.contains('clean'))
+                          icon = Icons.cleaning_services_rounded;
+                        else if (name.contains('plumb'))
+                          icon = Icons.plumbing_rounded;
+                        else if (name.contains('elect'))
+                          icon = Icons.electric_bolt_rounded;
+                        else if (name.contains('paint'))
+                          icon = Icons.format_paint_rounded;
+                        else if (name.contains('carpent'))
+                          icon = Icons.carpenter_rounded;
+                        else if (name.contains('garden'))
+                          icon = Icons.yard_rounded;
+                        else if (name.contains('ac') || name.contains('repair'))
+                          icon = Icons.handyman_rounded;
+                        else
+                          icon = Icons.miscellaneous_services_rounded;
+
+                        return GestureDetector(
+                          onTap: () {
+                            setStateSheet(() {
+                              _selectedCategoryIndex = index;
+                            });
+                          },
+                          child: Padding(
+                            padding: const EdgeInsets.only(right: 12),
+                            child: Center(
+                              child: AnimatedContainer(
+                                duration: const Duration(milliseconds: 200),
+                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                                decoration: BoxDecoration(
+                                  color: isSelected 
+                                      ? const Color(0xFFE8F3F1) 
+                                      : const Color(0xFFF1F5F9),
+                                  borderRadius: BorderRadius.circular(24),
+                                  border: Border.all(
+                                    color: isSelected 
+                                        ? const Color(0xFF4A9782) 
+                                        : const Color(0xFFE2E8F0),
+                                    width: 1.5,
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      icon, 
+                                      color: isSelected 
+                                          ? const Color(0xFF4A9782) 
+                                          : const Color(0xFF64748B), 
+                                      size: 18,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      category.name,
+                                      style: GoogleFonts.inter(
+                                        fontSize: 13,
+                                        fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
+                                        color: isSelected ? const Color(0xFF1E293B) : const Color(0xFF475569),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  
+                  // Description area box
+                  AnimatedContainer(
+                    duration: const Duration(milliseconds: 250),
+                    padding: const EdgeInsets.all(18),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF8FAFC),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: const Color(0xFFE2E8F0)),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              selectedCategory.name,
+                              style: GoogleFonts.inter(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w800,
+                                color: const Color(0xFF1E293B),
+                              ),
+                            ),
+                            Text(
+                              '₹${selectedCategory.hourlyRate.toInt()}/hr',
+                              style: GoogleFonts.inter(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w800,
+                                color: const Color(0xFF4A9782),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 10),
+                        Text(
+                          selectedCategory.description.isNotEmpty 
+                              ? selectedCategory.description 
+                              : 'No description available for this service.',
+                          style: GoogleFonts.inter(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w400,
+                            color: const Color(0xFF475569),
+                            height: 1.45,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  
+                  // Action Button
+                  SizedBox(
+                    height: 52,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        Navigator.pop(context);
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => ServiceDetailScreen(
+                              category: selectedCategory,
+                              isInstant: isInstant,
+                            ),
+                          ),
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF4A9782),
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        elevation: 0,
+                      ),
+                      child: Text(
+                        isInstant ? 'Book Instant Help Now' : 'Proceed to Schedule',
+                        style: GoogleFonts.inter(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.2,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _showBookingModeSelectionSheet(ServiceCategory category) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+          ),
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).padding.bottom + 20,
+            top: 12,
+            left: 20,
+            right: 20,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFD9D9D9),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(height: 24),
+              Text(
+                'Choose Booking Option',
+                style: GoogleFonts.inter(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                  color: const Color(0xFF1E293B),
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                'Select how you would like to book ${category.name}',
+                style: GoogleFonts.inter(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.black54,
+                ),
+              ),
+              const SizedBox(height: 24),
+              Row(
+                children: [
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: () {
+                        Navigator.pop(context);
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => ServiceDetailScreen(
+                              category: category,
+                              isInstant: true,
+                            ),
+                          ),
+                        );
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: const Color(0xFF4A9782).withOpacity(0.2),
+                            width: 1.5,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.02),
+                              blurRadius: 10,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: const BoxDecoration(
+                                color: Color(0xFFE8F3F1),
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(
+                                Icons.flash_on_rounded,
+                                color: Color(0xFF4A9782),
+                                size: 24,
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            Text(
+                              'Instant Help',
+                              style: GoogleFonts.inter(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w700,
+                                color: Colors.black87,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Arriving ASAP',
+                              style: GoogleFonts.inter(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w500,
+                                color: Colors.black54,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: () {
+                        Navigator.pop(context);
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => ServiceDetailScreen(
+                              category: category,
+                              isInstant: false,
+                            ),
+                          ),
+                        );
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: Colors.black.withOpacity(0.06),
+                            width: 1.5,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.02),
+                              blurRadius: 10,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: const BoxDecoration(
+                                color: Color(0xFFFFF8E1),
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(
+                                Icons.calendar_month_rounded,
+                                color: Color(0xFFFFB300),
+                                size: 24,
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            Text(
+                              'Scheduled',
+                              style: GoogleFonts.inter(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w700,
+                                color: Colors.black87,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Book for later',
+                              style: GoogleFonts.inter(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w500,
+                                color: Colors.black54,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+            ],
+          ),
+        );
+      },
     );
   }
 
@@ -1392,4 +2284,35 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
+}
+
+class DashedUnderlinePainter extends CustomPainter {
+  final Color color;
+  DashedUnderlinePainter({required this.color});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint =
+        Paint()
+          ..color = color
+          ..strokeWidth = 1.2
+          ..style = PaintingStyle.stroke;
+
+    double max = size.width;
+    double dashWidth = 3;
+    double dashSpace = 2;
+    double startX = 0;
+
+    while (startX < max) {
+      canvas.drawLine(
+        Offset(startX, size.height),
+        Offset(startX + dashWidth, size.height),
+        paint,
+      );
+      startX += dashWidth + dashSpace;
+    }
+  }
+
+  @override
+  bool shouldRepaint(CustomPainter oldDelegate) => false;
 }

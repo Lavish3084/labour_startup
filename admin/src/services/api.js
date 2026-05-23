@@ -51,6 +51,22 @@ export const adminService = {
         const response = await api.delete(`/admin/categories/${id}`);
         return response.data;
     },
+    getFaqs: async () => {
+        const response = await api.get('/admin/faqs');
+        return response.data;
+    },
+    createFaq: async (faqData) => {
+        const response = await api.post('/admin/faqs', faqData);
+        return response.data;
+    },
+    updateFaq: async (id, faqData) => {
+        const response = await api.put(`/admin/faqs/${id}`, faqData);
+        return response.data;
+    },
+    deleteFaq: async (id) => {
+        const response = await api.delete(`/admin/faqs/${id}`);
+        return response.data;
+    },
 };
 
 export default api;

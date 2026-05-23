@@ -216,4 +216,73 @@ router.put('/help-requests/:id', verifyAdmin, async (req, res) => {
     }
 });
 
+// FAQs CRUD routes
+const Faq = require('../models/Faq');
+
+// @route   GET /api/admin/faqs
+// @desc    Get all FAQs for admin panel
+// @access  Private (Admin only)
+router.get('/faqs', verifyAdmin, async (req, res) => {
+    try {
+        const faqs = await Faq.find().sort({ createdAt: -1 });
+        res.json(faqs);
+    } catch (err) {
+        console.error('Admin Fetch FAQs Error:', err.message);
+        res.status(500).send('Server Error');
+    }
+});
+
+// @route   POST /api/admin/faqs
+// @desc    Create a new FAQ
+// @access  Private (Admin only)
+router.post('/faqs', verifyAdmin, async (req, res) => {
+    const { question, answer, categories } = req.body;
+    try {
+        const faq = new Faq({
+            question,
+            answer,
+            categories
+        });
+        await faq.save();
+        res.json(faq);
+    } catch (err) {
+        console.error('Admin Create FAQ Error:', err.message);
+        res.status(500).send('Server Error');
+    }
+});
+
+// @route   PUT /api/admin/faqs/:id
+// @desc    Update an FAQ
+// @access  Private (Admin only)
+router.put('/faqs/:id', verifyAdmin, async (req, res) => {
+    const { question, answer, categories } = req.body;
+    try {
+        const faq = await Faq.findByIdAndUpdate(
+            req.params.id,
+            { $set: { question, answer, categories } },
+            { new: true }
+        );
+        res.json(faq);
+    } catch (err) {
+        console.error('Admin Update FAQ Error:', err.message);
+        res.status(500).send('Server Error');
+    }
+});
+
+// @route   DELETE /api/admin/faqs/:id
+// @desc    Delete an FAQ
+// @access  Private (Admin only)
+router.delete('/faqs/:id', verifyAdmin, async (req, res) => {
+    try {
+        const faq = await Faq.findByIdAndDelete(req.params.id);
+        if (!faq) {
+            return res.status(404).json({ msg: 'FAQ not found' });
+        }
+        res.json({ msg: 'FAQ removed' });
+    } catch (err) {
+        console.error('Admin Delete FAQ Error:', err.message);
+        res.status(500).send('Server Error');
+    }
+});
+
 module.exports = router;

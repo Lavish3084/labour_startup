@@ -15,6 +15,7 @@ import '../widgets/pattern_painter.dart';
 
 class ServiceRequestScreen extends StatefulWidget {
   final ServiceCategory category;
+  final bool isInstant;
   final int numberOfWorkers;
   final String workType;
   final List<String>? taskImagesBase64;
@@ -24,6 +25,7 @@ class ServiceRequestScreen extends StatefulWidget {
   const ServiceRequestScreen({
     super.key,
     required this.category,
+    this.isInstant = false,
     this.numberOfWorkers = 1,
     this.workType = '',
     this.taskImagesBase64,
@@ -146,32 +148,41 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   SizedBox(height: _selectedAddress != null ? 28 : 20),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      _buildModeToggle(),
-                      if (_selectedBookingMode == 'Hourly') _buildArrivalTimeShortCard(),
-                    ],
-                  ),
-                  const SizedBox(height: 24),
-                  Text(
-                    'Select Date',
-                    style: GoogleFonts.inter(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.black,
+                  if (widget.isInstant) ...[
+                    _buildInstantHelpBanner(),
+                    const SizedBox(height: 24),
+                    const Divider(height: 1),
+                    const SizedBox(height: 24),
+                    _buildHourlyContent(),
+                    const SizedBox(height: 32),
+                  ] else ...[
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        _buildModeToggle(),
+                        if (_selectedBookingMode == 'Hourly') _buildArrivalTimeShortCard(),
+                      ],
                     ),
-                  ),
-                  const SizedBox(height: 16),
-                  _buildDateSelectionRow(),
-                  const SizedBox(height: 24),
-                  const Divider(height: 1),
-                  const SizedBox(height: 24),
-                  if (_selectedBookingMode == 'Hourly') 
-                    _buildHourlyContent() 
-                  else 
-                    _buildDailyContent(),
-                  const SizedBox(height: 32),
+                    const SizedBox(height: 24),
+                    Text(
+                      'Select Date',
+                      style: GoogleFonts.inter(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.black,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    _buildDateSelectionRow(),
+                    const SizedBox(height: 24),
+                    const Divider(height: 1),
+                    const SizedBox(height: 24),
+                    if (_selectedBookingMode == 'Hourly') 
+                      _buildHourlyContent() 
+                    else 
+                      _buildDailyContent(),
+                    const SizedBox(height: 32),
+                  ],
                 ],
               ),
             ),
@@ -870,15 +881,18 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
                   MaterialPageRoute(
                     builder: (context) => BookingSetupScreen(
                       category: widget.category,
-                      bookingMode: _selectedBookingMode,
-                      scheduledTime: DateTime(
-                        _selectedDate.year,
-                        _selectedDate.month,
-                        _selectedDate.day,
-                        _selectedTime.hour,
-                        _selectedTime.minute,
-                      ),
-                      numberOfHours: _selectedBookingMode == 'Hourly' ? _numberOfHours.toInt() : null,
+                      bookingMode: widget.isInstant ? 'Hourly' : _selectedBookingMode,
+                      scheduledTime: widget.isInstant
+                          ? DateTime.now()
+                          : DateTime(
+                              _selectedDate.year,
+                              _selectedDate.month,
+                              _selectedDate.day,
+                              _selectedTime.hour,
+                              _selectedTime.minute,
+                            ),
+                      isInstant: widget.isInstant,
+                      numberOfHours: (widget.isInstant || _selectedBookingMode == 'Hourly') ? _numberOfHours.toInt() : null,
                       address: _selectedAddress!,
                       latitude: _latitude!,
                       longitude: _longitude!,
@@ -939,7 +953,7 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
   }
 
   double _calculateTotalPrice() {
-    if (_selectedBookingMode == 'Hourly') {
+    if (widget.isInstant || _selectedBookingMode == 'Hourly') {
       return widget.category.hourlyRate * _numberOfHours;
     } else {
       // Daily mode is fixed 10 hours (8 AM to 6 PM)
@@ -947,6 +961,62 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
     }
   }
 
+  Widget _buildInstantHelpBanner() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFE8F3F1),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: const Color(0xFF4A9782).withOpacity(0.3),
+          width: 1.5,
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.flash_on_rounded,
+              color: Color(0xFF4A9782),
+              size: 24,
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Instant Booking Active',
+                  style: GoogleFonts.inter(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    color: const Color(0xFF1E293B),
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  'A worker will be assigned to arrive as soon as possible (ASAP).',
+                  style: GoogleFonts.inter(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.black54,
+                    height: 1.3,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
 }
 

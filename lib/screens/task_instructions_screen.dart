@@ -15,8 +15,13 @@ enum DescribeMode { photo, voice, text }
 
 class TaskInstructionsScreen extends StatefulWidget {
   final ServiceCategory category;
+  final bool isInstant;
 
-  const TaskInstructionsScreen({super.key, required this.category});
+  const TaskInstructionsScreen({
+    super.key,
+    required this.category,
+    this.isInstant = false,
+  });
 
   @override
   State<TaskInstructionsScreen> createState() => _TaskInstructionsScreenState();
@@ -943,6 +948,7 @@ class _TaskInstructionsScreenState extends State<TaskInstructionsScreen>
             MaterialPageRoute(
               builder: (context) => ServiceRequestScreen(
                 category: widget.category,
+                isInstant: widget.isInstant,
                 numberOfWorkers: _workerCount,
                 workType: _selectedWorkType!,
                 taskImagesBase64: _taskImagesBase64.isNotEmpty ? _taskImagesBase64 : null,

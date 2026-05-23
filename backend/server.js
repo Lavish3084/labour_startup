@@ -74,6 +74,7 @@ const adminRoutes = require('./routes/admin');
 const categoriesRoutes = require('./routes/categories');
 const settingsRoutes = require('./routes/settings');
 const chatRoutes = require('./routes/chat');
+const faqRoutes = require('./routes/faqs');
 
 app.use('/api/auth', authRoutes);
 app.use('/api/categories', categoriesRoutes);
@@ -84,6 +85,7 @@ app.use('/api/payments', paymentRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/chat', chatRoutes);
+app.use('/api/faqs', faqRoutes);
 
 const { exec } = require("child_process");
 

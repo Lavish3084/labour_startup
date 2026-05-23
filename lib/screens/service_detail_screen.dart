@@ -8,8 +8,13 @@ import 'task_instructions_screen.dart';
 
 class ServiceDetailScreen extends StatefulWidget {
   final ServiceCategory category;
+  final bool isInstant;
 
-  const ServiceDetailScreen({super.key, required this.category});
+  const ServiceDetailScreen({
+    super.key,
+    required this.category,
+    this.isInstant = false,
+  });
 
   @override
   State<ServiceDetailScreen> createState() => _ServiceDetailScreenState();
@@ -25,12 +30,35 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen>
   int _totalReviews = 0;
   bool _isLoadingReviews = true;
 
+  List<dynamic> _faqs = [];
+  bool _isLoadingFaqs = true;
+
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
     _tabController.addListener(_handleTabSelection);
     _loadLabourerData();
+    _loadFaqs();
+  }
+
+  Future<void> _loadFaqs() async {
+    try {
+      final faqs = await ApiService.getFaqsForCategory(widget.category.name);
+      if (mounted) {
+        setState(() {
+          _faqs = faqs;
+          _isLoadingFaqs = false;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error loading FAQs: $e');
+      if (mounted) {
+        setState(() {
+          _isLoadingFaqs = false;
+        });
+      }
+    }
   }
 
   void _handleTabSelection() {
@@ -550,11 +578,48 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen>
             fit: BoxFit.contain,
           ),
         ),
+        _buildFaqsSection(),
       ],
     );
   }
 
+  Widget _buildFaqsSection() {
+    if (_isLoadingFaqs) {
+      return const Padding(
+        padding: EdgeInsets.symmetric(vertical: 24.0),
+        child: Center(
+          child: CircularProgressIndicator(
+            valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF4A9782)),
+          ),
+        ),
+      );
+    }
 
+    if (_faqs.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 32),
+        Text(
+          'Frequently Asked Questions',
+          style: GoogleFonts.inter(
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+            color: Colors.black,
+          ),
+        ),
+        const SizedBox(height: 16),
+        ..._faqs.map((faq) {
+          final question = faq['question']?.toString() ?? '';
+          final answer = faq['answer']?.toString() ?? '';
+          return FaqAccordionItem(question: question, answer: answer);
+        }),
+      ],
+    );
+  }
 
   Widget _buildBottomActionCard() {
     final double bottomPadding = MediaQuery.of(context).padding.bottom;
@@ -609,7 +674,10 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen>
                 MaterialPageRoute(
                   builder:
                       (context) =>
-                          TaskInstructionsScreen(category: widget.category),
+                          TaskInstructionsScreen(
+                            category: widget.category,
+                            isInstant: widget.isInstant,
+                          ),
                 ),
               );
             },
@@ -643,6 +711,76 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen>
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class FaqAccordionItem extends StatefulWidget {
+  final String question;
+  final String answer;
+
+  const FaqAccordionItem({
+    super.key,
+    required this.question,
+    required this.answer,
+  });
+
+  @override
+  State<FaqAccordionItem> createState() => _FaqAccordionItemState();
+}
+
+class _FaqAccordionItemState extends State<FaqAccordionItem> {
+  bool _isExpanded = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: Theme(
+        data: Theme.of(context).copyWith(
+          dividerColor: Colors.transparent,
+          splashColor: Colors.transparent,
+          highlightColor: Colors.transparent,
+        ),
+        child: ExpansionTile(
+          title: Text(
+            widget.question,
+            style: GoogleFonts.inter(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: const Color(0xFF1E293B),
+            ),
+          ),
+          trailing: Icon(
+            _isExpanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
+            color: const Color(0xFF4A9782),
+            size: 24,
+          ),
+          onExpansionChanged: (expanded) {
+            setState(() {
+              _isExpanded = expanded;
+            });
+          },
+          children: [
+            Padding(
+              padding: const EdgeInsets.only(left: 16.0, right: 16.0, bottom: 16.0),
+              child: Text(
+                widget.answer,
+                style: GoogleFonts.inter(
+                  fontSize: 13,
+                  color: const Color(0xFF64748B),
+                  height: 1.5,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
