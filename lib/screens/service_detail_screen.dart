@@ -604,10 +604,10 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen>
       children: [
         const SizedBox(height: 32),
         Text(
-          'Frequently Asked Questions',
+          'FAQs',
           style: GoogleFonts.inter(
-            fontSize: 16,
-            fontWeight: FontWeight.w700,
+            fontSize: 20,
+            fontWeight: FontWeight.w800,
             color: Colors.black,
           ),
         ),
@@ -658,7 +658,9 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen>
                 ),
               ),
               Text(
-                '₹${widget.category.dailyRate.toInt()}/Day',
+                widget.isInstant
+                    ? '₹${widget.category.hourlyRate.toInt()}/Hr'
+                    : '₹${widget.category.dailyRate.toInt()}/Day',
                 style: GoogleFonts.inter(
                   fontSize: 24,
                   fontWeight: FontWeight.w900,
@@ -736,11 +738,10 @@ class _FaqAccordionItemState extends State<FaqAccordionItem> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
-        color: const Color(0xFFF8FAFC),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        color: const Color(0xFFF3F5F9), // Soft grayish-blue background
+        borderRadius: BorderRadius.circular(24), // Highly rounded pill shape
       ),
       child: Theme(
         data: Theme.of(context).copyWith(
@@ -749,18 +750,20 @@ class _FaqAccordionItemState extends State<FaqAccordionItem> {
           highlightColor: Colors.transparent,
         ),
         child: ExpansionTile(
+          tilePadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
           title: Text(
             widget.question,
             style: GoogleFonts.inter(
-              fontSize: 14,
+              fontSize: 15,
               fontWeight: FontWeight.w600,
-              color: const Color(0xFF1E293B),
+              color: Colors.black,
+              height: 1.3,
             ),
           ),
           trailing: Icon(
-            _isExpanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
-            color: const Color(0xFF4A9782),
-            size: 24,
+            _isExpanded ? Icons.remove : Icons.add,
+            color: Colors.black,
+            size: 22,
           ),
           onExpansionChanged: (expanded) {
             setState(() {
@@ -768,14 +771,26 @@ class _FaqAccordionItemState extends State<FaqAccordionItem> {
             });
           },
           children: [
-            Padding(
-              padding: const EdgeInsets.only(left: 16.0, right: 16.0, bottom: 16.0),
-              child: Text(
-                widget.answer,
-                style: GoogleFonts.inter(
-                  fontSize: 13,
-                  color: const Color(0xFF64748B),
-                  height: 1.5,
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 24.0),
+              child: Divider(
+                color: Color(0xFFE2E8F0),
+                thickness: 1,
+                height: 1,
+              ),
+            ),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Padding(
+                padding: const EdgeInsets.only(left: 24.0, right: 24.0, top: 16.0, bottom: 20.0),
+                child: Text(
+                  widget.answer,
+                  textAlign: TextAlign.start,
+                  style: GoogleFonts.inter(
+                    fontSize: 13,
+                    color: const Color(0xFF475569),
+                    height: 1.5,
+                  ),
                 ),
               ),
             ),

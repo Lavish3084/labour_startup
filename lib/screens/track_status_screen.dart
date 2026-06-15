@@ -25,7 +25,7 @@ class TrackStatusScreen extends StatefulWidget {
   State<TrackStatusScreen> createState() => _TrackStatusScreenState();
 }
 
-class _TrackStatusScreenState extends State<TrackStatusScreen> {
+class _TrackStatusScreenState extends State<TrackStatusScreen> with WidgetsBindingObserver {
   final SocketService _socketService = SocketService();
   StreamSubscription? _notificationSubscription;
   bool _isLoading = true;
@@ -37,6 +37,7 @@ class _TrackStatusScreenState extends State<TrackStatusScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _fetchBookingDetails();
     _initSocket();
     _listenForNotifications();
@@ -49,6 +50,7 @@ class _TrackStatusScreenState extends State<TrackStatusScreen> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _socketService.leaveBooking(widget.bookingId);
     _socketService.offBookingUpdate();
     _notificationSubscription?.cancel();
@@ -56,8 +58,18 @@ class _TrackStatusScreenState extends State<TrackStatusScreen> {
     super.dispose();
   }
 
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      debugPrint('TrackStatusScreen: App resumed from background. Syncing...');
+      _fetchBookingDetails(showLoading: false);
+      _initSocket();
+    }
+  }
+
   void _initSocket() {
     _socketService.connect();
+    _socketService.offBookingUpdate(); // Prevent duplicate listeners
     _socketService.joinBooking(widget.bookingId);
     _socketService.onBookingUpdate((data) {
       if (mounted) {
@@ -247,8 +259,8 @@ class _TrackStatusScreenState extends State<TrackStatusScreen> {
     }
 
     final status = (_booking['status'] as String).toLowerCase();
-    final arrivalOTP = _booking['arrivalOTP']?.toString() ?? '----';
-    final completionOTP = _booking['completionOTP']?.toString() ?? '----';
+    final arrivalOTP = _booking['arrivalOtp']?.toString() ?? '----';
+    final completionOTP = _booking['completionOtp']?.toString() ?? '----';
     final labourerData = _booking['labourer'];
     final labourer = labourerData != null ? Labourer.fromJson(labourerData) : null;
     final amount = _booking['amount'] ?? (_booking['minAmount'] ?? 0);
@@ -406,7 +418,7 @@ class _TrackStatusScreenState extends State<TrackStatusScreen> {
                   ),
                 ),
             ],
-            const SizedBox(height: 40),
+            SizedBox(height: MediaQuery.of(context).padding.bottom + 24),
           ],
         ),
       ),

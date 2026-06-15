@@ -648,7 +648,7 @@ class _LabourerDetailScreenState extends State<LabourerDetailScreen> {
             left: 0,
             right: 0,
             child: Container(
-              padding: const EdgeInsets.all(20),
+              padding: EdgeInsets.fromLTRB(20, 20, 20, MediaQuery.of(context).padding.bottom + 12),
               decoration: BoxDecoration(
                 color: Colors.white,
                 boxShadow: [

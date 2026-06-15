@@ -16,6 +16,7 @@ import 'saved_addresses_screen.dart';
 import 'splash_screen.dart';
 import 'manage_profile_screen.dart';
 import 'refer_earn_screen.dart';
+import 'wallet_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -112,6 +113,136 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
+  Future<void> _openUrl(String urlString) async {
+    try {
+      final Uri url = Uri.parse(urlString);
+      if (await url_launcher.canLaunchUrl(url)) {
+        await url_launcher.launchUrl(url, mode: url_launcher.LaunchMode.externalApplication);
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Could not open $urlString')),
+          );
+        }
+      }
+    } catch (e) {
+      debugPrint('Error launching url: $e');
+    }
+  }
+
+  void _showSupportDialog() {
+    final TextEditingController subjectController = TextEditingController();
+    final TextEditingController messageController = TextEditingController();
+    bool isSubmitting = false;
+
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: Text(
+            'Help & Support',
+            style: GoogleFonts.inter(fontWeight: FontWeight.w800, fontSize: 20),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'How can we help you today?',
+                style: GoogleFonts.inter(fontSize: 13, color: Colors.grey[600]),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: subjectController,
+                decoration: InputDecoration(
+                  hintText: 'Subject',
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: messageController,
+                decoration: InputDecoration(
+                  hintText: 'Describe your issue...',
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                ),
+                maxLines: 4,
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text(
+                'Cancel',
+                style: GoogleFonts.inter(color: Colors.grey[600], fontWeight: FontWeight.w600),
+              ),
+            ),
+            ElevatedButton(
+              onPressed: isSubmitting
+                  ? null
+                  : () async {
+                      final subject = subjectController.text.trim();
+                      final msg = messageController.text.trim();
+
+                      if (subject.isEmpty || msg.isEmpty) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Please fill out all fields')),
+                        );
+                        return;
+                      }
+
+                      setDialogState(() => isSubmitting = true);
+
+                      try {
+                        final res = await ApiService.submitHelpRequest(subject, msg);
+                        if (mounted) {
+                          Navigator.pop(context);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(res['message'] ?? 'Help request submitted!'),
+                              backgroundColor: res['success'] == true ? Colors.green : Colors.red,
+                            ),
+                          );
+                        }
+                      } catch (e) {
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Submission failed: ${ErrorHandler.getErrorMessage(e)}'),
+                              backgroundColor: Colors.red,
+                            ),
+                          );
+                        }
+                      } finally {
+                        setDialogState(() => isSubmitting = false);
+                      }
+                    },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF4A9782),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              ),
+              child: isSubmitting
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                    )
+                  : Text(
+                      'Submit',
+                      style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.w700),
+                    ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final appState = Provider.of<AppStateProvider>(context);
@@ -128,20 +259,26 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
 
     final user = profileData?['user'];
+    final name = user?['name'] ?? 'Guest User';
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF9F9F9),
+      backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: const Color(0xFF143B2E), // Deep elegant green matching image
         elevation: 0,
-        centerTitle: true,
         automaticallyImplyLeading: false,
+        leading: Navigator.canPop(context)
+            ? IconButton(
+                icon: const Icon(Icons.arrow_back, color: Colors.white),
+                onPressed: () => Navigator.pop(context),
+              )
+            : null,
         title: Text(
           'Profile',
-          style: GoogleFonts.roboto(
-            fontSize: 22,
+          style: GoogleFonts.inter(
+            fontSize: 20,
             fontWeight: FontWeight.w700,
-            color: const Color(0xFF1D1B20),
+            color: Colors.white,
           ),
         ),
       ),
@@ -153,244 +290,363 @@ class _ProfileScreenState extends State<ProfileScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const SizedBox(
-                height: 20,
-              ), // ADJUST SPACING: Gap between AppBar and User Card (Original: 24)
-              _buildUserCard(user),
-              const SizedBox(
-                height: 36,
-              ), // ADJUST SPACING: Gap between User Card and 'Accounts' section (Original: 32)
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: Text(
-                  'Accounts',
-                  style: GoogleFonts.roboto(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                    color: const Color(0xFF595959),
-                    letterSpacing: 0.15,
-                  ),
-                ),
-              ),
-              const SizedBox(
-                height: 22,
-              ), // ADJUST SPACING: Gap between header and list (Original: 16)
-              _buildAccountsList(user),
-              const SizedBox(
-                height: 40,
-              ), // ADJUST SPACING: Bottom clearance (Original: 40)
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildUserCard(dynamic user) {
-    final name = user?['name'] ?? 'Guest User';
-    final email = user?['email'] ?? 'No email set';
-    final rating = user?['rating']?.toString() ?? '4.5';
-
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 24),
-      padding: const EdgeInsets.all(
-        20,
-      ), // ADJUST SPACING: Inner padding of the profile card (Original: 24)
-      decoration: ShapeDecoration(
-        color: Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(13)),
-        shadows: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 16,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              GestureDetector(
-                onTap: _updateProfilePicture,
-                child: Container(
-                  width: 80,
-                  height: 80,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(16),
-                    image: _getProfileImage(user),
-                    color: const Color(0xFFF2F2F2),
-                  ),
-                  child:
-                      user?['profilePicture'] == null
-                          ? const Icon(
-                            Icons.person,
-                            size: 40,
-                            color: Colors.grey,
-                          )
-                          : null,
-                ),
-              ),
-              const SizedBox(width: 20),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+              // 1. Header user details inside dark green card block
+              Container(
+                width: double.infinity,
+                color: const Color(0xFF143B2E),
+                padding: const EdgeInsets.only(left: 24, right: 24, bottom: 32, top: 8),
+                child: Row(
                   children: [
-                    Text(
-                      name,
-                      style: GoogleFonts.roboto(
-                        fontSize: 22,
-                        fontWeight: FontWeight.w700,
-                        color: const Color(0xFF1D1B20),
-                        height: 1.27,
+                    GestureDetector(
+                      onTap: _updateProfilePicture,
+                      child: Container(
+                        width: 84,
+                        height: 84,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.white.withOpacity(0.2),
+                          image: _getProfileImage(user),
+                        ),
+                        child: user?['profilePicture'] == null
+                            ? const Icon(Icons.person, size: 42, color: Colors.white)
+                            : null,
                       ),
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      email,
-                      style: GoogleFonts.roboto(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w400,
-                        color: const Color(0xFF49454F),
-                        height: 1.43,
-                        letterSpacing: 0.25,
+                    const SizedBox(width: 20),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            name,
+                            style: GoogleFonts.inter(
+                              fontSize: 24,
+                              fontWeight: FontWeight.w800,
+                              color: Colors.white,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            user?['phoneNumber'] ?? user?['email'] ?? 'No number set',
+                            style: GoogleFonts.inter(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.white.withOpacity(0.7),
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          GestureDetector(
+                            onTap: () => Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const ManageProfileScreen(),
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  'Edit profile',
+                                  style: GoogleFonts.inter(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                    color: const Color(0xFF8CD8B4), // light mint green
+                                  ),
+                                ),
+                                const SizedBox(width: 4),
+                                const Icon(
+                                  Icons.play_arrow_rounded,
+                                  size: 14,
+                                  color: Color(0xFF8CD8B4),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ],
                 ),
               ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
 
-  Widget _buildAccountsList(dynamic user) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 24),
-      decoration: ShapeDecoration(
-        color: Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(13)),
-        shadows: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 16,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          _buildMenuItem(
-            icon: Icons.person_outline_rounded,
-            title: 'Manage Profile',
-            onTap:
-                () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const ManageProfileScreen(),
-                  ),
+              // 2. Grid of 3 side-by-side cards
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+                child: Row(
+                  children: [
+                    _buildGridCard(
+                      icon: Icons.assignment_outlined,
+                      title: 'My bookings',
+                      onTap: () {
+                        Provider.of<AppStateProvider>(context, listen: false).setTab(1);
+                      },
+                    ),
+                    const SizedBox(width: 12),
+                    _buildGridCard(
+                      icon: Icons.account_balance_wallet_outlined,
+                      title: 'Will Wallet',
+                      badgeText: '₹${appState.walletBalance.toInt()}',
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const WalletScreen(),
+                          ),
+                        );
+                      },
+                    ),
+                    const SizedBox(width: 12),
+                    _buildGridCard(
+                      icon: Icons.headset_mic_outlined,
+                      title: 'Help & Support',
+                      onTap: _showSupportDialog,
+                    ),
+                  ],
                 ),
-          ),
-          _buildDivider(),
-          _buildMenuItem(
-            icon: Icons.lock_outline_rounded,
-            title: 'Password & Security',
-            onTap: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Password settings coming soon')),
-              );
-            },
-          ),
-          _buildDivider(),
-          _buildMenuItem(
-            icon: Icons.notifications_none_rounded,
-            title: 'Notifications',
-            onTap: () {},
-          ),
-          _buildDivider(),
-          _buildMenuItem(
-            icon: Icons.location_on_outlined,
-            title: 'Saved Addresses',
-            onTap:
-                () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const SavedAddressesScreen(),
-                  ),
-                ),
-          ),
-          _buildDivider(),
-          _buildMenuItem(
-            icon: Icons.share_outlined,
-            title: 'Refer & Earn',
-            onTap:
-                () => Navigator.push(
+              ),
+
+              // 3. Refer & earn pill card
+              GestureDetector(
+                onTap: () => Navigator.push(
                   context,
                   MaterialPageRoute(
                     builder: (context) => const ReferEarnScreen(),
                   ),
                 ),
+                child: Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 24),
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.02),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.card_giftcard_rounded,
+                        color: Color(0xFFD97706),
+                        size: 24,
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Text(
+                          'Refer & earn',
+                          style: GoogleFonts.inter(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.black,
+                          ),
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFEF3C7),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          'Upto ₹100',
+                          style: GoogleFonts.inter(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: const Color(0xFFD97706),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Icon(
+                        Icons.chevron_right_rounded,
+                        color: Colors.grey[400],
+                        size: 20,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              // 4. Large options card list
+              Container(
+                margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.02),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  children: [
+                    _buildListItem(
+                      icon: Icons.menu_book_rounded,
+                      title: 'Saved addresses',
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const SavedAddressesScreen(),
+                        ),
+                      ),
+                    ),
+                    _buildListDivider(),
+                    _buildListItem(
+                      icon: Icons.info_outline_rounded,
+                      title: 'About us',
+                      onTap: () => _openUrl('https://justlavish.tech/about-us'),
+                    ),
+                    _buildListDivider(),
+                    _buildListItem(
+                      icon: Icons.assignment_outlined,
+                      title: 'Terms of services',
+                      onTap: () => _openUrl('https://justlavish.tech/terms'),
+                    ),
+                    _buildListDivider(),
+                    _buildListItem(
+                      icon: Icons.shield_outlined,
+                      title: 'Privacy policy',
+                      onTap: () => _openUrl('https://justlavish.tech/privacy-policy'),
+                    ),
+                    _buildListDivider(),
+                    _buildListItem(
+                      icon: Icons.assignment_late_outlined,
+                      title: 'Request account deletion',
+                      onTap: _handleDeleteAccount,
+                    ),
+                    _buildListDivider(),
+                    _buildListItem(
+                      icon: Icons.logout_rounded,
+                      title: 'Log out',
+                      onTap: _handleLogout,
+                    ),
+                  ],
+                ),
+              ),
+
+              // 5. App version
+              Padding(
+                padding: EdgeInsets.only(top: 12, bottom: MediaQuery.of(context).padding.bottom + 100),
+                child: Center(
+                  child: Text(
+                    'APP VERSION: 1.4.6 (22a5)',
+                    style: GoogleFonts.inter(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: const Color(0xFF94A3B8),
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
-          _buildDivider(),
-          _buildMenuItem(
-            icon: Icons.logout_rounded,
-            title: 'Logout',
-            isDestructive: true,
-            onTap: _handleLogout,
-          ),
-          _buildDivider(),
-          _buildMenuItem(
-            icon: Icons.delete_forever_rounded,
-            title: 'Delete Account',
-            isDestructive: true,
-            onTap: _handleDeleteAccount,
-          ),
-        ],
+        ),
       ),
     );
   }
 
-  Widget _buildMenuItem({
+  Widget _buildGridCard({
+    required IconData icon,
+    required String title,
+    String? badgeText,
+    required VoidCallback onTap,
+  }) {
+    return Expanded(
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          height: 110,
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.02),
+                blurRadius: 8,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Icon(icon, color: const Color(0xFF475569), size: 26),
+                  if (badgeText != null)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFE8F3F1),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        badgeText,
+                        style: GoogleFonts.inter(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          color: const Color(0xFF4A9782),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+              Text(
+                title,
+                style: GoogleFonts.inter(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  color: const Color(0xFF1E293B),
+                  height: 1.2,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildListItem({
     required IconData icon,
     required String title,
     required VoidCallback onTap,
-    bool isDestructive = false,
   }) {
     return ListTile(
-      contentPadding: const EdgeInsets.symmetric(
-        horizontal: 20,
-        vertical: 5,
-      ), // ADJUST SPACING: Vertical padding of list items
-      dense: true, // Set to false for more vertical height
+      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 2),
       onTap: onTap,
-      leading: Icon(
-        icon,
-        color: isDestructive ? Colors.red : const Color(0xFF1D1B20),
-        size: 24,
-      ),
+      leading: Icon(icon, color: const Color(0xFF475569), size: 22),
       title: Text(
         title,
-        style: GoogleFonts.roboto(
-          fontSize: 16,
-          fontWeight: FontWeight.w500,
-          color: isDestructive ? Colors.red : const Color(0xFF1D1B20),
-          letterSpacing: 0.15,
-          height: 1.5,
+        style: GoogleFonts.inter(
+          fontSize: 15,
+          fontWeight: FontWeight.w600,
+          color: const Color(0xFF1E293B),
         ),
       ),
-      trailing: const Icon(
+      trailing: Icon(
         Icons.chevron_right_rounded,
-        color: Color(0xFFBBBBBB),
+        color: Colors.grey[400],
+        size: 20,
       ),
     );
   }
 
-  Widget _buildDivider() {
+  Widget _buildListDivider() {
     return const Padding(
-      padding: EdgeInsets.symmetric(horizontal: 24),
-      child: Divider(height: 1, thickness: 1, color: Color(0xFFDBDBDB)),
+      padding: EdgeInsets.symmetric(horizontal: 20),
+      child: Divider(height: 1, thickness: 1, color: Color(0xFFF1F5F9)),
     );
   }
 
@@ -421,11 +677,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Text(
           'Delete Account?',
-          style: GoogleFonts.roboto(fontWeight: FontWeight.w700),
+          style: GoogleFonts.inter(fontWeight: FontWeight.w700),
         ),
         content: Text(
           'This will permanently delete your account, profile information, saved addresses, and all associated data. This action cannot be undone.',
-          style: GoogleFonts.roboto(
+          style: GoogleFonts.inter(
             color: const Color(0xFF555555),
             height: 1.5,
           ),
@@ -435,7 +691,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             onPressed: () => Navigator.pop(context, false),
             child: Text(
               'Cancel',
-              style: GoogleFonts.roboto(
+              style: GoogleFonts.inter(
                 color: const Color(0xFF666666),
                 fontWeight: FontWeight.w600,
               ),
@@ -452,7 +708,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
             child: Text(
               'Delete',
-              style: GoogleFonts.roboto(
+              style: GoogleFonts.inter(
                 color: Colors.white,
                 fontWeight: FontWeight.w600,
               ),

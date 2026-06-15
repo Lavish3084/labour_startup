@@ -11,6 +11,21 @@ import 'package:google_sign_in/google_sign_in.dart';
 class ApiService {
   static const String baseUrl = Config.baseUrl;
 
+  /// Retry a GET request up to [maxRetries] times on transient server errors (500/503).
+  static Future<http.Response> _retryGet(Uri uri, {Map<String, String>? headers, int maxRetries = 2}) async {
+    http.Response? lastResponse;
+    for (int attempt = 0; attempt <= maxRetries; attempt++) {
+      lastResponse = await http.get(uri, headers: headers ?? {});
+      if (lastResponse.statusCode != 500 && lastResponse.statusCode != 503) {
+        return lastResponse;
+      }
+      if (attempt < maxRetries) {
+        await Future.delayed(Duration(milliseconds: 500 * (attempt + 1)));
+      }
+    }
+    return lastResponse!;
+  }
+
   // Authentication
   static Future<Map<String, dynamic>> signup(
     String name,
@@ -189,7 +204,7 @@ class ApiService {
   static Future<Map<String, dynamic>> getProfile() async {
     try {
       final token = await getToken();
-      final response = await http.get(
+      final response = await _retryGet(
         Uri.parse('$baseUrl/profile/me'),
         headers: {'x-auth-token': token ?? ''},
       );
@@ -218,6 +233,24 @@ class ApiService {
       body: jsonEncode({'name': name}),
     );
     return response.statusCode == 200;
+  }
+
+  static Future<bool> updateProfilePhone(String phoneNumber) async {
+    try {
+      final token = await getToken();
+      final response = await http.put(
+        Uri.parse('$baseUrl/auth/phone-direct'),
+        headers: {
+          'Content-Type': 'application/json',
+          'x-auth-token': token ?? '',
+        },
+        body: jsonEncode({'phoneNumber': phoneNumber}),
+      );
+      return response.statusCode == 200;
+    } catch (e) {
+      print('updateProfilePhone error: $e');
+      return false;
+    }
   }
 
   static Future<bool> updateProfilePicture(String base64Image) async {
@@ -469,8 +502,26 @@ class ApiService {
 
       if (response.statusCode == 200) {
         return {'success': true, 'data': jsonDecode(response.body)};
+      } else {
+        dynamic error;
+        try {
+          error = jsonDecode(response.body);
+        } catch (_) {
+          error = null;
+        }
+        String errorMsg = 'Something went wrong';
+        if (error is Map) {
+          if (error.containsKey('error') && error['error'] != null) {
+            errorMsg = '${error['msg'] ?? 'Error'}: ${error['error']}';
+          } else {
+            errorMsg = error['msg'] ?? 'Something went wrong';
+          }
+        }
+        return {
+          'success': false,
+          'message': errorMsg
+        };
       }
-      return {'success': false, 'message': 'Something went wrong'};
     } catch (e) {
       return {'success': false, 'message': ErrorHandler.getErrorMessage(e)};
     }
@@ -479,7 +530,7 @@ class ApiService {
   static Future<List<dynamic>> getUserBookings() async {
     try {
       final token = await getToken();
-      final response = await http.get(
+      final response = await _retryGet(
         Uri.parse('$baseUrl/bookings/user'),
         headers: {'x-auth-token': token ?? ''},
       );
@@ -490,7 +541,7 @@ class ApiService {
         await logout();
         throw Exception('Unauthorized');
       } else {
-        throw Exception('Failed to load settings: ${response.statusCode}');
+        throw Exception('Failed to load bookings: ${response.statusCode}');
       }
     } catch (e) {
       throw Exception(ErrorHandler.getErrorMessage(e));
@@ -582,7 +633,7 @@ class ApiService {
   // Data
   static Future<Map<String, dynamic>> getSettings() async {
     try {
-      final response = await http.get(Uri.parse('$baseUrl/settings'));
+      final response = await _retryGet(Uri.parse('$baseUrl/settings'));
       if (response.statusCode == 200) {
         return jsonDecode(response.body);
       } else {
@@ -739,7 +790,7 @@ class ApiService {
     }
   }
 
-  static Future<bool> confirmFreeBooking(String bookingId) async {
+  static Future<Map<String, dynamic>> confirmFreeBooking(String bookingId) async {
     try {
       final token = await getToken();
       final response = await http.post(
@@ -753,9 +804,30 @@ class ApiService {
         }),
       );
 
-      return response.statusCode == 200;
+      if (response.statusCode == 200) {
+        return {'success': true};
+      } else {
+        dynamic error;
+        try {
+          error = jsonDecode(response.body);
+        } catch (_) {
+          error = null;
+        }
+        String errorMsg = 'Failed to confirm booking';
+        if (error is Map) {
+          if (error.containsKey('error') && error['error'] != null) {
+            errorMsg = '${error['msg'] ?? 'Error'}: ${error['error']}';
+          } else {
+            errorMsg = error['msg'] ?? 'Failed to confirm booking';
+          }
+        }
+        return {
+          'success': false,
+          'message': errorMsg
+        };
+      }
     } catch (e) {
-      return false;
+      return {'success': false, 'message': ErrorHandler.getErrorMessage(e)};
     }
   }
 

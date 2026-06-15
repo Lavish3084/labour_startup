@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -18,35 +19,48 @@ class WalletScreen extends StatefulWidget {
 
 class _WalletScreenState extends State<WalletScreen> {
   final PaymentService _paymentService = PaymentService();
-  final TextEditingController _amountController = TextEditingController();
+  late final TextEditingController _amountController;
   bool _isProcessing = false;
+  int _selectedPresetAmount = 250;
 
   @override
   void initState() {
     super.initState();
+    _amountController = TextEditingController(text: '250');
     _paymentService.initialize(
       onSuccess: _handlePaymentSuccess,
       onFailure: _handlePaymentFailure,
       onExternalWallet: (response) {},
     );
+    _amountController.addListener(_onAmountChanged);
   }
 
   @override
   void dispose() {
     _paymentService.dispose();
+    _amountController.removeListener(_onAmountChanged);
     _amountController.dispose();
     super.dispose();
+  }
+
+  void _onAmountChanged() {
+    final amt = int.tryParse(_amountController.text) ?? 0;
+    setState(() {
+      if (amt == 250 || amt == 500 || amt == 1000) {
+        _selectedPresetAmount = amt;
+      } else {
+        _selectedPresetAmount = 0; // custom input
+      }
+    });
   }
 
   void _handlePaymentSuccess(PaymentSuccessResponse response) async {
     setState(() => _isProcessing = true);
     try {
       final double amount = double.tryParse(_amountController.text) ?? 0;
-      final success = await ApiService.verifyWalletPayment(
-        response.orderId!,
-        response.paymentId!,
-        response.signature!,
+      final success = await ApiService.addMoneyToWallet(
         amount,
+        response.paymentId ?? '',
       );
 
       if (success) {
@@ -59,7 +73,7 @@ class _WalletScreenState extends State<WalletScreen> {
       } else {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("Payment verification failed.")),
+            const SnackBar(content: Text("Failed to credit money to wallet.")),
           );
         }
       }
@@ -86,9 +100,9 @@ class _WalletScreenState extends State<WalletScreen> {
     if (amountText.isEmpty) return;
     
     final int amount = int.tryParse(amountText) ?? 0;
-    if (amount < 10) {
+    if (amount < 100) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Minimum amount is ₹10")),
+        const SnackBar(content: Text("Minimum amount is ₹100")),
       );
       return;
     }
@@ -100,143 +114,28 @@ class _WalletScreenState extends State<WalletScreen> {
         fallback: 'rzp_test_YourKeyIDHere',
       );
 
-      final order = await ApiService.createWalletOrder(amount);
       final user = Provider.of<AppStateProvider>(context, listen: false).profileData?['user'];
 
       _paymentService.openCheckout(
         keyId: razorpayKeyId,
-        orderId: order['id'],
+        orderId: null, // No order ID needed for wallet top-ups
         name: "WILL Wallet",
         description: "Add money to wallet",
         email: user?['email'] ?? "user@example.com",
         contact: user?['phone'] ?? "9876543210",
-        amount: order['amount'],
+        amount: amount * 100, // In paise
       );
     } catch (e) {
-      setState(() => _isProcessing = false);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(ErrorHandler.getErrorMessage(e))),
         );
       }
+    } finally {
+      if (mounted) {
+        setState(() => _isProcessing = false);
+      }
     }
-  }
-
-  void _showAddMoneyDialog() {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        padding: EdgeInsets.only(
-          bottom: MediaQuery.of(context).viewInsets.bottom,
-          left: 24,
-          right: 24,
-          top: 32,
-        ),
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Add Money to Wallet',
-              style: GoogleFonts.roboto(
-                fontSize: 20,
-                fontWeight: FontWeight.w700,
-                color: const Color(0xFF1D1B20),
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Enter the amount you want to add',
-              style: GoogleFonts.roboto(
-                fontSize: 14,
-                color: const Color(0xFF595959),
-              ),
-            ),
-            const SizedBox(height: 24),
-            TextField(
-              controller: _amountController,
-              keyboardType: TextInputType.number,
-              autofocus: true,
-              style: GoogleFonts.roboto(
-                fontSize: 24,
-                fontWeight: FontWeight.w700,
-                color: const Color(0xFF4A9782),
-              ),
-              decoration: InputDecoration(
-                prefixText: '₹ ',
-                prefixStyle: GoogleFonts.roboto(
-                  fontSize: 24,
-                  fontWeight: FontWeight.w700,
-                  color: const Color(0xFF4A9782),
-                ),
-                hintText: '0',
-                filled: true,
-                fillColor: const Color(0xFFF9F9F9),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide.none,
-                ),
-              ),
-            ),
-            const SizedBox(height: 24),
-            Row(
-              children: [100, 200, 500].map((val) => Padding(
-                padding: const EdgeInsets.only(right: 8),
-                child: ChoiceChip(
-                  label: Text('₹$val'),
-                  selected: _amountController.text == val.toString(),
-                  onSelected: (selected) {
-                    if (selected) {
-                      setState(() => _amountController.text = val.toString());
-                      Navigator.pop(context);
-                      _showAddMoneyDialog(); // Re-open to update state (simple way)
-                    }
-                  },
-                  selectedColor: const Color(0xFF4A9782).withOpacity(0.1),
-                  labelStyle: GoogleFonts.roboto(
-                    color: const Color(0xFF4A9782),
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              )).toList(),
-            ),
-            const SizedBox(height: 32),
-            SizedBox(
-              width: double.infinity,
-              height: 56,
-              child: ElevatedButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                  _startPayment();
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF4A9782),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  elevation: 0,
-                ),
-                child: Text(
-                  'Proceed to Pay',
-                  style: GoogleFonts.roboto(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white,
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(height: 32),
-          ],
-        ),
-      ),
-    );
   }
 
   @override
@@ -244,22 +143,12 @@ class _WalletScreenState extends State<WalletScreen> {
     final appState = Provider.of<AppStateProvider>(context);
     final double balance = appState.walletBalance;
 
+    final int typedAmount = int.tryParse(_amountController.text) ?? 0;
+    final double cashback = typedAmount >= 250 ? typedAmount * 0.05 : 0.0;
+    final double totalWalletValue = typedAmount + cashback;
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF9F9F9),
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        centerTitle: true,
-        automaticallyImplyLeading: false,
-        title: Text(
-          'Wallet',
-          style: GoogleFonts.roboto(
-            fontSize: 22,
-            fontWeight: FontWeight.w700,
-            color: const Color(0xFF1D1B20),
-          ),
-        ),
-      ),
+      backgroundColor: const Color(0xFFF8FAFC),
       body: RefreshIndicator(
         onRefresh: () => appState.fetchWalletBalance(),
         color: const Color(0xFF4A9782),
@@ -267,24 +156,42 @@ class _WalletScreenState extends State<WalletScreen> {
           children: [
             SingleChildScrollView(
               physics: const AlwaysScrollableScrollPhysics(),
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildBalanceCard(balance),
-                  const SizedBox(height: 24),
-                  _buildActionButtons(context),
-                  const SizedBox(height: 32),
-                  Text(
-                    'Recent Activity',
-                    style: GoogleFonts.roboto(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w700,
-                      color: const Color(0xFF1D1B20),
+                  // 1. Bright gradient green header block
+                  _buildHeader(context),
+                  
+                  // Content section shifting slightly upwards onto green header
+                  Transform.translate(
+                    offset: const Offset(0, -32),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                      child: Column(
+                        children: [
+                          // 2. White Balance Card
+                          _buildBalanceCard(balance),
+                          const SizedBox(height: 16),
+                          
+                          
+                          // 4. White Add Money Container
+                          _buildAddMoneyCard(typedAmount, cashback, totalWalletValue),
+                          const SizedBox(height: 24),
+                          
+                          // 5. Grid of 3 top-up features
+                          _buildFeaturesGrid(),
+                          const SizedBox(height: 16),
+                          
+                          // 6. How it works timeline card
+                          _buildHowItWorksCard(),
+                          const SizedBox(height: 16),
+                          
+                          // 7. Using your balance policies card
+                          _buildUsingBalanceCard(),
+                          SizedBox(height: MediaQuery.of(context).padding.bottom + 32),
+                        ],
+                      ),
                     ),
                   ),
-                  const SizedBox(height: 16),
-                  _buildActivityList(appState),
                 ],
               ),
             ),
@@ -301,32 +208,73 @@ class _WalletScreenState extends State<WalletScreen> {
     );
   }
 
-  Widget _buildBalanceCard(double balance) {
+  Widget _buildHeader(BuildContext context) {
+    final double topPadding = MediaQuery.of(context).padding.top;
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(vertical: 32),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF1F8F6),
-        borderRadius: BorderRadius.circular(16),
+      height: 240 + topPadding,
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            Color(0xFF0F9B60), // Lighter vibrant green
+            Color(0xFF0E8A54), // Deeper green
+          ],
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+        ),
       ),
+      padding: EdgeInsets.only(top: topPadding + 12, left: 24, right: 24),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              GestureDetector(
+                onTap: () => Navigator.pop(context),
+                child: Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.15),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.arrow_back, color: Colors.white, size: 20),
+                ),
+              ),
+              GestureDetector(
+                onTap: () {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Support request details coming soon.')),
+                  );
+                },
+                child: Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.15),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.help_outline_rounded, color: Colors.white, size: 20),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
           Text(
-            'Available Balance',
-            style: GoogleFonts.roboto(
-              fontSize: 14,
+            'Will',
+            style: GoogleFonts.inter(
+              fontSize: 24,
               fontWeight: FontWeight.w500,
-              color: const Color(0xFF595959),
-              letterSpacing: 0.1,
+              color: Colors.white.withOpacity(0.9),
             ),
           ),
-          const SizedBox(height: 8),
           Text(
-            '₹${balance.toStringAsFixed(2)}',
-            style: GoogleFonts.roboto(
-              fontSize: 36,
-              fontWeight: FontWeight.w700,
-              color: const Color(0xFF4A9782),
+            'Wallet',
+            style: GoogleFonts.inter(
+              fontSize: 38,
+              fontWeight: FontWeight.w900,
+              color: Colors.white,
+              letterSpacing: 1.5,
+              height: 1.1,
             ),
           ),
         ],
@@ -334,190 +282,488 @@ class _WalletScreenState extends State<WalletScreen> {
     );
   }
 
-  Widget _buildActionButtons(BuildContext context) {
+  Widget _buildBalanceCard(double balance) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 16,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                'Wallet Balance',
+                style: GoogleFonts.inter(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: const Color(0xFF64748B),
+                ),
+              ),
+              const SizedBox(width: 6),
+              Icon(Icons.info_outline_rounded, size: 16, color: Colors.grey[400]),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            '₹${balance.toInt()}',
+            style: GoogleFonts.inter(
+              fontSize: 48,
+              fontWeight: FontWeight.w900,
+              color: const Color(0xFF00AA6E), // Bright mockup green
+            ),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            balance <= 50 
+                ? 'Your balance is low. Please add money to continue enjoying benefits.'
+                : 'Your wallet has active credits. Top up now to secure extra rewards.',
+            textAlign: TextAlign.center,
+            style: GoogleFonts.inter(
+              fontSize: 12,
+              color: const Color(0xFF94A3B8),
+              height: 1.4,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  
+  Widget _buildAddMoneyCard(int typedAmount, double cashback, double totalWalletValue) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.02),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Add money',
+            style: GoogleFonts.inter(
+              fontSize: 18,
+              fontWeight: FontWeight.w800,
+              color: Colors.black,
+            ),
+          ),
+          const SizedBox(height: 16),
+          
+          // TextField Container
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            decoration: BoxDecoration(
+              border: Border.all(color: const Color(0xFFE2E8F0)),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _amountController,
+                    keyboardType: TextInputType.number,
+                    inputFormatters: [
+                      FilteringTextInputFormatter.digitsOnly,
+                    ],
+                    style: GoogleFonts.inter(
+                      fontSize: 26,
+                      fontWeight: FontWeight.w900,
+                      color: Colors.black,
+                    ),
+                    decoration: InputDecoration(
+                      prefixText: '₹',
+                      prefixStyle: GoogleFonts.inter(
+                        fontSize: 26,
+                        fontWeight: FontWeight.w900,
+                        color: Colors.black,
+                      ),
+                      border: InputBorder.none,
+                      contentPadding: EdgeInsets.zero,
+                    ),
+                  ),
+                ),
+                if (cashback > 0)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFEFF6FF),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      'Get ₹${cashback.toStringAsFixed(1)} cashback',
+                      style: GoogleFonts.inter(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: const Color(0xFF2563EB),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 10),
+          
+          // Helper dynamic subtext
+          if (typedAmount > 0)
+            Text(
+              typedAmount < 100
+                  ? 'Minimum amount to top up is ₹100'
+                  : (cashback > 0
+                      ? 'You will get ₹${totalWalletValue.toStringAsFixed(1)} in the wallet!'
+                      : 'You will get ₹$typedAmount in the wallet! Min ₹250 to unlock cashback.'),
+              style: GoogleFonts.inter(
+                fontSize: 12,
+                color: typedAmount < 100 ? const Color(0xFFDC2626) : const Color(0xFF64748B),
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          const SizedBox(height: 20),
+          
+          // Horizontal Custom Chip list
+          Row(
+            children: [
+              _buildPresetTopUpChip(250, '+₹12.5'),
+              const SizedBox(width: 10),
+              _buildPresetTopUpChip(500, '+₹25'),
+              const SizedBox(width: 10),
+              _buildPresetTopUpChip(1000, '+₹50'),
+            ],
+          ),
+          const SizedBox(height: 24),
+          
+          // Big green top-up button
+          SizedBox(
+            width: double.infinity,
+            height: 54,
+            child: ElevatedButton(
+              onPressed: _startPayment,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF00AA6E), // Bright top-up green
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                elevation: 0,
+              ),
+              child: Text(
+                'Add ₹$typedAmount to wallet',
+                style: GoogleFonts.inter(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPresetTopUpChip(int amount, String label) {
+    bool isSelected = _selectedPresetAmount == amount;
+    return Expanded(
+      child: GestureDetector(
+        onTap: () {
+          setState(() {
+            _selectedPresetAmount = amount;
+            _amountController.text = amount.toString();
+          });
+        },
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          decoration: BoxDecoration(
+            color: isSelected ? const Color(0xFFE6F4EA) : Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: isSelected ? const Color(0xFF137333) : const Color(0xFFE2E8F0),
+              width: 1.5,
+            ),
+          ),
+          child: Column(
+            children: [
+              Text(
+                '₹$amount',
+                style: GoogleFonts.inter(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w800,
+                  color: Colors.black,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                decoration: BoxDecoration(
+                  color: isSelected ? const Color(0xFF137333) : const Color(0xFFE8F3F1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  label,
+                  style: GoogleFonts.inter(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    color: isSelected ? Colors.white : const Color(0xFF4A9782),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFeaturesGrid() {
     return Row(
       children: [
-        Expanded(
-          child: _buildActionButton(
-            label: 'Add Money',
-            icon: Icons.add_circle_outline_rounded,
-            backgroundColor: const Color(0xFF4A9782),
-            textColor: Colors.white,
-            onTap: _showAddMoneyDialog,
+        _buildFeatureItem(
+          icon: Icons.flash_on_rounded,
+          title: 'Earn Rewards',
+          subtitle: 'on every top-up',
+        ),
+        _buildFeatureDivider(),
+        _buildFeatureItem(
+          icon: Icons.check_circle_outline_rounded,
+          title: 'Quick Checkout',
+          subtitle: 'on every booking',
+        ),
+        _buildFeatureDivider(),
+        _buildFeatureItem(
+          icon: Icons.calendar_today_outlined,
+          title: 'Universal Access',
+          subtitle: 'on all bookings',
+        ),
+      ],
+    );
+  }
+
+  Widget _buildFeatureItem({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+  }) {
+    return Expanded(
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: const BoxDecoration(
+              color: Color(0xFFE6F4EA),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, color: const Color(0xFF137333), size: 20),
           ),
+          const SizedBox(height: 8),
+          Text(
+            title,
+            textAlign: TextAlign.center,
+            style: GoogleFonts.inter(
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              color: Colors.black,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            subtitle,
+            textAlign: TextAlign.center,
+            style: GoogleFonts.inter(
+              fontSize: 10,
+              color: const Color(0xFF64748B),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFeatureDivider() {
+    return Container(
+      height: 32,
+      width: 1,
+      color: const Color(0xFFE2E8F0),
+    );
+  }
+
+  Widget _buildHowItWorksCard() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.02),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'How it works',
+            style: GoogleFonts.inter(
+              fontSize: 16,
+              fontWeight: FontWeight.w800,
+              color: Colors.black,
+            ),
+          ),
+          const SizedBox(height: 20),
+          
+          // Timeline list
+          _buildTimelineStep(
+            stepNumber: 1,
+            text: 'Add money to your Will wallet and receive promotional rewards.',
+            isLast: false,
+          ),
+          _buildTimelineStep(
+            stepNumber: 2,
+            text: 'Checkout instantly with balance in your Will wallet across all orders.',
+            isLast: false,
+          ),
+          _buildTimelineStep(
+            stepNumber: 3,
+            text: 'Wallet balance cannot be withdrawn and can only be used on Will, in accordance with applicable laws.',
+            isLast: true,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTimelineStep({
+    required int stepNumber,
+    required String text,
+    required bool isLast,
+  }) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Column(
+          children: [
+            Container(
+              width: 10,
+              height: 10,
+              decoration: const BoxDecoration(
+                color: Color(0xFF0F9B60),
+                shape: BoxShape.circle,
+              ),
+            ),
+            if (!isLast)
+              Container(
+                width: 1.5,
+                height: 48,
+                decoration: const BoxDecoration(
+                  color: Color(0xFFE2E8F0),
+                ),
+              ),
+          ],
         ),
         const SizedBox(width: 16),
         Expanded(
-          child: _buildActionButton(
-            label: 'Withdraw',
-            icon: Icons.arrow_upward_rounded,
-            backgroundColor: Colors.white,
-            textColor: Colors.grey, // Disabled look
-            onTap: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Withdrawals are not permitted at this time.')),
-              );
-            },
+          child: Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: Text(
+              text,
+              style: GoogleFonts.inter(
+                fontSize: 13,
+                color: const Color(0xFF475569),
+                height: 1.4,
+              ),
+            ),
           ),
         ),
       ],
     );
   }
 
-  Widget _buildActionButton({
-    required String label,
-    required IconData icon,
-    required Color backgroundColor,
-    required Color textColor,
-    required VoidCallback onTap,
-  }) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 14),
-        decoration: BoxDecoration(
-          color: backgroundColor,
-          borderRadius: BorderRadius.circular(12),
-          border: backgroundColor == Colors.white 
-            ? Border.all(color: const Color(0xFFEEEEEE)) 
-            : null,
-          boxShadow: backgroundColor == Colors.white ? [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.02),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            )
-          ] : null,
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, color: textColor, size: 20),
-            const SizedBox(width: 8),
-            Text(
-              label,
-              style: GoogleFonts.roboto(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: textColor,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildActivityList(AppStateProvider appState) {
-    final List<dynamic> transactions = appState.walletTransactions;
-
-    if (transactions.isEmpty) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 40),
-          child: Column(
-            children: [
-              Icon(Icons.history_rounded, size: 48, color: Colors.grey[300]),
-              const SizedBox(height: 16),
-              Text(
-                'No recent activity',
-                style: GoogleFonts.roboto(
-                  fontSize: 16,
-                  color: const Color(0xFF595959),
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-
-    return ListView.separated(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      itemCount: transactions.length,
-      separatorBuilder: (context, index) => const SizedBox(height: 12),
-      itemBuilder: (context, index) {
-        final tx = transactions[index];
-        return _buildActivityItem(tx);
-      },
-    );
-  }
-
-  Widget _buildActivityItem(dynamic tx) {
-    final bool isCredit = tx['type']?.toString().toLowerCase() == 'credit';
-    final String amount = (isCredit ? '+' : '-') + '₹${tx['amount']}';
-    
-    // Formatting date
-    String dateStr = 'Recently';
-    try {
-      final DateTime date = DateTime.parse(tx['date']).toLocal();
-      final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-      dateStr = "${date.day} ${months[date.month - 1]}, ${date.hour % 12 == 0 ? 12 : date.hour % 12}:${date.minute.toString().padLeft(2, '0')} ${date.hour >= 12 ? 'PM' : 'AM'}";
-    } catch (_) {}
-
+  Widget _buildUsingBalanceCard() {
     return Container(
-      padding: const EdgeInsets.all(16),
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.03),
+            color: Colors.black.withOpacity(0.02),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
         ],
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: const Color(0xFFF5F5F5),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Icon(
-              isCredit ? Icons.add_card_rounded : Icons.account_balance_wallet_outlined, 
-              color: const Color(0xFF595959), 
-              size: 24
-            ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  tx['title'] ?? (isCredit ? 'Money Added' : 'Service Booking'),
-                  style: GoogleFonts.roboto(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: const Color(0xFF1D1B20),
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  dateStr,
-                  style: GoogleFonts.roboto(
-                    fontSize: 14,
-                    color: const Color(0xFF595959),
-                  ),
-                ),
-              ],
-            ),
-          ),
           Text(
-            amount,
-            style: GoogleFonts.roboto(
+            'Using your Balance',
+            style: GoogleFonts.inter(
               fontSize: 16,
-              fontWeight: FontWeight.w700,
-              color: isCredit ? const Color(0xFF4A9782) : const Color(0xFF1D1B20),
+              fontWeight: FontWeight.w800,
+              color: Colors.black,
             ),
           ),
+          const SizedBox(height: 16),
+          
+          _buildPolicyItem('Seamlessly pay for bookings with balance in your wallet at Pronto.'),
+          const SizedBox(height: 12),
+          _buildPolicyItem('Promotional rewards expire 15 days after being credited.'),
+          const SizedBox(height: 12),
+          _buildPolicyItem('Cash balance expires 1 year from the date of credit.'),
         ],
       ),
+    );
+  }
+
+  Widget _buildPolicyItem(String text) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(top: 4.0),
+          child: Transform.rotate(
+            angle: 45 * 3.14159 / 180,
+            child: Container(
+              width: 6,
+              height: 6,
+              color: const Color(0xFF0F9B60),
+            ),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Text(
+            text,
+            style: GoogleFonts.inter(
+              fontSize: 13,
+              color: const Color(0xFF475569),
+              height: 1.4,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

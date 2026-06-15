@@ -33,11 +33,11 @@ class ServiceCategory {
       iconName: iconName,
       description: json['description'] ?? '',
       supportedModes: List<String>.from(json['supportedModes']),
-      hourlyRate: (json['hourlyRate'] as num).toDouble(),
-      dailyRate: (json['dailyRate'] as num).toDouble(),
-      minHourlyRate: (json['minHourlyRate'] as num? ?? 0).toDouble(),
-      maxHourlyRate: (json['maxHourlyRate'] as num? ?? 1000).toDouble(),
-      commissionPercentage: (json['commissionPercentage'] as num? ?? 0).toDouble(),
+      hourlyRate: double.tryParse(json['hourlyRate']?.toString() ?? '0') ?? 0.0,
+      dailyRate: double.tryParse(json['dailyRate']?.toString() ?? '0') ?? 0.0,
+      minHourlyRate: double.tryParse(json['minHourlyRate']?.toString() ?? '0') ?? 0.0,
+      maxHourlyRate: double.tryParse(json['maxHourlyRate']?.toString() ?? '1000') ?? 1000.0,
+      commissionPercentage: double.tryParse(json['commissionPercentage']?.toString() ?? '0') ?? 0.0,
     );
   }
 

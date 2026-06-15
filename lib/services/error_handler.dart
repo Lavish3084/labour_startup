@@ -26,6 +26,10 @@ class ErrorHandler {
       }
     }
 
+    if (message == 'Internet error') {
+      return 'Internet error';
+    }
+
     if (action != null && action.isNotEmpty) {
       return '$action: $message';
     }

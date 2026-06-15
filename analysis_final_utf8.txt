@@ -1,0 +1,284 @@
+﻿Analyzing labour...                                             
+
+   info - Don't invoke 'print' in production code - New folder (3)\lib\main.dart:18:5 - avoid_print
+   info - Don't invoke 'print' in production code - New folder (3)\lib\main.dart:25:5 - avoid_print
+   info - Don't invoke 'print' in production code - New folder (3)\lib\main.dart:26:5 - avoid_print
+warning - Unused import: '../models/labourer.dart' - New folder (3)\lib\providers\app_state_provider.dart:5:8 - unused_import
+   info - Don't invoke 'print' in production code - New folder (3)\lib\providers\location_provider.dart:169:7 - avoid_print
+   info - Don't invoke 'print' in production code - New folder (3)\lib\providers\location_provider.dart:174:9 - avoid_print
+   info - Don't invoke 'print' in production code - New folder (3)\lib\providers\location_provider.dart:189:9 - avoid_print
+   info - Don't invoke 'print' in production code - New folder (3)\lib\providers\location_provider.dart:203:5 - avoid_print
+warning - Unused import: '../widgets/glass_card.dart' - New folder (3)\lib\screens\bookings_screen.dart:12:8 - unused_import
+   info - The import of 'dart:ui' is unnecessary because all of the used elements are also provided by the import of 'package:flutter/material.dart' - New folder (3)\lib\screens\bookings_screen.dart:13:8 - unnecessary_import
+   info - Don't use 'BuildContext's across async gaps - New folder (3)\lib\screens\bookings_screen.dart:55:13 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps - New folder (3)\lib\screens\bookings_screen.dart:59:32 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - New folder (3)\lib\screens\bookings_screen.dart:65:32 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - New folder (3)\lib\screens\bookings_screen.dart:117:30 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps - New folder (3)\lib\screens\bookings_screen.dart:269:30 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps - New folder (3)\lib\screens\bookings_screen.dart:278:30 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - New folder (3)\lib\screens\bookings_screen.dart:284:30 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps - New folder (3)\lib\screens\bookings_screen.dart:316:32 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps - New folder (3)\lib\screens\bookings_screen.dart:321:32 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - New folder (3)\lib\screens\bookings_screen.dart:327:32 - use_build_context_synchronously
+   info - Parameter 'key' could be a super parameter - New folder (3)\lib\screens\category_labourers_screen.dart:11:9 - use_super_parameters
+   info - Parameter 'key' could be a super parameter - New folder (3)\lib\screens\labourer_detail_screen.dart:13:9 - use_super_parameters
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - New folder (3)\lib\screens\labourer_detail_screen.dart:325:43 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - New folder (3)\lib\screens\labourer_detail_screen.dart:341:45 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - New folder (3)\lib\screens\labourer_detail_screen.dart:413:53 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - New folder (3)\lib\screens\labourer_detail_screen.dart:557:41 - deprecated_member_use
+   info - Parameter 'key' could be a super parameter - New folder (3)\lib\screens\location_search_screen.dart:13:9 - use_super_parameters
+   info - 'desiredAccuracy' is deprecated and shouldn't be used. use settings parameter with AndroidSettings, AppleSettings, WebSettings, or LocationSettings - New folder (3)\lib\screens\location_search_screen.dart:42:11 - deprecated_member_use
+   info - 'desiredAccuracy' is deprecated and shouldn't be used. use settings parameter with AndroidSettings, AppleSettings, WebSettings, or LocationSettings - New folder (3)\lib\screens\location_search_screen.dart:400:21 - deprecated_member_use
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - New folder (3)\lib\screens\location_search_screen.dart:427:35 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - New folder (3)\lib\screens\location_search_screen.dart:436:42 - use_build_context_synchronously
+   info - Don't invoke 'print' in production code - New folder (3)\lib\screens\login_screen.dart:28:7 - avoid_print
+   info - Don't invoke 'print' in production code - New folder (3)\lib\screens\login_screen.dart:32:9 - avoid_print
+   info - Don't invoke 'print' in production code - New folder (3)\lib\screens\login_screen.dart:37:7 - avoid_print
+   info - Don't invoke 'print' in production code - New folder (3)\lib\screens\login_screen.dart:40:7 - avoid_print
+   info - Don't invoke 'print' in production code - New folder (3)\lib\screens\login_screen.dart:43:9 - avoid_print
+   info - Don't invoke 'print' in production code - New folder (3)\lib\screens\login_screen.dart:45:9 - avoid_print
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - New folder (3)\lib\screens\login_screen.dart:54:19 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - New folder (3)\lib\screens\login_screen.dart:59:19 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - New folder (3)\lib\screens\login_screen.dart:70:36 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - New folder (3)\lib\screens\login_screen.dart:78:32 - use_build_context_synchronously
+   info - Don't invoke 'print' in production code - New folder (3)\lib\screens\login_screen.dart:84:7 - avoid_print
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - New folder (3)\lib\screens\login_screen.dart:86:30 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - New folder (3)\lib\screens\login_screen.dart:411:17 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - New folder (3)\lib\screens\login_screen.dart:416:17 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - New folder (3)\lib\screens\login_screen.dart:424:32 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - New folder (3)\lib\screens\login_screen.dart:431:30 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - New folder (3)\lib\screens\profile_screen.dart:129:9 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - New folder (3)\lib\screens\profile_screen.dart:762:15 - use_build_context_synchronously
+   info - Parameter 'key' could be a super parameter - New folder (3)\lib\screens\saved_addresses_screen.dart:8:9 - use_super_parameters
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - New folder (3)\lib\screens\saved_addresses_screen.dart:76:43 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - New folder (3)\lib\screens\saved_addresses_screen.dart:87:47 - deprecated_member_use
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - New folder (3)\lib\screens\signup_screen.dart:87:17 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - New folder (3)\lib\screens\signup_screen.dart:92:17 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - New folder (3)\lib\screens\signup_screen.dart:100:32 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - New folder (3)\lib\screens\signup_screen.dart:107:30 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - New folder (3)\lib\screens\signup_screen.dart:138:19 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - New folder (3)\lib\screens\signup_screen.dart:143:19 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - New folder (3)\lib\screens\signup_screen.dart:151:34 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - New folder (3)\lib\screens\signup_screen.dart:159:30 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps - New folder (3)\lib\screens\splash_screen.dart:87:13 - use_build_context_synchronously
+   info - Parameter 'key' could be a super parameter - New folder (3)\lib\screens\worker_details_screen.dart:12:9 - use_super_parameters
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - New folder (3)\lib\screens\worker_details_screen.dart:93:13 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps - New folder (3)\lib\screens\worker_details_screen.dart:97:32 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps - New folder (3)\lib\screens\worker_details_screen.dart:98:27 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps - New folder (3)\lib\screens\worker_details_screen.dart:101:15 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - New folder (3)\lib\screens\worker_details_screen.dart:109:32 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - New folder (3)\lib\screens\worker_details_screen.dart:117:11 - use_build_context_synchronously
+   info - Parameter 'key' could be a super parameter - New folder (3)\lib\screens\worker_home_screen.dart:13:9 - use_super_parameters
+   info - Don't invoke 'print' in production code - New folder (3)\lib\services\api_service.dart:93:7 - avoid_print
+   info - Don't invoke 'print' in production code - New folder (3)\lib\services\api_service.dart:100:7 - avoid_print
+   info - Don't invoke 'print' in production code - New folder (3)\lib\services\api_service.dart:127:7 - avoid_print
+   info - Don't invoke 'print' in production code - New folder (3)\lib\services\api_service.dart:142:7 - avoid_print
+   info - Don't invoke 'print' in production code - New folder (3)\lib\services\api_service.dart:226:5 - avoid_print
+   info - Don't invoke 'print' in production code - New folder (3)\lib\services\api_service.dart:227:5 - avoid_print
+   info - Don't invoke 'print' in production code - New folder (3)\lib\services\api_service.dart:238:5 - avoid_print
+   info - Don't invoke 'print' in production code - New folder (3)\lib\services\api_service.dart:239:5 - avoid_print
+   info - Uses 'await' on an instance of 'String?', which is not a subtype of 'Future' - New folder (3)\lib\services\api_service.dart:245:19 - await_only_futures
+   info - Don't invoke 'print' in production code - New folder (3)\lib\services\api_service.dart:249:7 - avoid_print
+   info - Don't invoke 'print' in production code - New folder (3)\lib\services\api_service.dart:261:9 - avoid_print
+   info - Don't invoke 'print' in production code - New folder (3)\lib\services\api_service.dart:263:9 - avoid_print
+   info - Don't invoke 'print' in production code - New folder (3)\lib\services\api_service.dart:266:7 - avoid_print
+   info - Don't invoke 'print' in production code - New folder (3)\lib\services\api_service.dart:316:9 - avoid_print
+   info - Don't invoke 'print' in production code - New folder (3)\lib\services\api_service.dart:319:9 - avoid_print
+   info - Don't invoke 'print' in production code - New folder (3)\lib\services\api_service.dart:324:7 - avoid_print
+   info - Don't invoke 'print' in production code - New folder (3)\lib\services\api_service.dart:475:5 - avoid_print
+   info - Don't invoke 'print' in production code - New folder (3)\lib\services\api_service.dart:476:5 - avoid_print
+   info - Don't invoke 'print' in production code - New folder (3)\lib\services\api_service.dart:487:5 - avoid_print
+   info - Don't invoke 'print' in production code - New folder (3)\lib\services\api_service.dart:488:5 - avoid_print
+   info - Don't invoke 'print' in production code - New folder (3)\lib\services\notification_service.dart:56:9 - avoid_print
+   info - Don't invoke 'print' in production code - New folder (3)\lib\services\notification_service.dart:63:7 - avoid_print
+   info - Don't invoke 'print' in production code - New folder (3)\lib\services\notification_service.dart:65:7 - avoid_print
+   info - Don't invoke 'print' in production code - New folder (3)\lib\services\notification_service.dart:70:7 - avoid_print
+   info - Don't invoke 'print' in production code - New folder (3)\lib\services\notification_service.dart:77:7 - avoid_print
+   info - Don't invoke 'print' in production code - New folder (3)\lib\services\notification_service.dart:78:7 - avoid_print
+   info - Don't invoke 'print' in production code - New folder (3)\lib\services\notification_service.dart:81:9 - avoid_print
+   info - Don't invoke 'print' in production code - New folder (3)\lib\services\notification_service.dart:98:7 - avoid_print
+   info - Don't invoke 'print' in production code - New folder (3)\lib\services\notification_service.dart:101:7 - avoid_print
+   info - Don't invoke 'print' in production code - New folder (3)\lib\services\notification_service.dart:103:7 - avoid_print
+warning - Unused import: 'package:flutter/services.dart' - New folder (3)\lib\services\payment_service.dart:2:8 - unused_import
+   info - Don't invoke 'print' in production code - New folder (3)\lib\services\payment_service.dart:49:7 - avoid_print
+   info - Parameter 'key' could be a super parameter - New folder (3)\lib\widgets\address_selection_sheet.dart:11:9 - use_super_parameters
+   info - 'desiredAccuracy' is deprecated and shouldn't be used. use settings parameter with AndroidSettings, AppleSettings, WebSettings, or LocationSettings - New folder (3)\lib\widgets\address_selection_sheet.dart:32:9 - deprecated_member_use
+   info - Don't use 'BuildContext's across async gaps - New folder (3)\lib\widgets\address_selection_sheet.dart:96:13 - use_build_context_synchronously
+   info - Don't invoke 'print' in production code - New folder (3)\lib\widgets\address_selection_sheet.dart:205:5 - avoid_print
+warning - Unused import: '../utils/app_theme.dart' - New folder (3)\lib\widgets\feature_category_card.dart:4:8 - unused_import
+   info - Parameter 'key' could be a super parameter - New folder (3)\lib\widgets\feature_category_card.dart:11:9 - use_super_parameters
+   info - Parameter 'key' could be a super parameter - New folder (3)\lib\widgets\glass_card.dart:13:9 - use_super_parameters
+   info - Parameter 'key' could be a super parameter - New folder (3)\lib\widgets\labourer_card.dart:11:9 - use_super_parameters
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - New folder (3)\lib\widgets\labourer_card.dart:36:35 - deprecated_member_use
+   info - Parameter 'key' could be a super parameter - New folder (3)\lib\widgets\section_header.dart:9:9 - use_super_parameters
+   info - Parameter 'key' could be a super parameter - New folder (3)\lib\widgets\service_category_card.dart:9:9 - use_super_parameters
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - New folder (3)\lib\widgets\service_category_card.dart:23:49 - deprecated_member_use
+   info - Don't invoke 'print' in production code - lib\main.dart:17:5 - avoid_print
+   info - Don't invoke 'print' in production code - lib\main.dart:24:5 - avoid_print
+   info - Don't invoke 'print' in production code - lib\main.dart:25:5 - avoid_print
+warning - Unused import: '../models/labourer.dart' - lib\providers\app_state_provider.dart:5:8 - unused_import
+   info - Don't invoke 'print' in production code - lib\providers\location_provider.dart:169:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\providers\location_provider.dart:174:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\providers\location_provider.dart:189:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\providers\location_provider.dart:203:5 - avoid_print
+warning - Unused import: '../widgets/glass_card.dart' - lib\screens\bookings_screen.dart:12:8 - unused_import
+   info - The import of 'dart:ui' is unnecessary because all of the used elements are also provided by the import of 'package:flutter/material.dart' - lib\screens\bookings_screen.dart:13:8 - unnecessary_import
+   info - Don't use 'BuildContext's across async gaps - lib\screens\bookings_screen.dart:55:13 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps - lib\screens\bookings_screen.dart:59:32 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\screens\bookings_screen.dart:65:32 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\screens\bookings_screen.dart:117:30 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps - lib\screens\bookings_screen.dart:269:30 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps - lib\screens\bookings_screen.dart:278:30 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\screens\bookings_screen.dart:284:30 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps - lib\screens\bookings_screen.dart:316:32 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps - lib\screens\bookings_screen.dart:321:32 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\screens\bookings_screen.dart:327:32 - use_build_context_synchronously
+   info - Parameter 'key' could be a super parameter - lib\screens\category_labourers_screen.dart:11:9 - use_super_parameters
+   info - Parameter 'key' could be a super parameter - lib\screens\location_search_screen.dart:13:9 - use_super_parameters
+   info - 'desiredAccuracy' is deprecated and shouldn't be used. use settings parameter with AndroidSettings, AppleSettings, WebSettings, or LocationSettings - lib\screens\location_search_screen.dart:42:11 - deprecated_member_use
+   info - 'desiredAccuracy' is deprecated and shouldn't be used. use settings parameter with AndroidSettings, AppleSettings, WebSettings, or LocationSettings - lib\screens\location_search_screen.dart:400:21 - deprecated_member_use
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\screens\location_search_screen.dart:427:35 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\screens\location_search_screen.dart:436:42 - use_build_context_synchronously
+   info - Don't invoke 'print' in production code - lib\screens\login_screen.dart:28:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\screens\login_screen.dart:32:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\screens\login_screen.dart:37:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\screens\login_screen.dart:40:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\screens\login_screen.dart:43:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\screens\login_screen.dart:45:9 - avoid_print
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\screens\login_screen.dart:52:17 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\screens\login_screen.dart:62:36 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\screens\login_screen.dart:70:32 - use_build_context_synchronously
+   info - Don't invoke 'print' in production code - lib\screens\login_screen.dart:76:7 - avoid_print
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\screens\login_screen.dart:78:30 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\screens\login_screen.dart:394:15 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\screens\login_screen.dart:401:32 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\screens\login_screen.dart:408:30 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\screens\profile_screen.dart:128:9 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\screens\profile_screen.dart:516:15 - use_build_context_synchronously
+   info - Parameter 'key' could be a super parameter - lib\screens\saved_addresses_screen.dart:8:9 - use_super_parameters
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\saved_addresses_screen.dart:76:43 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\saved_addresses_screen.dart:87:47 - deprecated_member_use
+   info - The private field _selectedRole could be 'final' - lib\screens\signup_screen.dart:25:10 - prefer_final_fields
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\screens\signup_screen.dart:85:15 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\screens\signup_screen.dart:92:32 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\screens\signup_screen.dart:99:30 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\screens\signup_screen.dart:129:17 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\screens\signup_screen.dart:136:34 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\screens\signup_screen.dart:144:30 - use_build_context_synchronously
+   info - Don't invoke 'print' in production code - lib\services\api_service.dart:93:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\api_service.dart:100:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\api_service.dart:127:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\api_service.dart:142:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\api_service.dart:199:5 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\api_service.dart:200:5 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\api_service.dart:211:5 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\api_service.dart:212:5 - avoid_print
+   info - Uses 'await' on an instance of 'String?', which is not a subtype of 'Future' - lib\services\api_service.dart:218:19 - await_only_futures
+   info - Don't invoke 'print' in production code - lib\services\api_service.dart:222:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\api_service.dart:234:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\api_service.dart:236:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\api_service.dart:239:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\api_service.dart:289:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\api_service.dart:292:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\api_service.dart:297:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\api_service.dart:420:5 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\api_service.dart:421:5 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\api_service.dart:432:5 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\api_service.dart:433:5 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\notification_service.dart:56:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\notification_service.dart:63:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\notification_service.dart:65:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\notification_service.dart:70:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\notification_service.dart:77:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\notification_service.dart:78:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\notification_service.dart:81:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\notification_service.dart:98:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\notification_service.dart:101:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\notification_service.dart:103:7 - avoid_print
+warning - Unused import: 'package:flutter/services.dart' - lib\services\payment_service.dart:2:8 - unused_import
+   info - Don't invoke 'print' in production code - lib\services\payment_service.dart:49:7 - avoid_print
+   info - Parameter 'key' could be a super parameter - lib\widgets\address_selection_sheet.dart:11:9 - use_super_parameters
+   info - 'desiredAccuracy' is deprecated and shouldn't be used. use settings parameter with AndroidSettings, AppleSettings, WebSettings, or LocationSettings - lib\widgets\address_selection_sheet.dart:32:9 - deprecated_member_use
+   info - Don't use 'BuildContext's across async gaps - lib\widgets\address_selection_sheet.dart:96:13 - use_build_context_synchronously
+   info - Don't invoke 'print' in production code - lib\widgets\address_selection_sheet.dart:205:5 - avoid_print
+warning - Unused import: '../utils/app_theme.dart' - lib\widgets\feature_category_card.dart:4:8 - unused_import
+   info - Parameter 'key' could be a super parameter - lib\widgets\feature_category_card.dart:11:9 - use_super_parameters
+   info - Parameter 'key' could be a super parameter - lib\widgets\glass_card.dart:13:9 - use_super_parameters
+   info - Parameter 'key' could be a super parameter - lib\widgets\labourer_card.dart:11:9 - use_super_parameters
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\widgets\labourer_card.dart:36:35 - deprecated_member_use
+   info - Parameter 'key' could be a super parameter - lib\widgets\section_header.dart:9:9 - use_super_parameters
+   info - Parameter 'key' could be a super parameter - lib\widgets\service_category_card.dart:9:9 - use_super_parameters
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\widgets\service_category_card.dart:23:49 - deprecated_member_use
+   info - Don't invoke 'print' in production code - worker_app\lib\main.dart:18:5 - avoid_print
+   info - Don't invoke 'print' in production code - worker_app\lib\main.dart:25:5 - avoid_print
+   info - Don't invoke 'print' in production code - worker_app\lib\main.dart:26:5 - avoid_print
+   info - The private field _isLoading could be 'final' - worker_app\lib\providers\location_provider.dart:47:8 - prefer_final_fields
+   info - Don't use 'BuildContext's across async gaps - worker_app\lib\screens\complete_phone_screen.dart:69:28 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps - worker_app\lib\screens\complete_phone_screen.dart:89:28 - use_build_context_synchronously
+   info - Parameter 'key' could be a super parameter - worker_app\lib\screens\location_search_screen.dart:13:9 - use_super_parameters
+   info - 'desiredAccuracy' is deprecated and shouldn't be used. use settings parameter with AndroidSettings, AppleSettings, WebSettings, or LocationSettings - worker_app\lib\screens\location_search_screen.dart:42:11 - deprecated_member_use
+   info - 'desiredAccuracy' is deprecated and shouldn't be used. use settings parameter with AndroidSettings, AppleSettings, WebSettings, or LocationSettings - worker_app\lib\screens\location_search_screen.dart:400:21 - deprecated_member_use
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - worker_app\lib\screens\location_search_screen.dart:427:35 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - worker_app\lib\screens\location_search_screen.dart:436:42 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps - worker_app\lib\screens\login_screen.dart:57:38 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - worker_app\lib\screens\login_screen.dart:67:17 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps - worker_app\lib\screens\login_screen.dart:78:61 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps - worker_app\lib\screens\login_screen.dart:81:19 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps - worker_app\lib\screens\login_screen.dart:90:38 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - worker_app\lib\screens\login_screen.dart:95:36 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - worker_app\lib\screens\login_screen.dart:103:32 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - worker_app\lib\screens\login_screen.dart:110:30 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps - worker_app\lib\screens\login_screen.dart:160:28 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps - worker_app\lib\screens\login_screen.dart:186:58 - use_build_context_synchronously
+   info - Parameter 'key' could be a super parameter - worker_app\lib\screens\profile_screen.dart:19:9 - use_super_parameters
+   info - Don't use 'BuildContext's across async gaps - worker_app\lib\screens\profile_screen.dart:32:43 - use_build_context_synchronously
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - worker_app\lib\screens\profile_screen.dart:273:67 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - worker_app\lib\screens\profile_screen.dart:296:101 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - worker_app\lib\screens\profile_screen.dart:373:69 - deprecated_member_use
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - worker_app\lib\screens\profile_screen.dart:420:60 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps - worker_app\lib\screens\signup_screen.dart:92:28 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps - worker_app\lib\screens\signup_screen.dart:114:28 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps - worker_app\lib\screens\signup_screen.dart:137:54 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps - worker_app\lib\screens\signup_screen.dart:194:56 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - worker_app\lib\screens\signup_screen.dart:207:34 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - worker_app\lib\screens\signup_screen.dart:215:30 - use_build_context_synchronously
+   info - Parameter 'key' could be a super parameter - worker_app\lib\screens\worker_details_screen.dart:12:9 - use_super_parameters
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - worker_app\lib\screens\worker_details_screen.dart:101:13 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps - worker_app\lib\screens\worker_details_screen.dart:105:32 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps - worker_app\lib\screens\worker_details_screen.dart:106:27 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps - worker_app\lib\screens\worker_details_screen.dart:109:15 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - worker_app\lib\screens\worker_details_screen.dart:117:32 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - worker_app\lib\screens\worker_details_screen.dart:125:11 - use_build_context_synchronously
+   info - Parameter 'key' could be a super parameter - worker_app\lib\screens\worker_home_screen.dart:13:9 - use_super_parameters
+   info - Don't invoke 'print' in production code - worker_app\lib\services\api_service.dart:94:7 - avoid_print
+   info - Don't invoke 'print' in production code - worker_app\lib\services\api_service.dart:106:7 - avoid_print
+   info - Don't invoke 'print' in production code - worker_app\lib\services\api_service.dart:133:7 - avoid_print
+   info - Don't invoke 'print' in production code - worker_app\lib\services\api_service.dart:176:7 - avoid_print
+   info - Don't invoke 'print' in production code - worker_app\lib\services\api_service.dart:203:7 - avoid_print
+   info - Don't invoke 'print' in production code - worker_app\lib\services\api_service.dart:218:7 - avoid_print
+   info - Don't invoke 'print' in production code - worker_app\lib\services\api_service.dart:302:5 - avoid_print
+   info - Don't invoke 'print' in production code - worker_app\lib\services\api_service.dart:303:5 - avoid_print
+   info - Don't invoke 'print' in production code - worker_app\lib\services\api_service.dart:314:5 - avoid_print
+   info - Don't invoke 'print' in production code - worker_app\lib\services\api_service.dart:315:5 - avoid_print
+   info - Uses 'await' on an instance of 'String?', which is not a subtype of 'Future' - worker_app\lib\services\api_service.dart:321:19 - await_only_futures
+   info - Don't invoke 'print' in production code - worker_app\lib\services\api_service.dart:325:7 - avoid_print
+   info - Don't invoke 'print' in production code - worker_app\lib\services\api_service.dart:337:9 - avoid_print
+   info - Don't invoke 'print' in production code - worker_app\lib\services\api_service.dart:339:9 - avoid_print
+   info - Don't invoke 'print' in production code - worker_app\lib\services\api_service.dart:342:7 - avoid_print
+   info - Don't invoke 'print' in production code - worker_app\lib\services\notification_service.dart:56:9 - avoid_print
+   info - Don't invoke 'print' in production code - worker_app\lib\services\notification_service.dart:63:7 - avoid_print
+   info - Don't invoke 'print' in production code - worker_app\lib\services\notification_service.dart:65:7 - avoid_print
+   info - Don't invoke 'print' in production code - worker_app\lib\services\notification_service.dart:70:7 - avoid_print
+   info - Don't invoke 'print' in production code - worker_app\lib\services\notification_service.dart:77:7 - avoid_print
+   info - Don't invoke 'print' in production code - worker_app\lib\services\notification_service.dart:78:7 - avoid_print
+   info - Don't invoke 'print' in production code - worker_app\lib\services\notification_service.dart:81:9 - avoid_print
+   info - Don't invoke 'print' in production code - worker_app\lib\services\notification_service.dart:98:7 - avoid_print
+   info - Don't invoke 'print' in production code - worker_app\lib\services\notification_service.dart:101:7 - avoid_print
+   info - Don't invoke 'print' in production code - worker_app\lib\services\notification_service.dart:103:7 - avoid_print
+warning - Unused import: 'package:flutter/services.dart' - worker_app\lib\services\payment_service.dart:2:8 - unused_import
+   info - Don't invoke 'print' in production code - worker_app\lib\services\payment_service.dart:49:7 - avoid_print
+   info - Parameter 'key' could be a super parameter - worker_app\lib\widgets\glass_card.dart:13:9 - use_super_parameters
+   info - Parameter 'key' could be a super parameter - worker_app\lib\widgets\labourer_card.dart:10:9 - use_super_parameters
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - worker_app\lib\widgets\labourer_card.dart:30:35 - deprecated_member_use
+   info - Parameter 'key' could be a super parameter - worker_app\lib\widgets\section_header.dart:9:9 - use_super_parameters
+

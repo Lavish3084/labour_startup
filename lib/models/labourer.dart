@@ -17,7 +17,7 @@ class LabourerReview {
     return LabourerReview(
       userId: json['user']?.toString(),
       userName: json['userName'] ?? 'Customer',
-      rating: (json['rating'] ?? 0).toDouble(),
+      rating: double.tryParse(json['rating']?.toString() ?? '0') ?? 0.0,
       comment: json['comment'] ?? '',
       date: json['date'] != null ? DateTime.parse(json['date']) : DateTime.now(),
     );
@@ -72,14 +72,14 @@ class Labourer {
       id: json['_id'] ?? json['id'] ?? '',
       name: json['name'] ?? '',
       category: json['category'] ?? '',
-      rating: (json['rating'] ?? 0).toDouble(),
-      jobsCompleted: json['jobsCompleted'] ?? 0,
-      hourlyRate: (json['hourlyRate'] ?? 0).toDouble(),
+      rating: double.tryParse(json['rating']?.toString() ?? '0') ?? 0.0,
+      jobsCompleted: int.tryParse(json['jobsCompleted']?.toString() ?? '0') ?? 0,
+      hourlyRate: double.tryParse(json['hourlyRate']?.toString() ?? '0') ?? 0.0,
       description: json['description'] ?? '',
       imageUrl: json['imageUrl'] ?? '',
       location: json['location'] ?? '',
       skills: List<String>.from(json['skills'] ?? []),
-      experienceYears: json['experienceYears'] ?? 0,
+      experienceYears: int.tryParse(json['experienceYears']?.toString() ?? '0') ?? 0,
       upiId: json['upiId'],
       phoneNumber: (json['user'] is Map) ? json['user']['phoneNumber'] : json['phoneNumber'],
       reviews: json['reviews'] != null

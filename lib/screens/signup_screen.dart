@@ -304,7 +304,7 @@ class _SignupScreenState extends State<SignupScreen> {
                 ),
               ),
             ),
-            const SizedBox(height: 32),
+            SizedBox(height: MediaQuery.of(context).padding.bottom + 16),
           ],
         ),
       ),

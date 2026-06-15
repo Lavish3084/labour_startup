@@ -279,38 +279,25 @@ class _BookingsScreenState extends State<BookingsScreen> {
     final isLoading = appState.isBookingsLoading;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF9F9F9),
+      backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
-        centerTitle: true,
+        centerTitle: false,
+        titleSpacing: 24,
         automaticallyImplyLeading: false,
         title: Text(
-          'Bookings',
-          style: GoogleFonts.roboto(
-            fontSize: 22,
-            fontWeight: FontWeight.w700,
-            color: const Color(0xFF1D1B20),
+          'Your bookings',
+          style: GoogleFonts.inter(
+            fontSize: 24,
+            fontWeight: FontWeight.w800,
+            color: Colors.black,
           ),
         ),
       ),
       body: Column(
         children: [
-          const SizedBox(height: 16),
-          Container(
-            margin: const EdgeInsets.symmetric(horizontal: 24),
-            padding: const EdgeInsets.all(4),
-            decoration: BoxDecoration(
-              color: const Color(0xFFE8E8E8),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Row(
-              children: [
-                _buildTabItem(0, 'Active'),
-                _buildTabItem(1, 'Past'),
-              ],
-            ),
-          ),
+          _buildTabBar(),
           const SizedBox(height: 24),
           Expanded(
             child: isLoading && currentBookings.isEmpty
@@ -324,33 +311,45 @@ class _BookingsScreenState extends State<BookingsScreen> {
     );
   }
 
+  Widget _buildTabBar() {
+    return Container(
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        border: Border(
+          bottom: BorderSide(color: Color(0xFFE2E8F0), width: 1),
+        ),
+      ),
+      child: Row(
+        children: [
+          _buildTabItem(0, 'Upcoming'),
+          _buildTabItem(1, 'Past'),
+        ],
+      ),
+    );
+  }
+
   Widget _buildTabItem(int index, String label) {
     bool isSelected = _selectedTabIndex == index;
     return Expanded(
       child: GestureDetector(
         onTap: () => setState(() => _selectedTabIndex = index),
         child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 12),
+          padding: const EdgeInsets.symmetric(vertical: 14),
           decoration: BoxDecoration(
-            color: isSelected ? Colors.white : Colors.transparent,
-            borderRadius: BorderRadius.circular(8),
-            boxShadow: isSelected
-                ? [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
-                      blurRadius: 4,
-                      offset: const Offset(0, 2),
-                    ),
-                  ]
-                : [],
+            border: Border(
+              bottom: BorderSide(
+                color: isSelected ? const Color(0xFF4A9782) : Colors.transparent,
+                width: 3,
+              ),
+            ),
           ),
           child: Text(
             label,
             textAlign: TextAlign.center,
-            style: GoogleFonts.roboto(
+            style: GoogleFonts.inter(
               fontSize: 16,
-              fontWeight: FontWeight.w500,
-              color: isSelected ? const Color(0xFF2E876E) : const Color(0xFF666666),
+              fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+              color: isSelected ? Colors.black : const Color(0xFF94A3B8),
             ),
           ),
         ),
@@ -645,14 +644,19 @@ class _BookingsScreenState extends State<BookingsScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.assignment_outlined, size: 64, color: Colors.grey[300]),
-          const SizedBox(height: 16),
+          Image.asset(
+            'assets/images/empty_bookings_calendar.png',
+            width: 140,
+            height: 140,
+            fit: BoxFit.contain,
+          ),
+          const SizedBox(height: 24),
           Text(
-            'No bookings found',
-            style: GoogleFonts.roboto(
-              fontSize: 18,
-              fontWeight: FontWeight.w500,
-              color: Colors.grey[600],
+            _selectedTabIndex == 0 ? 'No upcoming bookings' : 'No past bookings',
+            style: GoogleFonts.inter(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: const Color(0xFF1E293B),
             ),
           ),
         ],

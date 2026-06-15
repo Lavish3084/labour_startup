@@ -89,7 +89,7 @@ class _ReferEarnScreenState extends State<ReferEarnScreen> {
         ),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
+        padding: EdgeInsets.fromLTRB(24, 24, 24, MediaQuery.of(context).padding.bottom + 24),
         child: Column(
           children: [
             const SizedBox(height: 20),

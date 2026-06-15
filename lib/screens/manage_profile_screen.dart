@@ -18,6 +18,7 @@ class ManageProfileScreen extends StatefulWidget {
 
 class _ManageProfileScreenState extends State<ManageProfileScreen> {
   late TextEditingController _nameController;
+  late TextEditingController _phoneController;
   bool _isSaving = false;
   bool _isPickingImage = false;
 
@@ -26,11 +27,13 @@ class _ManageProfileScreenState extends State<ManageProfileScreen> {
     super.initState();
     final user = Provider.of<AppStateProvider>(context, listen: false).profileData?['user'];
     _nameController = TextEditingController(text: user?['name'] ?? '');
+    _phoneController = TextEditingController(text: user?['phoneNumber'] ?? user?['phone'] ?? '');
   }
 
   @override
   void dispose() {
     _nameController.dispose();
+    _phoneController.dispose();
     super.dispose();
   }
 
@@ -68,17 +71,43 @@ class _ManageProfileScreenState extends State<ManageProfileScreen> {
 
   Future<void> _saveProfile() async {
     final name = _nameController.text.trim();
-    if (name.isEmpty) return;
+    final phone = _phoneController.text.trim();
+
+    if (name.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Name cannot be empty')),
+      );
+      return;
+    }
 
     setState(() => _isSaving = true);
     try {
-      final success = await ApiService.updateProfileName(name);
-      if (success && mounted) {
+      final nameSuccess = await ApiService.updateProfileName(name);
+      
+      bool phoneSuccess = true;
+      final user = Provider.of<AppStateProvider>(context, listen: false).profileData?['user'];
+      final originalPhone = user?['phoneNumber'] ?? user?['phone'] ?? '';
+      if (phone != originalPhone) {
+        if (phone.isEmpty) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Phone number cannot be empty')),
+          );
+          setState(() => _isSaving = false);
+          return;
+        }
+        phoneSuccess = await ApiService.updateProfilePhone(phone);
+      }
+
+      if (nameSuccess && phoneSuccess && mounted) {
         await Provider.of<AppStateProvider>(context, listen: false).fetchProfile();
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Profile updated successfully')),
         );
         Navigator.pop(context);
+      } else if (!phoneSuccess && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Failed to update phone number. It may already be in use.')),
+        );
       }
     } catch (e) {
       if (mounted) {
@@ -115,7 +144,7 @@ class _ManageProfileScreenState extends State<ManageProfileScreen> {
         ),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
+        padding: EdgeInsets.fromLTRB(24, 24, 24, MediaQuery.of(context).padding.bottom + 24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
@@ -165,9 +194,9 @@ class _ManageProfileScreenState extends State<ManageProfileScreen> {
               icon: Icons.email_outlined,
             ),
             const SizedBox(height: 20),
-            _buildReadOnlyField(
+            _buildTextField(
               label: 'Phone Number',
-              value: user?['phone'] ?? 'Not set',
+              controller: _phoneController,
               icon: Icons.phone_outlined,
             ),
             const SizedBox(height: 40),

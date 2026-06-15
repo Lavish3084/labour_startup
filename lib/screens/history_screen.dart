@@ -173,7 +173,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
       onRefresh: _refreshBookings,
       color: AppTheme.saffron,
       child: ListView.builder(
-        padding: const EdgeInsets.only(top: 120, left: 20, right: 20, bottom: 40),
+        padding: EdgeInsets.only(top: 120, left: 20, right: 20, bottom: MediaQuery.of(context).padding.bottom + 24),
         itemCount: sortedBookings.length,
         itemBuilder: (context, index) {
           final booking = sortedBookings[index];

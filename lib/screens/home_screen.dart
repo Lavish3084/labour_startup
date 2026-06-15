@@ -1634,82 +1634,20 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildBookingOptionTiles() {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
+      padding: const EdgeInsets.only(left: 20, right: 20, top: 28, bottom: 16),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Left Card: Schedule
           Expanded(
-            child: GestureDetector(
-              onTap: () => _showCategorySelectionSheet(true),
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: const Color(0xFF4A9782).withOpacity(0.12),
-                    width: 1.5,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.03),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: const BoxDecoration(
-                        color: Color(0xFFE8F3F1),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.flash_on_rounded,
-                        color: Color(0xFF4A9782),
-                        size: 20,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Instant Help',
-                            style: GoogleFonts.inter(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w700,
-                              color: const Color(0xFF1E293B),
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            'Arriving ASAP',
-                            style: GoogleFonts.inter(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w500,
-                              color: Colors.black54,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
+            flex: 4,
             child: GestureDetector(
               onTap: () => _showCategorySelectionSheet(false),
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(24),
                   border: Border.all(
                     color: Colors.black.withOpacity(0.04),
                     width: 1.5,
@@ -1722,47 +1660,167 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ],
                 ),
-                child: Row(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     Container(
-                      padding: const EdgeInsets.all(8),
+                      width: 48,
+                      height: 48,
                       decoration: const BoxDecoration(
-                        color: Color(0xFFFFF8E1),
+                        color: Color(0xFFE8F3F1),
                         shape: BoxShape.circle,
                       ),
                       child: const Icon(
                         Icons.calendar_month_rounded,
-                        color: Color(0xFFFFB300),
-                        size: 20,
+                        color: AppTheme.brandGreenMain,
+                        size: 24,
                       ),
                     ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Scheduled',
-                            style: GoogleFonts.inter(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w700,
-                              color: const Color(0xFF1E293B),
-                            ),
+                    const SizedBox(height: 20),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          'Schedule',
+                          style: GoogleFonts.inter(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w800,
+                            color: const Color(0xFF1E293B),
                           ),
-                          const SizedBox(height: 2),
-                          Text(
-                            'Book for later',
-                            style: GoogleFonts.inter(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w500,
-                              color: Colors.black54,
-                            ),
-                          ),
-                        ],
+                        ),
+                        const SizedBox(width: 2),
+                        Icon(
+                          Icons.chevron_right_rounded,
+                          color: Colors.grey.shade400,
+                          size: 18,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Pick your time',
+                      style: GoogleFonts.inter(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.grey[500],
                       ),
                     ),
                   ],
                 ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 16),
+          // Right Card: Instant
+          Expanded(
+            flex: 5,
+            child: GestureDetector(
+              onTap: () => _showCategorySelectionSheet(true),
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  // Layer 1: Solid Card Shell background (fills the entire stack area dynamically)
+                  Positioned.fill(
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(24),
+                        border: Border.all(
+                          color: Colors.black.withOpacity(0.04),
+                          width: 1.5,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.03),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  // Layer 2: Worker Image Cutout (positioned entirely inside the card on the right, clipped to card rounded corners)
+                  Positioned(
+                    bottom: 1.5,
+                    right: 1.5,
+                    top: 1.5,
+                    child: IgnorePointer(
+                      child: ClipRRect(
+                        borderRadius: const BorderRadius.only(
+                          topRight: Radius.circular(22.5),
+                          bottomRight: Radius.circular(22.5),
+                        ),
+                        child: SizedBox(
+                          width: 100, // Constrain image width so it occupies only the right portion of the card
+                          child: Image.asset(
+                            'assets/images/worker_namaste.png',
+                            fit: BoxFit.cover,
+                            alignment: Alignment.bottomCenter,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  // Layer 3: Card Content (Non-positioned child, determines Stack size. Solid transparent layout)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: 48,
+                          height: 48,
+                          decoration: const BoxDecoration(
+                            color: Color(0xFFE8F3F1),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.flash_on_rounded,
+                            color: AppTheme.brandGreenMain,
+                            size: 24,
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                        Padding(
+                          padding: const EdgeInsets.only(right: 28),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                'Instant',
+                                style: GoogleFonts.inter(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w800,
+                                  color: const Color(0xFF1E293B),
+                                ),
+                              ),
+                              const SizedBox(width: 2),
+                              Icon(
+                                Icons.chevron_right_rounded,
+                                color: Colors.grey.shade400,
+                                size: 18,
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Padding(
+                          padding: const EdgeInsets.only(right: 28),
+                          child: Text(
+                            'Get help now',
+                            style: GoogleFonts.inter(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.grey[500],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
@@ -1998,7 +2056,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         elevation: 0,
                       ),
                       child: Text(
-                        isInstant ? 'Book Instant Help Now' : 'Proceed to Schedule',
+                        isInstant ? 'Book Instant' : 'Proceed to Schedule',
                         style: GoogleFonts.inter(
                           fontSize: 15,
                           fontWeight: FontWeight.w700,
@@ -2084,7 +2142,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           color: Colors.white,
                           borderRadius: BorderRadius.circular(16),
                           border: Border.all(
-                            color: const Color(0xFF4A9782).withOpacity(0.2),
+                            color: AppTheme.brandGreenMain.withOpacity(0.2),
                             width: 1.5,
                           ),
                           boxShadow: [
@@ -2105,13 +2163,13 @@ class _HomeScreenState extends State<HomeScreen> {
                               ),
                               child: const Icon(
                                 Icons.flash_on_rounded,
-                                color: Color(0xFF4A9782),
+                                color: AppTheme.brandGreenMain,
                                 size: 24,
                               ),
                             ),
                             const SizedBox(height: 12),
                             Text(
-                              'Instant Help',
+                              'Instant',
                               style: GoogleFonts.inter(
                                 fontSize: 14,
                                 fontWeight: FontWeight.w700,
@@ -2169,18 +2227,18 @@ class _HomeScreenState extends State<HomeScreen> {
                             Container(
                               padding: const EdgeInsets.all(10),
                               decoration: const BoxDecoration(
-                                color: Color(0xFFFFF8E1),
+                                color: Color(0xFFE8F3F1),
                                 shape: BoxShape.circle,
                               ),
                               child: const Icon(
                                 Icons.calendar_month_rounded,
-                                color: Color(0xFFFFB300),
+                                color: AppTheme.brandGreenMain,
                                 size: 24,
                               ),
                             ),
                             const SizedBox(height: 12),
                             Text(
-                              'Scheduled',
+                              'Schedule',
                               style: GoogleFonts.inter(
                                 fontSize: 14,
                                 fontWeight: FontWeight.w700,

@@ -36,7 +36,8 @@ class SearchingWorkerScreen extends StatefulWidget {
   State<SearchingWorkerScreen> createState() => _SearchingWorkerScreenState();
 }
 
-class _SearchingWorkerScreenState extends State<SearchingWorkerScreen> with TickerProviderStateMixin {
+class _SearchingWorkerScreenState extends State<SearchingWorkerScreen> 
+    with TickerProviderStateMixin, WidgetsBindingObserver {
   late AnimationController _pulseController;
   final SocketService _socketService = SocketService();
   StreamSubscription? _notificationSubscription;
@@ -52,6 +53,7 @@ class _SearchingWorkerScreenState extends State<SearchingWorkerScreen> with Tick
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _currentBookingId = (widget.bookingData?['_id'] ?? widget.bookingData?['id'])?.toString();
     
     // Calculate remaining seconds based on createdAt to ensure persistence
@@ -92,6 +94,7 @@ class _SearchingWorkerScreenState extends State<SearchingWorkerScreen> with Tick
 
   void _initSocket(String id) {
     _socketService.connect();
+    _socketService.offBookingUpdate(); // Prevent duplicate listeners
     _socketService.joinBooking(id);
     _socketService.onBookingUpdate((data) {
       if (mounted) {
@@ -221,6 +224,7 @@ class _SearchingWorkerScreenState extends State<SearchingWorkerScreen> with Tick
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     if (_currentBookingId != null) {
       _socketService.leaveBooking(_currentBookingId!);
       _socketService.offBookingUpdate();
@@ -229,6 +233,17 @@ class _SearchingWorkerScreenState extends State<SearchingWorkerScreen> with Tick
     _notificationSubscription?.cancel();
     _pulseController.dispose();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      debugPrint('SearchingWorkerScreen: App resumed from background. Syncing...');
+      if (_currentBookingId != null) {
+        _checkBookingStatus(_currentBookingId!);
+        _initSocket(_currentBookingId!);
+      }
+    }
   }
 
   Future<void> _checkBookingStatus(String id) async {
@@ -373,7 +388,7 @@ class _SearchingWorkerScreenState extends State<SearchingWorkerScreen> with Tick
                   ),
                   const SizedBox(height: 32),
                   _buildFooterButtons(),
-                  const SizedBox(height: 32),
+                  SizedBox(height: MediaQuery.of(context).padding.bottom + 16),
                 ],
               ),
             ),

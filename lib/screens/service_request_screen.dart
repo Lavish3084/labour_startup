@@ -815,7 +815,7 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
   Widget _buildBottomFooter() {
     final totalPrice = _calculateTotalPrice();
     return Container(
-      padding: const EdgeInsets.fromLTRB(24, 16, 24, 30),
+      padding: EdgeInsets.fromLTRB(24, 16, 24, MediaQuery.of(context).padding.bottom + 16),
       decoration: BoxDecoration(
         color: Colors.white,
         boxShadow: [

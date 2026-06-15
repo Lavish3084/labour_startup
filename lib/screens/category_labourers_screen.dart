@@ -83,7 +83,7 @@ class _CategoryLabourersScreenState extends State<CategoryLabourersScreen> {
           }
 
           return ListView.builder(
-            padding: const EdgeInsets.all(20),
+            padding: EdgeInsets.fromLTRB(20, 20, 20, MediaQuery.of(context).padding.bottom + 20),
             itemCount: filteredLabourers.length,
             itemBuilder: (context, index) {
               return LabourerCard(

@@ -24,7 +24,7 @@ class PaymentService {
 
   void openCheckout({
     required String keyId, // Razorpay Key ID
-    required String orderId,
+    String? orderId,
     required String name,
     required String description,
     required String email,
@@ -36,12 +36,15 @@ class PaymentService {
       'amount': amount,
       'name': name,
       'description': description,
-      'order_id': orderId,
       'prefill': {'contact': contact, 'email': email},
       'external': {
         'wallets': ['paytm'],
       },
     };
+
+    if (orderId != null && orderId.isNotEmpty) {
+      options['order_id'] = orderId;
+    }
 
     try {
       _razorpay.open(options);

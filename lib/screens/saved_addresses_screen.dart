@@ -76,7 +76,7 @@ class SavedAddressesScreen extends StatelessWidget {
           }
 
           return ListView.builder(
-            padding: const EdgeInsets.all(24),
+            padding: EdgeInsets.fromLTRB(24, 24, 24, MediaQuery.of(context).padding.bottom + 24),
             itemCount: savedLocations.length,
             itemBuilder: (context, index) {
               final loc = savedLocations[index];

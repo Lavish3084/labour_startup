@@ -236,12 +236,12 @@ class _BookingSetupScreenState extends State<BookingSetupScreen> {
         
         if (_finalFeeAmount <= 0) {
           // Skip payment gateway for 0-fee bookings
-          final success = await ApiService.confirmFreeBooking(_currentBookingId!);
-          if (success) {
+          final result = await ApiService.confirmFreeBooking(_currentBookingId!);
+          if (result['success']) {
             _navigateToNextScreen();
           } else {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Failed to confirm booking. Please try again.')),
+              SnackBar(content: Text(result['message'] ?? 'Failed to confirm booking. Please try again.')),
             );
           }
         } else if (_useWallet) {
