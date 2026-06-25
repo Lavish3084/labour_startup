@@ -139,7 +139,7 @@ const Categories = () => {
                     <div key={category._id} style={styles.card}>
                         <div style={styles.cardHeader}>
                             <div style={styles.iconBox}>
-                                <LayoutGrid size={24} color="#3b82f6" />
+                                <LayoutGrid size={24} color="#00B365" />
                             </div>
                             <div style={styles.cardActions}>
                                 <button style={styles.actionBtn} onClick={() => handleOpenModal(category)}>
@@ -339,7 +339,7 @@ const styles = {
         marginTop: '0.4rem',
     },
     addBtn: {
-        background: '#1e293b',
+        background: '#00B365',
         color: 'white',
         border: 'none',
         padding: '0.75rem 1.25rem',
@@ -349,7 +349,7 @@ const styles = {
         alignItems: 'center',
         gap: '0.5rem',
         cursor: 'pointer',
-        boxShadow: '0 4px 12px rgba(30, 41, 59, 0.2)',
+        boxShadow: '0 4px 12px rgba(0, 179, 101, 0.2)',
     },
     filterBar: {
         display: 'flex',
@@ -397,7 +397,7 @@ const styles = {
     iconBox: {
         width: '44px',
         height: '44px',
-        background: '#eff6ff',
+        background: '#E6F7EF',
         borderRadius: '12px',
         display: 'flex',
         alignItems: 'center',
@@ -570,7 +570,7 @@ const styles = {
         padding: '0.75rem 1.5rem',
         borderRadius: '12px',
         border: 'none',
-        background: '#1e293b',
+        background: '#00B365',
         color: 'white',
         fontWeight: '600',
         cursor: 'pointer',

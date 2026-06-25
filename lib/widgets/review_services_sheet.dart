@@ -119,11 +119,7 @@ class _ReviewServicesSheetState extends State<ReviewServicesSheet> {
 
   Widget _buildItemCard(BuildContext context, CartItem item, CartProvider provider) {
     final originalPrice = item.totalPrice.toInt();
-    final bookingAmount = originalPrice > 0
-        ? (originalPrice * (_commissionPercentage / 100.0))
-            .clamp(49.0, 999.0)
-            .toInt()
-        : 0;
+    final bookingAmount = item.getBookingAmount(_commissionPercentage);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),

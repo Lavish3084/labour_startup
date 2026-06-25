@@ -37,6 +37,14 @@ class CartItem {
     return category.hourlyRate * hours * workerCount;
   }
 
+  int getBookingAmount(double fallbackCommission) {
+    if (totalPrice <= 0) return 0;
+    final effectiveCommission = category.commissionPercentage > 0 
+        ? category.commissionPercentage 
+        : fallbackCommission;
+    return (totalPrice * (effectiveCommission / 100.0)).clamp(49.0, 999.0).toInt();
+  }
+
   Map<String, dynamic> toJson() {
     return {
       'id': id,

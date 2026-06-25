@@ -98,7 +98,7 @@ class _CartScreenState extends State<CartScreen> {
           }
 
           final totalPrice = cartProvider.totalPrice.toInt();
-          final bookingAmount = totalPrice > 0 ? (totalPrice * (_commissionPercentage / 100.0)).clamp(49.0, 999.0).toInt() : 0;
+          final bookingAmount = cartProvider.getTotalBookingAmount(_commissionPercentage);
           final remainingAmount = totalPrice > bookingAmount ? totalPrice - bookingAmount : 0;
 
           return Column(

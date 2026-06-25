@@ -18,6 +18,10 @@ class CartProvider with ChangeNotifier {
     return _items.fold(0.0, (sum, item) => sum + item.totalPrice);
   }
 
+  int getTotalBookingAmount(double fallbackCommission) {
+    return _items.fold(0, (sum, item) => sum + item.getBookingAmount(fallbackCommission));
+  }
+
   Future<void> _loadCart() async {
     try {
       final prefs = await SharedPreferences.getInstance();

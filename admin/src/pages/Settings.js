@@ -394,7 +394,7 @@ const styles = {
         alignItems: 'center',
         justifyContent: 'center',
         gap: '8px',
-        backgroundColor: '#3b82f6',
+        backgroundColor: '#00B365',
         color: 'white',
         padding: '12px 24px',
         borderRadius: '10px',

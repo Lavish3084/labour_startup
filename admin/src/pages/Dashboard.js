@@ -227,7 +227,7 @@ const styles = {
     viewAllBtn: {
         background: 'transparent',
         border: 'none',
-        color: '#3b82f6',
+        color: '#00B365',
         fontWeight: '600',
         fontSize: '0.875rem',
         cursor: 'pointer',

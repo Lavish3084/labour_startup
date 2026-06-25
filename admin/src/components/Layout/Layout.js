@@ -48,7 +48,7 @@ const Layout = ({ children }) => {
                 transform: isSidebarOpen ? 'translateX(0)' : 'translateX(-100%)',
             }}>
                 <div style={styles.logoContainer}>
-                    <h2 style={styles.logoText}>Will Admin</h2>
+                    <h2 style={styles.logoText}>Labour Admin</h2>
                 </div>
 
                 <nav style={styles.nav}>
@@ -58,9 +58,9 @@ const Layout = ({ children }) => {
                             to={item.path}
                             style={({ isActive }) => ({
                                 ...styles.navLink,
-                                background: isActive ? '#f1f5f9' : 'transparent',
-                                color: isActive ? '#1e293b' : '#64748b',
-                                fontWeight: isActive ? '600' : '400',
+                                background: isActive ? '#E6F7EF' : 'transparent',
+                                color: isActive ? '#00B365' : '#64748b',
+                                fontWeight: isActive ? '700' : '500',
                             })}
                         >
                             {item.icon}
@@ -118,7 +118,7 @@ const styles = {
     container: {
         display: 'flex',
         height: '100vh',
-        background: '#f8fafc',
+        background: '#FAF9F6',
         fontFamily: "'Inter', sans-serif",
     },
     sidebar: {
