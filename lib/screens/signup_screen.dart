@@ -52,16 +52,19 @@ class _SignupScreenState extends State<SignupScreen> {
     final password = _passwordController.text;
     final confirmPassword = _confirmPasswordController.text;
 
-    if (name.isEmpty || email.isEmpty || password.isEmpty || confirmPassword.isEmpty) {
+    if (name.isEmpty ||
+        email.isEmpty ||
+        password.isEmpty ||
+        confirmPassword.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please fill in all fields')),
       );
       return;
     }
     if (password != confirmPassword) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Passwords do not match')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Passwords do not match')));
       return;
     }
 
@@ -74,7 +77,11 @@ class _SignupScreenState extends State<SignupScreen> {
       }
 
       final result = await ApiService.signup(
-        name, email, password, 'user', profilePicture,
+        name,
+        email,
+        password,
+        'user',
+        profilePicture,
       );
 
       if (result['success']) {
@@ -127,8 +134,12 @@ class _SignupScreenState extends State<SignupScreen> {
       final idToken = googleAuth.idToken;
 
       if (idToken != null) {
-        final result = await ApiService.googleLogin(idToken, 'user', action: 'signup');
-        
+        final result = await ApiService.googleLogin(
+          idToken,
+          'user',
+          action: 'signup',
+        );
+
         if (result['success']) {
           if (context.mounted) {
             await Geolocator.requestPermission();
@@ -174,7 +185,10 @@ class _SignupScreenState extends State<SignupScreen> {
         backgroundColor: Colors.white,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_rounded, color: AppTheme.textPrimary),
+          icon: const Icon(
+            Icons.arrow_back_rounded,
+            color: AppTheme.textPrimary,
+          ),
           onPressed: () => Navigator.pop(context),
         ),
       ),
@@ -206,16 +220,22 @@ class _SignupScreenState extends State<SignupScreen> {
                         shape: BoxShape.circle,
                         color: AppTheme.primaryLight,
                         border: Border.all(color: AppTheme.divider, width: 1),
-                        image: _imageFile != null
-                            ? DecorationImage(
-                                image: FileImage(_imageFile!),
-                                fit: BoxFit.cover,
-                              )
-                            : null,
+                        image:
+                            _imageFile != null
+                                ? DecorationImage(
+                                  image: FileImage(_imageFile!),
+                                  fit: BoxFit.cover,
+                                )
+                                : null,
                       ),
-                      child: _imageFile == null
-                          ? const Icon(Icons.person_rounded, size: 36, color: AppTheme.textMuted)
-                          : null,
+                      child:
+                          _imageFile == null
+                              ? const Icon(
+                                Icons.person_rounded,
+                                size: 36,
+                                color: AppTheme.textMuted,
+                              )
+                              : null,
                     ),
                     Positioned(
                       bottom: 0,
@@ -227,7 +247,11 @@ class _SignupScreenState extends State<SignupScreen> {
                           shape: BoxShape.circle,
                           border: Border.all(color: Colors.white, width: 2),
                         ),
-                        child: const Icon(Icons.add_rounded, color: Colors.white, size: 14),
+                        child: const Icon(
+                          Icons.add_rounded,
+                          color: Colors.white,
+                          size: 14,
+                        ),
                       ),
                     ),
                   ],
@@ -238,16 +262,34 @@ class _SignupScreenState extends State<SignupScreen> {
             const SizedBox(height: 28),
 
             // Form fields
-            _buildField('Full name', _nameController, Icons.person_outline_rounded, 'John Doe'),
+            _buildField(
+              'Full name',
+              _nameController,
+              Icons.person_outline_rounded,
+              'John Doe',
+            ),
             const SizedBox(height: 14),
-            _buildField('Email', _emailController, Icons.mail_outline_rounded, 'you@example.com',
-                keyboardType: TextInputType.emailAddress),
+            _buildField(
+              'Email',
+              _emailController,
+              Icons.mail_outline_rounded,
+              'you@example.com',
+              keyboardType: TextInputType.emailAddress,
+            ),
             const SizedBox(height: 14),
-            _buildPasswordField('Password', _passwordController, _obscurePassword,
-                () => setState(() => _obscurePassword = !_obscurePassword)),
+            _buildPasswordField(
+              'Password',
+              _passwordController,
+              _obscurePassword,
+              () => setState(() => _obscurePassword = !_obscurePassword),
+            ),
             const SizedBox(height: 14),
-            _buildPasswordField('Confirm password', _confirmPasswordController, _obscureConfirm,
-                () => setState(() => _obscureConfirm = !_obscureConfirm)),
+            _buildPasswordField(
+              'Confirm password',
+              _confirmPasswordController,
+              _obscureConfirm,
+              () => setState(() => _obscureConfirm = !_obscureConfirm),
+            ),
 
             const SizedBox(height: 28),
 
@@ -257,13 +299,17 @@ class _SignupScreenState extends State<SignupScreen> {
               child: ElevatedButton(
                 onPressed: _isLoading ? null : _handleSignup,
                 style: AppTheme.primaryButton,
-                child: _isLoading
-                    ? const SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
-                      )
-                    : Text('Create account', style: AppTheme.button),
+                child:
+                    _isLoading
+                        ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2,
+                          ),
+                        )
+                        : Text('Create account', style: AppTheme.button),
               ),
             ),
             const SizedBox(height: 24),
@@ -272,7 +318,10 @@ class _SignupScreenState extends State<SignupScreen> {
                 Expanded(child: Divider(color: AppTheme.border)),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Text('OR', style: AppTheme.body.copyWith(color: AppTheme.textMuted)),
+                  child: Text(
+                    'OR',
+                    style: AppTheme.body.copyWith(color: AppTheme.textMuted),
+                  ),
                 ),
                 Expanded(child: Divider(color: AppTheme.border)),
               ],
@@ -300,7 +349,9 @@ class _SignupScreenState extends State<SignupScreen> {
                   elevation: 1,
                   shadowColor: Colors.black12,
                   side: BorderSide(color: Colors.grey.shade300, width: 1),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
               ),
             ),
@@ -311,8 +362,13 @@ class _SignupScreenState extends State<SignupScreen> {
     );
   }
 
-  Widget _buildField(String label, TextEditingController controller, IconData icon, String hint,
-      {TextInputType? keyboardType}) {
+  Widget _buildField(
+    String label,
+    TextEditingController controller,
+    IconData icon,
+    String hint, {
+    TextInputType? keyboardType,
+  }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -323,14 +379,22 @@ class _SignupScreenState extends State<SignupScreen> {
           enabled: !_isLoading,
           keyboardType: keyboardType,
           style: AppTheme.body.copyWith(color: AppTheme.textPrimary),
-          decoration: AppTheme.inputDecoration(label: '', hint: hint, prefixIcon: icon),
+          decoration: AppTheme.inputDecoration(
+            label: '',
+            hint: hint,
+            prefixIcon: icon,
+          ),
         ),
       ],
     );
   }
 
   Widget _buildPasswordField(
-      String label, TextEditingController controller, bool obscure, VoidCallback toggle) {
+    String label,
+    TextEditingController controller,
+    bool obscure,
+    VoidCallback toggle,
+  ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -348,7 +412,9 @@ class _SignupScreenState extends State<SignupScreen> {
             suffix: GestureDetector(
               onTap: toggle,
               child: Icon(
-                obscure ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                obscure
+                    ? Icons.visibility_off_outlined
+                    : Icons.visibility_outlined,
                 color: AppTheme.textMuted,
                 size: 20,
               ),

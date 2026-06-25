@@ -25,7 +25,8 @@ class TrackStatusScreen extends StatefulWidget {
   State<TrackStatusScreen> createState() => _TrackStatusScreenState();
 }
 
-class _TrackStatusScreenState extends State<TrackStatusScreen> with WidgetsBindingObserver {
+class _TrackStatusScreenState extends State<TrackStatusScreen>
+    with WidgetsBindingObserver {
   final SocketService _socketService = SocketService();
   StreamSubscription? _notificationSubscription;
   bool _isLoading = true;
@@ -83,7 +84,8 @@ class _TrackStatusScreenState extends State<TrackStatusScreen> with WidgetsBindi
   }
 
   void _checkCompletionStatus() {
-    if (_booking != null && _booking['status']?.toString().toLowerCase() == 'completed') {
+    if (_booking != null &&
+        _booking['status']?.toString().toLowerCase() == 'completed') {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
           Navigator.pushReplacement(
@@ -134,9 +136,9 @@ class _TrackStatusScreenState extends State<TrackStatusScreen> with WidgetsBindi
         );
 
         if (success) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("Payment Successful!")),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text("Payment Successful!")));
           _fetchBookingDetails();
         }
       } catch (e) {
@@ -162,8 +164,9 @@ class _TrackStatusScreenState extends State<TrackStatusScreen> with WidgetsBindi
 
     if (upiId != null && upiId.isNotEmpty) {
       // Launch UPI Intent
-      final String upiUri = 'upi://pay?pa=$upiId&pn=${Uri.encodeComponent(workerName)}&am=$amount&cu=INR&tn=${Uri.encodeComponent("Payment for ${_booking['category']} via WILL App")}';
-      
+      final String upiUri =
+          'upi://pay?pa=$upiId&pn=${Uri.encodeComponent(workerName)}&am=$amount&cu=INR&tn=${Uri.encodeComponent("Payment for ${_booking['category']} via WILL App")}';
+
       try {
         if (await canLaunchUrl(Uri.parse(upiUri))) {
           await launchUrl(Uri.parse(upiUri));
@@ -183,63 +186,83 @@ class _TrackStatusScreenState extends State<TrackStatusScreen> with WidgetsBindi
   void _showPaymentDialog(int amount, {bool isUpi = false, String? upiId}) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text(isUpi ? 'Pay via UPI' : 'Pay in Cash', style: GoogleFonts.roboto(fontWeight: FontWeight.bold)),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              isUpi 
-                ? 'We couldn\'t open your UPI app automatically. You can pay manually to:'
-                : 'The worker hasn\'t set up online payments. Please pay them directly.',
-              style: GoogleFonts.roboto(fontSize: 14),
+      builder:
+          (context) => AlertDialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
             ),
-            const SizedBox(height: 16),
-            if (isUpi && upiId != null) ...[
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF2F2F2),
-                  borderRadius: BorderRadius.circular(8),
+            title: Text(
+              isUpi ? 'Pay via UPI' : 'Pay in Cash',
+              style: GoogleFonts.roboto(fontWeight: FontWeight.bold),
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  isUpi
+                      ? 'We couldn\'t open your UPI app automatically. You can pay manually to:'
+                      : 'The worker hasn\'t set up online payments. Please pay them directly.',
+                  style: GoogleFonts.roboto(fontSize: 14),
                 ),
-                child: Row(
-                  children: [
-                    Expanded(child: Text(upiId, style: const TextStyle(fontWeight: FontWeight.bold))),
-                    IconButton(
-                      icon: const Icon(Icons.copy, size: 18),
-                      onPressed: () {
-                        // Copy to clipboard logic could go here
-                      },
+                const SizedBox(height: 16),
+                if (isUpi && upiId != null) ...[
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF2F2F2),
+                      borderRadius: BorderRadius.circular(8),
                     ),
-                  ],
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            upiId,
+                            style: const TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.copy, size: 18),
+                          onPressed: () {
+                            // Copy to clipboard logic could go here
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                ],
+                Text(
+                  'Amount: ₹$amount',
+                  style: GoogleFonts.roboto(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: const Color(0xFF4A9782),
+                  ),
                 ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Close'),
               ),
-              const SizedBox(height: 12),
+              if (isUpi)
+                ElevatedButton(
+                  onPressed: () {
+                    // If we show this dialog, user probably already tried opening the app
+                    Navigator.pop(context);
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF4A9782),
+                  ),
+                  child: const Text(
+                    'Done',
+                    style: TextStyle(color: Colors.white),
+                  ),
+                ),
             ],
-            Text(
-              'Amount: ₹$amount',
-              style: GoogleFonts.roboto(fontSize: 18, fontWeight: FontWeight.bold, color: const Color(0xFF4A9782)),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Close'),
           ),
-          if (isUpi)
-            ElevatedButton(
-              onPressed: () {
-                // If we show this dialog, user probably already tried opening the app
-                Navigator.pop(context);
-              },
-              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF4A9782)),
-              child: const Text('Done', style: TextStyle(color: Colors.white)),
-            ),
-        ],
-      ),
     );
   }
 
@@ -247,7 +270,9 @@ class _TrackStatusScreenState extends State<TrackStatusScreen> with WidgetsBindi
   Widget build(BuildContext context) {
     if (_isLoading && _booking == null) {
       return const Scaffold(
-        body: Center(child: CircularProgressIndicator(color: Color(0xFF4A9782))),
+        body: Center(
+          child: CircularProgressIndicator(color: Color(0xFF4A9782)),
+        ),
       );
     }
 
@@ -262,9 +287,12 @@ class _TrackStatusScreenState extends State<TrackStatusScreen> with WidgetsBindi
     final arrivalOTP = _booking['arrivalOtp']?.toString() ?? '----';
     final completionOTP = _booking['completionOtp']?.toString() ?? '----';
     final labourerData = _booking['labourer'];
-    final labourer = labourerData != null ? Labourer.fromJson(labourerData) : null;
+    final labourer =
+        labourerData != null ? Labourer.fromJson(labourerData) : null;
     final amount = _booking['amount'] ?? (_booking['minAmount'] ?? 0);
-    final bool hasUpi = labourerData?['upiId'] != null && labourerData!['upiId'].toString().isNotEmpty;
+    final bool hasUpi =
+        labourerData?['upiId'] != null &&
+        labourerData!['upiId'].toString().isNotEmpty;
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -330,7 +358,9 @@ class _TrackStatusScreenState extends State<TrackStatusScreen> with WidgetsBindi
                         });
                       },
                       icon: Icon(
-                        _isWorkerCardExpanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
+                        _isWorkerCardExpanded
+                            ? Icons.keyboard_arrow_up
+                            : Icons.keyboard_arrow_down,
                         color: Colors.black,
                         size: 24,
                       ),
@@ -396,9 +426,12 @@ class _TrackStatusScreenState extends State<TrackStatusScreen> with WidgetsBindi
                     width: double.infinity,
                     height: 52,
                     child: ElevatedButton(
-                      onPressed: () => _initiatePayment(
-                        amount is int ? amount : int.tryParse(amount.toString()) ?? 0,
-                      ),
+                      onPressed:
+                          () => _initiatePayment(
+                            amount is int
+                                ? amount
+                                : int.tryParse(amount.toString()) ?? 0,
+                          ),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF529A87),
                         shape: RoundedRectangleBorder(
@@ -472,15 +505,14 @@ class _TrackStatusScreenState extends State<TrackStatusScreen> with WidgetsBindi
               width: 22,
               height: 22,
               decoration: BoxDecoration(
-                color: isCompleted ? const Color(0xFF4A9782) : const Color(0xFF4A9782).withValues(alpha: 0.5),
+                color:
+                    isCompleted
+                        ? const Color(0xFF4A9782)
+                        : const Color(0xFF4A9782).withValues(alpha: 0.5),
                 shape: BoxShape.circle,
                 border: Border.all(color: Colors.white, width: 2),
               ),
-              child: const Icon(
-                Icons.check,
-                size: 14,
-                color: Colors.white,
-              ),
+              child: const Icon(Icons.check, size: 14, color: Colors.white),
             ),
           ),
         ],
@@ -490,15 +522,19 @@ class _TrackStatusScreenState extends State<TrackStatusScreen> with WidgetsBindi
 
   Widget _buildOTPCard(String status, String arrivalOTP, String completionOTP) {
     bool isCompletion = status == 'arrived' || status == 'completed';
-    String title = isCompletion 
-        ? "Share OTP to worker\nafter payment is done" 
-        : "Share OTP to worker\nonce he arrives";
+    String title =
+        isCompletion
+            ? "Share OTP to worker\nafter payment is done"
+            : "Share OTP to worker\nonce he arrives";
     String otp = isCompletion ? completionOTP : arrivalOTP;
 
     return Align(
       alignment: isCompletion ? Alignment.centerRight : Alignment.centerLeft,
       child: Container(
-        margin: isCompletion ? const EdgeInsets.only(right: 36) : const EdgeInsets.only(left: 36),
+        margin:
+            isCompletion
+                ? const EdgeInsets.only(right: 36)
+                : const EdgeInsets.only(left: 36),
         padding: const EdgeInsets.all(16),
         decoration: ShapeDecoration(
           color: Colors.white,
@@ -516,7 +552,7 @@ class _TrackStatusScreenState extends State<TrackStatusScreen> with WidgetsBindi
               color: Colors.black.withValues(alpha: 0.05),
               blurRadius: 10,
               offset: const Offset(0, 4),
-            )
+            ),
           ],
         ),
         child: Column(
@@ -566,7 +602,7 @@ class _TrackStatusScreenState extends State<TrackStatusScreen> with WidgetsBindi
                 blurRadius: 4,
                 offset: Offset(0, 4),
                 spreadRadius: 0,
-              )
+              ),
             ],
           ),
           child: Row(
@@ -576,9 +612,10 @@ class _TrackStatusScreenState extends State<TrackStatusScreen> with WidgetsBindi
                 height: 63,
                 decoration: ShapeDecoration(
                   image: DecorationImage(
-                    image: labourer.imageUrl.isNotEmpty
-                        ? NetworkImage(labourer.imageUrl)
-                        : const NetworkImage("https://placehold.co/63x63"),
+                    image:
+                        labourer.imageUrl.isNotEmpty
+                            ? NetworkImage(labourer.imageUrl)
+                            : const NetworkImage("https://placehold.co/63x63"),
                     fit: BoxFit.cover,
                   ),
                   shape: const OvalBorder(
@@ -641,7 +678,10 @@ class _TrackStatusScreenState extends State<TrackStatusScreen> with WidgetsBindi
                   decoration: ShapeDecoration(
                     color: const Color(0xFFF5FFFC),
                     shape: RoundedRectangleBorder(
-                      side: const BorderSide(width: 1, color: Color(0xFF4A9782)),
+                      side: const BorderSide(
+                        width: 1,
+                        color: Color(0xFF4A9782),
+                      ),
                       borderRadius: BorderRadius.circular(25.50),
                     ),
                   ),
@@ -650,11 +690,12 @@ class _TrackStatusScreenState extends State<TrackStatusScreen> with WidgetsBindi
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => ChatScreen(
-                            bookingId: widget.bookingId,
-                            otherUserName: labourer.name,
-                            otherUserPhoto: labourer.imageUrl,
-                          ),
+                          builder:
+                              (context) => ChatScreen(
+                                bookingId: widget.bookingId,
+                                otherUserName: labourer.name,
+                                otherUserPhoto: labourer.imageUrl,
+                              ),
                         ),
                       );
                     },
@@ -680,7 +721,11 @@ class _TrackStatusScreenState extends State<TrackStatusScreen> with WidgetsBindi
                   ),
                 ),
                 child: IconButton(
-                  icon: const Icon(Icons.call_outlined, color: Colors.white, size: 24),
+                  icon: const Icon(
+                    Icons.call_outlined,
+                    color: Colors.white,
+                    size: 24,
+                  ),
                   onPressed: () async {
                     final userData = _booking['labourer']?['user'];
                     final phone = userData?['phoneNumber'];
@@ -702,7 +747,8 @@ class _TrackStatusScreenState extends State<TrackStatusScreen> with WidgetsBindi
 
   Widget _buildWorkDetailsCard(dynamic booking) {
     final date = DateTime.parse(booking['date']).toLocal();
-    final timeStr = "${date.hour % 12 == 0 ? 12 : date.hour % 12}:${date.minute.toString().padLeft(2, '0')} ${date.hour >= 12 ? 'PM' : 'AM'}";
+    final timeStr =
+        "${date.hour % 12 == 0 ? 12 : date.hour % 12}:${date.minute.toString().padLeft(2, '0')} ${date.hour >= 12 ? 'PM' : 'AM'}";
     final dateStr = "${date.day} ${_getMonthName(date.month)}";
 
     return Container(
@@ -725,7 +771,10 @@ class _TrackStatusScreenState extends State<TrackStatusScreen> with WidgetsBindi
             children: [
               _buildDetailItem('Service', booking['category']),
               _buildVerticalDivider(),
-              _buildDetailItem('Duration', '${booking['numberOfHours'] ?? 2} Hours'),
+              _buildDetailItem(
+                'Duration',
+                '${booking['numberOfHours'] ?? 2} Hours',
+              ),
               _buildVerticalDivider(),
               _buildDetailItem('Date', dateStr),
             ],
@@ -751,11 +800,7 @@ class _TrackStatusScreenState extends State<TrackStatusScreen> with WidgetsBindi
   }
 
   Widget _buildVerticalDivider() {
-    return Container(
-      width: 1,
-      height: 33,
-      color: const Color(0xFFCCCCCC),
-    );
+    return Container(width: 1, height: 33, color: const Color(0xFFCCCCCC));
   }
 
   Widget _buildDetailItem(String label, String value) {
@@ -844,9 +889,12 @@ class _TrackStatusScreenState extends State<TrackStatusScreen> with WidgetsBindi
               width: double.infinity,
               height: 52,
               child: ElevatedButton(
-                onPressed: () => _initiatePayment(
-                  amount is int ? amount : int.tryParse(amount.toString()) ?? 0,
-                ),
+                onPressed:
+                    () => _initiatePayment(
+                      amount is int
+                          ? amount
+                          : int.tryParse(amount.toString()) ?? 0,
+                    ),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF4A9782),
                   shape: RoundedRectangleBorder(
@@ -872,15 +920,27 @@ class _TrackStatusScreenState extends State<TrackStatusScreen> with WidgetsBindi
 
   String _getMonthName(int month) {
     const months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
     ];
     return months[month - 1];
   }
 
   Widget _buildPaymentOptionsBar() {
     final labourerData = _booking['labourer'];
-    final bool hasUpi = labourerData?['upiId'] != null && labourerData!['upiId'].toString().isNotEmpty;
+    final bool hasUpi =
+        labourerData?['upiId'] != null &&
+        labourerData!['upiId'].toString().isNotEmpty;
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 32),
@@ -903,11 +963,27 @@ class _TrackStatusScreenState extends State<TrackStatusScreen> with WidgetsBindi
             ),
           ),
           if (hasUpi) ...[
-            Image.asset('assets/images/gpay_logo.png', height: 16, errorBuilder: (c, e, s) => const Text('GPay', style: TextStyle(fontSize: 10))),
+            Image.asset(
+              'assets/images/gpay_logo.png',
+              height: 16,
+              errorBuilder:
+                  (c, e, s) =>
+                      const Text('GPay', style: TextStyle(fontSize: 10)),
+            ),
             const SizedBox(width: 12),
-            Image.asset('assets/images/paytm_logo.png', height: 16, errorBuilder: (c, e, s) => const Text('Paytm', style: TextStyle(fontSize: 10))),
+            Image.asset(
+              'assets/images/paytm_logo.png',
+              height: 16,
+              errorBuilder:
+                  (c, e, s) =>
+                      const Text('Paytm', style: TextStyle(fontSize: 10)),
+            ),
             const SizedBox(width: 12),
-            const Icon(Icons.account_balance_wallet_outlined, size: 20, color: Color(0xFF4A9782)),
+            const Icon(
+              Icons.account_balance_wallet_outlined,
+              size: 20,
+              color: Color(0xFF4A9782),
+            ),
             const SizedBox(width: 4),
           ],
           Text(

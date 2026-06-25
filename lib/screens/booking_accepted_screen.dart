@@ -82,11 +82,7 @@ class BookingAcceptedScreen extends StatelessWidget {
       ),
       child: Stack(
         children: [
-          Positioned.fill(
-            child: CustomPaint(
-              painter: _DotPatternPainter(),
-            ),
-          ),
+          Positioned.fill(child: CustomPaint(painter: _DotPatternPainter())),
           SafeArea(
             child: Center(
               child: Padding(
@@ -117,7 +113,11 @@ class BookingAcceptedScreen extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(width: 4),
-                        const Icon(Icons.arrow_drop_down, color: Colors.white, size: 20),
+                        const Icon(
+                          Icons.arrow_drop_down,
+                          color: Colors.white,
+                          size: 20,
+                        ),
                       ],
                     ),
                   ],
@@ -141,7 +141,9 @@ class BookingAcceptedScreen extends StatelessWidget {
               child: ElevatedButton(
                 onPressed: () {
                   Navigator.of(context).pushAndRemoveUntil(
-                    MaterialPageRoute(builder: (context) => const MainScreen(initialIndex: 0)),
+                    MaterialPageRoute(
+                      builder: (context) => const MainScreen(initialIndex: 0),
+                    ),
                     (route) => false,
                   );
                 },
@@ -171,10 +173,7 @@ class BookingAcceptedScreen extends StatelessWidget {
               shape: BoxShape.circle,
               border: Border.all(color: const Color(0xFF4A9782), width: 1),
             ),
-            child: const Icon(
-              Icons.more_horiz,
-              color: Color(0xFF4A9782),
-            ),
+            child: const Icon(Icons.more_horiz, color: Color(0xFF4A9782)),
           ),
         ],
       ),
@@ -185,9 +184,10 @@ class BookingAcceptedScreen extends StatelessWidget {
 class _DotPatternPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = Colors.white.withOpacity(0.1)
-      ..style = PaintingStyle.fill;
+    final paint =
+        Paint()
+          ..color = Colors.white.withOpacity(0.1)
+          ..style = PaintingStyle.fill;
 
     const spacing = 20.0;
     const radius = 1.0;

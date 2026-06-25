@@ -119,58 +119,62 @@ class _SplashLocationSequenceState extends State<SplashLocationSequence>
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 380),
-                  switchInCurve: Curves.easeOut,
-                  switchOutCurve: Curves.easeIn,
-                  child: _showMap && _hasLocation
-                      ? LocationMapCircle(
-                          key: const ValueKey('map'),
-                          latitude: widget.latitude!,
-                          longitude: widget.longitude!,
-                        )
-                      : const LocationLoadingIndicator(
-                          key: ValueKey('pulse'),
-                          showMessage: false,
-                        ),
-                ),
-                const SizedBox(height: 24),
-                AnimatedOpacity(
-                  opacity: widget.isFetching ? 1.0 : (1.0 - _liftAnimation.value),
-                  duration: const Duration(milliseconds: 200),
-                  child: widget.isFetching
-                      ? Text(
-                          'Fetching location...',
-                          textAlign: TextAlign.center,
-                          style: GoogleFonts.inter(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w500,
-                            color: const Color(0xFF6B7280),
-                          ),
-                        )
-                      : const SizedBox(height: 22),
-                ),
-                Align(
-                  alignment: Alignment.center,
-                  child: SizeTransition(
-                    sizeFactor: _textAnimation,
-                    axisAlignment: -1,
-                    child: FadeTransition(
-                      opacity: _textAnimation,
-                      child: _hasLocation
-                          ? Padding(
-                              padding: const EdgeInsets.only(top: 8),
-                              child: Center(
-                                child: LocationAddressLabels(
-                                  locality: widget.locality!,
-                                  fullAddress: widget.fullAddress!,
-                                ),
+                  AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 380),
+                    switchInCurve: Curves.easeOut,
+                    switchOutCurve: Curves.easeIn,
+                    child:
+                        _showMap && _hasLocation
+                            ? LocationMapCircle(
+                              key: const ValueKey('map'),
+                              latitude: widget.latitude!,
+                              longitude: widget.longitude!,
+                            )
+                            : const LocationLoadingIndicator(
+                              key: ValueKey('pulse'),
+                              showMessage: false,
+                            ),
+                  ),
+                  const SizedBox(height: 24),
+                  AnimatedOpacity(
+                    opacity:
+                        widget.isFetching ? 1.0 : (1.0 - _liftAnimation.value),
+                    duration: const Duration(milliseconds: 200),
+                    child:
+                        widget.isFetching
+                            ? Text(
+                              'Fetching location...',
+                              textAlign: TextAlign.center,
+                              style: GoogleFonts.inter(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w500,
+                                color: const Color(0xFF6B7280),
                               ),
                             )
-                          : const SizedBox.shrink(),
+                            : const SizedBox(height: 22),
+                  ),
+                  Align(
+                    alignment: Alignment.center,
+                    child: SizeTransition(
+                      sizeFactor: _textAnimation,
+                      axisAlignment: -1,
+                      child: FadeTransition(
+                        opacity: _textAnimation,
+                        child:
+                            _hasLocation
+                                ? Padding(
+                                  padding: const EdgeInsets.only(top: 8),
+                                  child: Center(
+                                    child: LocationAddressLabels(
+                                      locality: widget.locality!,
+                                      fullAddress: widget.fullAddress!,
+                                    ),
+                                  ),
+                                )
+                                : const SizedBox.shrink(),
+                      ),
                     ),
                   ),
-                ),
                 ],
               ),
             ),

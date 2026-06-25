@@ -102,7 +102,7 @@ class _ChatScreenState extends State<ChatScreen> {
           _isLoading = false;
         });
         if (showLoading) {
-           _scrollToBottom();
+          _scrollToBottom();
         }
       }
     } catch (e) {
@@ -152,12 +152,20 @@ class _ChatScreenState extends State<ChatScreen> {
             CircleAvatar(
               radius: 18,
               backgroundColor: const Color(0xFF4A9782).withOpacity(0.1),
-              backgroundImage: widget.otherUserPhoto != null && widget.otherUserPhoto!.isNotEmpty
-                  ? NetworkImage(widget.otherUserPhoto!)
-                  : null,
-              child: widget.otherUserPhoto == null || widget.otherUserPhoto!.isEmpty
-                  ? const Icon(Icons.person, color: Color(0xFF4A9782), size: 20)
-                  : null,
+              backgroundImage:
+                  widget.otherUserPhoto != null &&
+                          widget.otherUserPhoto!.isNotEmpty
+                      ? NetworkImage(widget.otherUserPhoto!)
+                      : null,
+              child:
+                  widget.otherUserPhoto == null ||
+                          widget.otherUserPhoto!.isEmpty
+                      ? const Icon(
+                        Icons.person,
+                        color: Color(0xFF4A9782),
+                        size: 20,
+                      )
+                      : null,
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -195,18 +203,23 @@ class _ChatScreenState extends State<ChatScreen> {
       body: Column(
         children: [
           Expanded(
-            child: _isLoading && _messages.isEmpty
-                ? const Center(child: CircularProgressIndicator(color: Color(0xFF4A9782)))
-                : ListView.builder(
-                    controller: _scrollController,
-                    padding: const EdgeInsets.all(16),
-                    itemCount: _messages.length,
-                    itemBuilder: (context, index) {
-                      final msg = _messages[index];
-                      final isMe = msg['sender']['_id'] == _currentUserId;
-                      return _buildMessageBubble(msg['text'], isMe);
-                    },
-                  ),
+            child:
+                _isLoading && _messages.isEmpty
+                    ? const Center(
+                      child: CircularProgressIndicator(
+                        color: Color(0xFF4A9782),
+                      ),
+                    )
+                    : ListView.builder(
+                      controller: _scrollController,
+                      padding: const EdgeInsets.all(16),
+                      itemCount: _messages.length,
+                      itemBuilder: (context, index) {
+                        final msg = _messages[index];
+                        final isMe = msg['sender']['_id'] == _currentUserId;
+                        return _buildMessageBubble(msg['text'], isMe);
+                      },
+                    ),
           ),
           _buildMessageInput(),
         ],
@@ -220,7 +233,9 @@ class _ChatScreenState extends State<ChatScreen> {
       child: Container(
         margin: const EdgeInsets.only(bottom: 8),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-        constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.7),
+        constraints: BoxConstraints(
+          maxWidth: MediaQuery.of(context).size.width * 0.7,
+        ),
         decoration: BoxDecoration(
           color: isMe ? const Color(0xFF4A9782) : const Color(0xFFF1F1F1),
           borderRadius: BorderRadius.only(

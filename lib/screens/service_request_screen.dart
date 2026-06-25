@@ -50,7 +50,8 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
   final bool _saveAddress = true;
   late String _selectedBookingMode;
   int _numberOfHours = 2; // Default 2h
-  final Set<DateTime> _selectedDates = {}; // For multi-date selection in Daily mode
+  final Set<DateTime> _selectedDates =
+      {}; // For multi-date selection in Daily mode
 
   @override
   void initState() {
@@ -90,10 +91,11 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
-      builder: (context) => _TimePickerSheet(
-        initialTime: _selectedTime,
-        selectedDate: _selectedDate,
-      ),
+      builder:
+          (context) => _TimePickerSheet(
+            initialTime: _selectedTime,
+            selectedDate: _selectedDate,
+          ),
     );
 
     if (picked != null) {
@@ -104,7 +106,10 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
   }
 
   Future<void> _pickAddress() async {
-    final locationProvider = Provider.of<LocationProvider>(context, listen: false);
+    final locationProvider = Provider.of<LocationProvider>(
+      context,
+      listen: false,
+    );
     await locationProvider.loadSavedLocations();
 
     if (!mounted) return;
@@ -113,9 +118,10 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
-      builder: (context) => _ServiceLocationSelectionSheet(
-        savedLocations: locationProvider.savedLocations,
-      ),
+      builder:
+          (context) => _ServiceLocationSelectionSheet(
+            savedLocations: locationProvider.savedLocations,
+          ),
     );
 
     if (result != null && result is Map<String, dynamic>) {
@@ -160,7 +166,8 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         _buildModeToggle(),
-                        if (_selectedBookingMode == 'Hourly') _buildArrivalTimeShortCard(),
+                        if (_selectedBookingMode == 'Hourly')
+                          _buildArrivalTimeShortCard(),
                       ],
                     ),
                     const SizedBox(height: 24),
@@ -177,9 +184,9 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
                     const SizedBox(height: 24),
                     const Divider(height: 1),
                     const SizedBox(height: 24),
-                    if (_selectedBookingMode == 'Hourly') 
-                      _buildHourlyContent() 
-                    else 
+                    if (_selectedBookingMode == 'Hourly')
+                      _buildHourlyContent()
+                    else
                       _buildDailyContent(),
                     const SizedBox(height: 32),
                   ],
@@ -213,108 +220,114 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
           ),
         ),
         child: Stack(
-        children: [
-          Positioned.fill(
-            child: CustomPaint(
-              painter: DotPatternPainter(),
-            ),
-          ),
-          SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  GestureDetector(
-                    onTap: () => Navigator.pop(context),
-                    child: Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: const BoxDecoration(
-                        color: Colors.white24,
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(Icons.arrow_back_rounded,
-                          color: Colors.white, size: 20),
-                    ),
-                  ),
-                  const Spacer(),
-                  Text(
-                    'When should we start ?',
-                    style: GoogleFonts.roboto( // Changed to Roboto
-                      fontSize: 32,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white,
-                      height: 1.25,
-                    ),
-                  ),
-                  if (_selectedAddress != null) ...[
-                    const SizedBox(height: 12),
+          children: [
+            Positioned.fill(child: CustomPaint(painter: DotPatternPainter())),
+            SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 10,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
                     GestureDetector(
-                      onTap: _pickAddress,
+                      onTap: () => Navigator.pop(context),
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.15),
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(
-                            color: Colors.white.withValues(alpha: 0.25),
-                            width: 1,
-                          ),
+                        padding: const EdgeInsets.all(8),
+                        decoration: const BoxDecoration(
+                          color: Colors.white24,
+                          shape: BoxShape.circle,
                         ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(
-                              Icons.location_on,
-                              color: Color(0xFFE1FFF6),
-                              size: 14,
+                        child: const Icon(
+                          Icons.arrow_back_rounded,
+                          color: Colors.white,
+                          size: 20,
+                        ),
+                      ),
+                    ),
+                    const Spacer(),
+                    Text(
+                      'When should we start ?',
+                      style: GoogleFonts.roboto(
+                        // Changed to Roboto
+                        fontSize: 32,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                        height: 1.25,
+                      ),
+                    ),
+                    if (_selectedAddress != null) ...[
+                      const SizedBox(height: 12),
+                      GestureDetector(
+                        onTap: _pickAddress,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: Colors.white.withValues(alpha: 0.25),
+                              width: 1,
                             ),
-                            const SizedBox(width: 6),
-                            Flexible(
-                              child: Text(
-                                _selectedAddress!,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: GoogleFonts.roboto(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w500,
-                                  color: Colors.white,
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(
+                                Icons.location_on,
+                                color: Color(0xFFE1FFF6),
+                                size: 14,
+                              ),
+                              const SizedBox(width: 6),
+                              Flexible(
+                                child: Text(
+                                  _selectedAddress!,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: GoogleFonts.roboto(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w500,
+                                    color: Colors.white,
+                                  ),
                                 ),
                               ),
-                            ),
-                            const SizedBox(width: 8),
-                            Container(
-                              width: 1,
-                              height: 12,
-                              color: Colors.white.withValues(alpha: 0.3),
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              'Change',
-                              style: GoogleFonts.roboto(
+                              const SizedBox(width: 8),
+                              Container(
+                                width: 1,
+                                height: 12,
+                                color: Colors.white.withValues(alpha: 0.3),
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                'Change',
+                                style: GoogleFonts.roboto(
                                   fontSize: 11,
                                   fontWeight: FontWeight.w700,
                                   color: const Color(0xFFE1FFF6),
+                                ),
                               ),
-                            ),
-                            const Icon(
-                              Icons.keyboard_arrow_down,
-                              color: Color(0xFFE1FFF6),
-                              size: 14,
-                            ),
-                          ],
+                              const Icon(
+                                Icons.keyboard_arrow_down,
+                                color: Color(0xFFE1FFF6),
+                                size: 14,
+                              ),
+                            ],
+                          ),
                         ),
                       ),
-                    ),
-                    const SizedBox(height: 18),
-                  ] else ...[
-                    const SizedBox(height: 20),
+                      const SizedBox(height: 18),
+                    ] else ...[
+                      const SizedBox(height: 20),
+                    ],
                   ],
-                ],
+                ),
               ),
             ),
-          ),
-        ],
+          ],
         ),
       ),
     );
@@ -330,18 +343,17 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
           radius: 0.50,
           colors: [Color(0xFF4A9782), Color(0xFF216F5A)],
         ),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(26),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(26)),
       ),
       child: Stack(
         children: [
           AnimatedAlign(
             duration: const Duration(milliseconds: 250),
             curve: Curves.easeInOut,
-            alignment: _selectedBookingMode == 'Hourly'
-                ? Alignment.centerLeft
-                : Alignment.centerRight,
+            alignment:
+                _selectedBookingMode == 'Hourly'
+                    ? Alignment.centerLeft
+                    : Alignment.centerRight,
             child: Padding(
               padding: const EdgeInsets.all(4.0),
               child: Container(
@@ -368,9 +380,10 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
                           Icon(
                             Icons.timer_outlined,
                             size: 16,
-                            color: _selectedBookingMode == 'Hourly'
-                                ? const Color(0xFF4A9782)
-                                : Colors.white.withValues(alpha: 0.8),
+                            color:
+                                _selectedBookingMode == 'Hourly'
+                                    ? const Color(0xFF4A9782)
+                                    : Colors.white.withValues(alpha: 0.8),
                           ),
                           const SizedBox(width: 4),
                           Text(
@@ -378,9 +391,10 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
                             style: GoogleFonts.roboto(
                               fontSize: 12,
                               fontWeight: FontWeight.w500,
-                              color: _selectedBookingMode == 'Hourly'
-                                  ? const Color(0xFF4A9782)
-                                  : Colors.white.withValues(alpha: 0.8),
+                              color:
+                                  _selectedBookingMode == 'Hourly'
+                                      ? const Color(0xFF4A9782)
+                                      : Colors.white.withValues(alpha: 0.8),
                             ),
                           ),
                         ],
@@ -401,9 +415,10 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
                           Icon(
                             Icons.calendar_today_outlined,
                             size: 14,
-                            color: _selectedBookingMode == 'Daily'
-                                ? const Color(0xFF4A9782)
-                                : Colors.white.withValues(alpha: 0.8),
+                            color:
+                                _selectedBookingMode == 'Daily'
+                                    ? const Color(0xFF4A9782)
+                                    : Colors.white.withValues(alpha: 0.8),
                           ),
                           const SizedBox(width: 4),
                           Text(
@@ -411,9 +426,10 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
                             style: GoogleFonts.roboto(
                               fontSize: 12,
                               fontWeight: FontWeight.w500,
-                              color: _selectedBookingMode == 'Daily'
-                                  ? const Color(0xFF4A9782)
-                                  : Colors.white.withValues(alpha: 0.8),
+                              color:
+                                  _selectedBookingMode == 'Daily'
+                                      ? const Color(0xFF4A9782)
+                                      : Colors.white.withValues(alpha: 0.8),
                             ),
                           ),
                         ],
@@ -444,8 +460,11 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
                 color: const Color(0xFFF1FAF7),
                 borderRadius: BorderRadius.circular(6),
               ),
-              child: const Icon(Icons.access_alarm,
-                  size: 24, color: Color(0xFF4A9782)),
+              child: const Icon(
+                Icons.access_alarm,
+                size: 24,
+                color: Color(0xFF4A9782),
+              ),
             ),
             const SizedBox(width: 8),
             Column(
@@ -471,7 +490,11 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
               ],
             ),
             const SizedBox(width: 4),
-            const Icon(Icons.keyboard_arrow_down, color: Color(0xFF4A9782), size: 18),
+            const Icon(
+              Icons.keyboard_arrow_down,
+              color: Color(0xFF4A9782),
+              size: 18,
+            ),
           ],
         ),
       ),
@@ -487,9 +510,10 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
         itemCount: 7,
         itemBuilder: (context, index) {
           final date = DateTime.now().add(Duration(days: index));
-          final isSelected = _selectedBookingMode == 'Hourly'
-              ? DateUtils.isSameDay(_selectedDate, date)
-              : _selectedDates.any((d) => DateUtils.isSameDay(d, date));
+          final isSelected =
+              _selectedBookingMode == 'Hourly'
+                  ? DateUtils.isSameDay(_selectedDate, date)
+                  : _selectedDates.any((d) => DateUtils.isSameDay(d, date));
 
           return Padding(
             padding: const EdgeInsets.only(right: 8),
@@ -499,9 +523,12 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
                   if (_selectedBookingMode == 'Hourly') {
                     _selectedDate = date;
                   } else {
-                    if (_selectedDates.any((d) => DateUtils.isSameDay(d, date))) {
-                      _selectedDates
-                          .removeWhere((d) => DateUtils.isSameDay(d, date));
+                    if (_selectedDates.any(
+                      (d) => DateUtils.isSameDay(d, date),
+                    )) {
+                      _selectedDates.removeWhere(
+                        (d) => DateUtils.isSameDay(d, date),
+                      );
                     } else {
                       _selectedDates.add(date);
                     }
@@ -514,9 +541,10 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
                   width: 44,
                   height: 44,
                   decoration: BoxDecoration(
-                    color: isSelected
-                        ? const Color(0xFF4A9782)
-                        : const Color(0xFFF1F1F1),
+                    color:
+                        isSelected
+                            ? const Color(0xFF4A9782)
+                            : const Color(0xFFF1F1F1),
                     borderRadius: BorderRadius.circular(22),
                   ),
                   child: Column(
@@ -603,15 +631,17 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
                   thumbColor: const Color(0xFF4A9782),
                   overlayColor: const Color(0xFF4A9782).withValues(alpha: 0.1),
                   trackHeight: 2,
-                  thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 8),
+                  thumbShape: const RoundSliderThumbShape(
+                    enabledThumbRadius: 8,
+                  ),
                 ),
                 child: Slider(
                   value: _numberOfHours.toDouble(),
                   min: 1,
                   max: 6,
                   divisions: 5,
-                  onChanged: (val) =>
-                      setState(() => _numberOfHours = val.toInt()),
+                  onChanged:
+                      (val) => setState(() => _numberOfHours = val.toInt()),
                 ),
               ),
               const SizedBox(height: 8),
@@ -650,8 +680,12 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
     );
   }
 
-  Widget _buildSummaryCard(IconData icon, String label, String value,
-      {bool isLocked = false}) {
+  Widget _buildSummaryCard(
+    IconData icon,
+    String label,
+    String value, {
+    bool isLocked = false,
+  }) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
       child: Row(
@@ -685,7 +719,11 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
                     ),
                     if (isLocked) ...[
                       const SizedBox(width: 4),
-                      const Icon(Icons.lock_outline, size: 10, color: Color(0xFF636363)),
+                      const Icon(
+                        Icons.lock_outline,
+                        size: 10,
+                        color: Color(0xFF636363),
+                      ),
                     ],
                   ],
                 ),
@@ -720,11 +758,7 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
               6, // Show 6 main points
               (index) => Column(
                 children: [
-                  Container(
-                    width: 1,
-                    height: 13,
-                    color: Colors.black,
-                  ),
+                  Container(width: 1, height: 13, color: Colors.black),
                 ],
               ),
             ),
@@ -737,7 +771,10 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
               21, // 4 gaps of 4 ticks each between 6 points (5 gaps * 4 ticks = 20, + 1 for alignment)
               (index) => Container(
                 width: 1,
-                height: (index % 4 == 0) ? 0 : 7, // Hide sub-ticks that overlap with main ticks
+                height:
+                    (index % 4 == 0)
+                        ? 0
+                        : 7, // Hide sub-ticks that overlap with main ticks
                 color: const Color(0xFFD2D2D2),
               ),
             ),
@@ -815,7 +852,7 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
   Widget _buildBottomFooter() {
     final totalPrice = _calculateTotalPrice();
     return Container(
-      padding: EdgeInsets.fromLTRB(24, 16, 24, MediaQuery.of(context).padding.bottom + 16),
+      padding: const EdgeInsets.fromLTRB(24, 16, 24, 30),
       decoration: BoxDecoration(
         color: Colors.white,
         boxShadow: [
@@ -857,9 +894,13 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
             height: 48,
             child: ElevatedButton(
               onPressed: () {
-                if (_selectedAddress == null || _latitude == null || _longitude == null) {
+                if (_selectedAddress == null ||
+                    _latitude == null ||
+                    _longitude == null) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Please select a valid location first')),
+                    const SnackBar(
+                      content: Text('Please select a valid location first'),
+                    ),
                   );
                   return;
                 }
@@ -879,30 +920,39 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => BookingSetupScreen(
-                      category: widget.category,
-                      bookingMode: widget.isInstant ? 'Hourly' : _selectedBookingMode,
-                      scheduledTime: widget.isInstant
-                          ? DateTime.now()
-                          : DateTime(
-                              _selectedDate.year,
-                              _selectedDate.month,
-                              _selectedDate.day,
-                              _selectedTime.hour,
-                              _selectedTime.minute,
-                            ),
-                      isInstant: widget.isInstant,
-                      numberOfHours: (widget.isInstant || _selectedBookingMode == 'Hourly') ? _numberOfHours.toInt() : null,
-                      address: _selectedAddress!,
-                      latitude: _latitude!,
-                      longitude: _longitude!,
-                      amount: totalPrice,
-                      numberOfWorkers: widget.numberOfWorkers,
-                      workType: widget.workType,
-                      taskImagesBase64: widget.taskImagesBase64,
-                      taskAudioBase64: widget.taskAudioBase64,
-                      taskNotes: widget.taskNotes,
-                    ),
+                    builder:
+                        (context) => BookingSetupScreen(
+                          category: widget.category,
+                          bookingMode:
+                              widget.isInstant
+                                  ? 'Hourly'
+                                  : _selectedBookingMode,
+                          scheduledTime:
+                              widget.isInstant
+                                  ? DateTime.now()
+                                  : DateTime(
+                                    _selectedDate.year,
+                                    _selectedDate.month,
+                                    _selectedDate.day,
+                                    _selectedTime.hour,
+                                    _selectedTime.minute,
+                                  ),
+                          isInstant: widget.isInstant,
+                          numberOfHours:
+                              (widget.isInstant ||
+                                      _selectedBookingMode == 'Hourly')
+                                  ? _numberOfHours.toInt()
+                                  : null,
+                          address: _selectedAddress!,
+                          latitude: _latitude!,
+                          longitude: _longitude!,
+                          amount: totalPrice,
+                          numberOfWorkers: widget.numberOfWorkers,
+                          workType: widget.workType,
+                          taskImagesBase64: widget.taskImagesBase64,
+                          taskAudioBase64: widget.taskAudioBase64,
+                          taskNotes: widget.taskNotes,
+                        ),
                   ),
                 );
               },
@@ -915,25 +965,28 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
                 ),
                 elevation: 0,
               ),
-              child: _isLoading
-                  ? const SizedBox(
-                      height: 20,
-                      width: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                      ),
-                    )
-                  : Center(
-                      child: Text(
-                        'Confirm',
-                        style: GoogleFonts.roboto(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
-                          letterSpacing: 0.15,
+              child:
+                  _isLoading
+                      ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            Colors.white,
+                          ),
+                        ),
+                      )
+                      : Center(
+                        child: Text(
+                          'Confirm',
+                          style: GoogleFonts.roboto(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                            letterSpacing: 0.15,
+                          ),
                         ),
                       ),
-                    ),
             ),
           ),
         ],
@@ -957,7 +1010,9 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
       return widget.category.hourlyRate * _numberOfHours;
     } else {
       // Daily mode is fixed 10 hours (8 AM to 6 PM)
-      return widget.category.hourlyRate * 10 * (_selectedDates.length.clamp(1, 100));
+      return widget.category.hourlyRate *
+          10 *
+          (_selectedDates.length.clamp(1, 100));
     }
   }
 
@@ -1017,7 +1072,6 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
       ),
     );
   }
-
 }
 
 class _TimePickerSheet extends StatefulWidget {
@@ -1053,9 +1107,12 @@ class _TimePickerSheetState extends State<_TimePickerSheet> {
   void _validate(DateTime dt) {
     final now = DateTime.now();
     final minTime = now.add(const Duration(minutes: 60));
-    
+
     if (dt.isBefore(minTime)) {
-      final hour = minTime.hour == 0 ? 12 : (minTime.hour > 12 ? minTime.hour - 12 : minTime.hour);
+      final hour =
+          minTime.hour == 0
+              ? 12
+              : (minTime.hour > 12 ? minTime.hour - 12 : minTime.hour);
       final ampm = minTime.hour >= 12 ? 'PM' : 'AM';
       final minute = minTime.minute.toString().padLeft(2, '0');
       setState(() {
@@ -1106,13 +1163,11 @@ class _TimePickerSheetState extends State<_TimePickerSheet> {
               ),
             ),
             const SizedBox(height: 32),
-            
+
             SizedBox(
               height: 200,
               child: CupertinoTheme(
-                data: const CupertinoThemeData(
-                  brightness: Brightness.light,
-                ),
+                data: const CupertinoThemeData(brightness: Brightness.light),
                 child: CupertinoDatePicker(
                   mode: CupertinoDatePickerMode.time,
                   initialDateTime: _tempDateTime,
@@ -1131,14 +1186,20 @@ class _TimePickerSheetState extends State<_TimePickerSheet> {
                 ),
               ),
             ),
-            
+
             const SizedBox(height: 24),
-            
+
             if (_error != null)
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.red.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
@@ -1149,14 +1210,14 @@ class _TimePickerSheetState extends State<_TimePickerSheet> {
                   ),
                 ),
               ),
-            
+
             const SizedBox(height: 32),
-            
+
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
               child: Row(
                 children: [
-                   Expanded(
+                  Expanded(
                     child: TextButton(
                       onPressed: () => Navigator.pop(context),
                       child: Text(
@@ -1168,9 +1229,13 @@ class _TimePickerSheetState extends State<_TimePickerSheet> {
                   const SizedBox(width: 16),
                   Expanded(
                     child: ElevatedButton(
-                      onPressed: _error != null 
-                        ? null 
-                        : () => Navigator.pop(context, TimeOfDay.fromDateTime(_tempDateTime)),
+                      onPressed:
+                          _error != null
+                              ? null
+                              : () => Navigator.pop(
+                                context,
+                                TimeOfDay.fromDateTime(_tempDateTime),
+                              ),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF5EA28F),
                         foregroundColor: Colors.white,
@@ -1194,9 +1259,7 @@ class _TimePickerSheetState extends State<_TimePickerSheet> {
 class _ServiceLocationSelectionSheet extends StatelessWidget {
   final List<SavedLocation> savedLocations;
 
-  const _ServiceLocationSelectionSheet({
-    required this.savedLocations,
-  });
+  const _ServiceLocationSelectionSheet({required this.savedLocations});
 
   @override
   Widget build(BuildContext context) {
@@ -1257,11 +1320,18 @@ class _ServiceLocationSelectionSheet extends StatelessWidget {
             const SizedBox(height: 8),
             if (savedLocations.isEmpty) ...[
               Padding(
-                padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 24),
+                padding: const EdgeInsets.symmetric(
+                  vertical: 24,
+                  horizontal: 24,
+                ),
                 child: Center(
                   child: Column(
                     children: [
-                      Icon(Icons.location_off_outlined, size: 48, color: Colors.grey[400]),
+                      Icon(
+                        Icons.location_off_outlined,
+                        size: 48,
+                        color: Colors.grey[400],
+                      ),
                       const SizedBox(height: 12),
                       Text(
                         'No saved locations found',
@@ -1283,12 +1353,14 @@ class _ServiceLocationSelectionSheet extends StatelessWidget {
                 child: ListView.separated(
                   shrinkWrap: true,
                   physics: const BouncingScrollPhysics(),
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-                  itemCount: savedLocations.length,
-                  separatorBuilder: (context, index) => const Divider(
-                    height: 1,
-                    color: Color(0xFFF3F4F6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 8,
                   ),
+                  itemCount: savedLocations.length,
+                  separatorBuilder:
+                      (context, index) =>
+                          const Divider(height: 1, color: Color(0xFFF3F4F6)),
                   itemBuilder: (context, index) {
                     final location = savedLocations[index];
                     IconData iconData = Icons.location_on_rounded;
@@ -1324,8 +1396,10 @@ class _ServiceLocationSelectionSheet extends StatelessWidget {
                         padding: const EdgeInsets.only(top: 4),
                         child: Text(
                           [
-                            if (location.houseNumber.isNotEmpty) 'House: ${location.houseNumber}',
-                            if (location.landmark.isNotEmpty) 'Landmark: ${location.landmark}',
+                            if (location.houseNumber.isNotEmpty)
+                              'House: ${location.houseNumber}',
+                            if (location.landmark.isNotEmpty)
+                              'Landmark: ${location.landmark}',
                             location.address,
                           ].join(', '),
                           style: GoogleFonts.inter(
@@ -1363,7 +1437,10 @@ class _ServiceLocationSelectionSheet extends StatelessWidget {
                   side: const BorderSide(color: Color(0xFFE5E7EB)),
                 ),
                 tileColor: const Color(0xFFF9FAFB),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
                 leading: Container(
                   padding: const EdgeInsets.all(10),
                   decoration: const BoxDecoration(
@@ -1394,7 +1471,11 @@ class _ServiceLocationSelectionSheet extends StatelessWidget {
                     ),
                   ),
                 ),
-                trailing: const Icon(Icons.arrow_forward_ios, size: 14, color: Colors.grey),
+                trailing: const Icon(
+                  Icons.arrow_forward_ios,
+                  size: 14,
+                  color: Colors.grey,
+                ),
                 onTap: () async {
                   final result = await Navigator.push<Map<String, dynamic>>(
                     context,
@@ -1414,4 +1495,3 @@ class _ServiceLocationSelectionSheet extends StatelessWidget {
     );
   }
 }
-

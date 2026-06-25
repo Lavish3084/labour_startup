@@ -8,7 +8,6 @@ import 'signup_screen.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:geolocator/geolocator.dart';
 
-
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
@@ -41,9 +40,13 @@ class _LoginScreenState extends State<LoginScreen> {
 
       if (idToken != null) {
         print('Sending Token to backend to action=login...');
-        final result = await ApiService.googleLogin(idToken, 'user', action: 'login');
+        final result = await ApiService.googleLogin(
+          idToken,
+          'user',
+          action: 'login',
+        );
         print('Backend Response: $result');
-        
+
         if (result['success']) {
           if (context.mounted) {
             await Geolocator.requestPermission();
@@ -100,7 +103,11 @@ class _LoginScreenState extends State<LoginScreen> {
   Future<void> _completeGoogleSignup(String idToken, String role) async {
     setState(() => _isLoading = true);
     try {
-      final result = await ApiService.googleLogin(idToken, role, action: 'signup');
+      final result = await ApiService.googleLogin(
+        idToken,
+        role,
+        action: 'signup',
+      );
       if (result['success']) {
         if (mounted) {
           await Geolocator.requestPermission();
@@ -197,8 +204,10 @@ class _LoginScreenState extends State<LoginScreen> {
                   hint: '••••••••',
                   prefixIcon: Icons.lock_outline_rounded,
                   suffix: GestureDetector(
-                    onTap: () =>
-                        setState(() => _obscurePassword = !_obscurePassword),
+                    onTap:
+                        () => setState(
+                          () => _obscurePassword = !_obscurePassword,
+                        ),
                     child: Icon(
                       _obscurePassword
                           ? Icons.visibility_off_outlined
@@ -219,34 +228,38 @@ class _LoginScreenState extends State<LoginScreen> {
                 child: ElevatedButton(
                   onPressed: _isLoading ? null : _handleLogin,
                   style: AppTheme.primaryButton,
-                  child: _isLoading
-                      ? const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(
-                            color: Colors.white,
-                            strokeWidth: 2,
-                          ),
-                        )
-                      : Text('Sign in', style: AppTheme.button),
+                  child:
+                      _isLoading
+                          ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 2,
+                            ),
+                          )
+                          : Text('Sign in', style: AppTheme.button),
                 ),
               ),
 
               const SizedBox(height: 24),
-              
+
               // Google Login
               Row(
                 children: [
                   Expanded(child: Divider(color: AppTheme.border)),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: Text('OR', style: AppTheme.body.copyWith(color: AppTheme.textMuted)),
+                    child: Text(
+                      'OR',
+                      style: AppTheme.body.copyWith(color: AppTheme.textMuted),
+                    ),
                   ),
                   Expanded(child: Divider(color: AppTheme.border)),
                 ],
               ),
               const SizedBox(height: 24),
-              
+
               SizedBox(
                 width: double.infinity,
                 height: 52,
@@ -269,7 +282,9 @@ class _LoginScreenState extends State<LoginScreen> {
                     elevation: 1,
                     shadowColor: Colors.black12,
                     side: BorderSide(color: Colors.grey.shade300, width: 1),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
                 ),
               ),

@@ -19,7 +19,8 @@ class LabourerReview {
       userName: json['userName'] ?? 'Customer',
       rating: double.tryParse(json['rating']?.toString() ?? '0') ?? 0.0,
       comment: json['comment'] ?? '',
-      date: json['date'] != null ? DateTime.parse(json['date']) : DateTime.now(),
+      date:
+          json['date'] != null ? DateTime.parse(json['date']) : DateTime.now(),
     );
   }
 
@@ -73,20 +74,26 @@ class Labourer {
       name: json['name'] ?? '',
       category: json['category'] ?? '',
       rating: double.tryParse(json['rating']?.toString() ?? '0') ?? 0.0,
-      jobsCompleted: int.tryParse(json['jobsCompleted']?.toString() ?? '0') ?? 0,
+      jobsCompleted:
+          int.tryParse(json['jobsCompleted']?.toString() ?? '0') ?? 0,
       hourlyRate: double.tryParse(json['hourlyRate']?.toString() ?? '0') ?? 0.0,
       description: json['description'] ?? '',
       imageUrl: json['imageUrl'] ?? '',
       location: json['location'] ?? '',
       skills: List<String>.from(json['skills'] ?? []),
-      experienceYears: int.tryParse(json['experienceYears']?.toString() ?? '0') ?? 0,
+      experienceYears:
+          int.tryParse(json['experienceYears']?.toString() ?? '0') ?? 0,
       upiId: json['upiId'],
-      phoneNumber: (json['user'] is Map) ? json['user']['phoneNumber'] : json['phoneNumber'],
-      reviews: json['reviews'] != null
-          ? (json['reviews'] as List)
-              .map((item) => LabourerReview.fromJson(item))
-              .toList()
-          : [],
+      phoneNumber:
+          (json['user'] is Map)
+              ? json['user']['phoneNumber']
+              : json['phoneNumber'],
+      reviews:
+          json['reviews'] != null
+              ? (json['reviews'] as List)
+                  .map((item) => LabourerReview.fromJson(item))
+                  .toList()
+              : [],
     );
   }
 

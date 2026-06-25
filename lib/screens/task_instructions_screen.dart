@@ -44,16 +44,16 @@ class _TaskInstructionsScreenState extends State<TaskInstructionsScreen>
   final List<String> _taskImagesBase64 = [];
   String? _taskAudioBase64;
   final ImagePicker _picker = ImagePicker();
-  
+
   // Audio state
   final AudioRecorder _audioRecorder = AudioRecorder();
   final AudioPlayer _audioPlayer = AudioPlayer();
   bool _isRecording = false;
   bool _isPlaying = false;
-  
+
   // Message state
   final TextEditingController _msgController = TextEditingController();
-  
+
   // Active Describe Mode
   DescribeMode _activeDescribeMode = DescribeMode.voice;
 
@@ -65,7 +65,10 @@ class _TaskInstructionsScreenState extends State<TaskInstructionsScreen>
       duration: const Duration(milliseconds: 280),
     );
     _chevronRotation = Tween<double>(begin: 0, end: 0.5).animate(
-      CurvedAnimation(parent: _selectorAnimController, curve: Curves.easeOutCubic),
+      CurvedAnimation(
+        parent: _selectorAnimController,
+        curve: Curves.easeOutCubic,
+      ),
     );
     _audioPlayer.onPlayerStateChanged.listen((state) {
       if (mounted) {
@@ -90,10 +93,11 @@ class _TaskInstructionsScreenState extends State<TaskInstructionsScreen>
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
-      builder: (context) => _WorkTypePickerSheet(
-        options: _workTypes,
-        selected: _selectedWorkType,
-      ),
+      builder:
+          (context) => _WorkTypePickerSheet(
+            options: _workTypes,
+            selected: _selectedWorkType,
+          ),
     );
     if (picked != null && mounted) {
       setState(() => _selectedWorkType = picked);
@@ -103,9 +107,9 @@ class _TaskInstructionsScreenState extends State<TaskInstructionsScreen>
 
   Future<void> _showImagePickerBottomSheet() async {
     if (_taskImagesBase64.length >= 5) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Maximum 5 images allowed')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Maximum 5 images allowed')));
       return;
     }
 
@@ -114,28 +118,38 @@ class _TaskInstructionsScreenState extends State<TaskInstructionsScreen>
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (context) => SafeArea(
-        child: Wrap(
-          children: [
-            ListTile(
-              leading: const Icon(Icons.camera_alt, color: Color(0xFF468A73)),
-              title: Text('Take a Photo', style: GoogleFonts.inter()),
-              onTap: () {
-                Navigator.pop(context);
-                _pickImage(ImageSource.camera);
-              },
+      builder:
+          (context) => SafeArea(
+            child: Wrap(
+              children: [
+                ListTile(
+                  leading: const Icon(
+                    Icons.camera_alt,
+                    color: Color(0xFF468A73),
+                  ),
+                  title: Text('Take a Photo', style: GoogleFonts.inter()),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _pickImage(ImageSource.camera);
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(
+                    Icons.photo_library,
+                    color: Color(0xFF468A73),
+                  ),
+                  title: Text(
+                    'Choose from Gallery',
+                    style: GoogleFonts.inter(),
+                  ),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _pickImage(ImageSource.gallery);
+                  },
+                ),
+              ],
             ),
-            ListTile(
-              leading: const Icon(Icons.photo_library, color: Color(0xFF468A73)),
-              title: Text('Choose from Gallery', style: GoogleFonts.inter()),
-              onTap: () {
-                Navigator.pop(context);
-                _pickImage(ImageSource.gallery);
-              },
-            ),
-          ],
-        ),
-      ),
+          ),
     );
   }
 
@@ -155,16 +169,19 @@ class _TaskInstructionsScreenState extends State<TaskInstructionsScreen>
 
   void _previewImage(String imgBase64) {
     final bytes = base64Decode(imgBase64.split(',').last);
-    
+
     showDialog(
       context: context,
-      builder: (context) => Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(20),
-          child: Image.memory(bytes, fit: BoxFit.contain),
-        ),
-      ),
+      builder:
+          (context) => Dialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(20),
+              child: Image.memory(bytes, fit: BoxFit.contain),
+            ),
+          ),
     );
   }
 
@@ -190,7 +207,8 @@ class _TaskInstructionsScreenState extends State<TaskInstructionsScreen>
       } else {
         if (await _audioRecorder.hasPermission()) {
           final tempDir = await getTemporaryDirectory();
-          final path = '${tempDir.path}/task_audio_${DateTime.now().millisecondsSinceEpoch}.m4a';
+          final path =
+              '${tempDir.path}/task_audio_${DateTime.now().millisecondsSinceEpoch}.m4a';
           await _audioRecorder.start(
             const RecordConfig(encoder: AudioEncoder.aacLc),
             path: path,
@@ -381,11 +399,7 @@ class _TaskInstructionsScreenState extends State<TaskInstructionsScreen>
         color: const Color(0xFF2E876E),
         child: Stack(
           children: [
-            Positioned.fill(
-              child: CustomPaint(
-                painter: DotPatternPainter(),
-              ),
-            ),
+            Positioned.fill(child: CustomPaint(painter: DotPatternPainter())),
             SafeArea(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
@@ -434,9 +448,10 @@ class _TaskInstructionsScreenState extends State<TaskInstructionsScreen>
           decoration: BoxDecoration(
             color: const Color(0xFFEBEBEB),
             borderRadius: BorderRadius.circular(30),
-            border: hasSelection
-                ? Border.all(color: const Color(0xFF4A9782), width: 1.2)
-                : null,
+            border:
+                hasSelection
+                    ? Border.all(color: const Color(0xFF4A9782), width: 1.2)
+                    : null,
           ),
           child: Row(
             children: [
@@ -445,10 +460,10 @@ class _TaskInstructionsScreenState extends State<TaskInstructionsScreen>
                   duration: const Duration(milliseconds: 220),
                   style: GoogleFonts.inter(
                     fontSize: 15,
-                    fontWeight: hasSelection ? FontWeight.w600 : FontWeight.w500,
-                    color: hasSelection
-                        ? Colors.black
-                        : const Color(0xFF6F6F6F),
+                    fontWeight:
+                        hasSelection ? FontWeight.w600 : FontWeight.w500,
+                    color:
+                        hasSelection ? Colors.black : const Color(0xFF6F6F6F),
                   ),
                   child: Text(
                     hasSelection
@@ -548,17 +563,21 @@ class _TaskInstructionsScreenState extends State<TaskInstructionsScreen>
             height: 56,
             width: 56,
             decoration: BoxDecoration(
-              color: isSelected ? const Color(0xFF468A73) : const Color(0xFFEBEBEB),
+              color:
+                  isSelected
+                      ? const Color(0xFF468A73)
+                      : const Color(0xFFEBEBEB),
               shape: BoxShape.circle,
-              boxShadow: isSelected
-                  ? [
-                      BoxShadow(
-                        color: const Color(0xFF468A73).withOpacity(0.3),
-                        blurRadius: 8,
-                        offset: const Offset(0, 4),
-                      )
-                    ]
-                  : [],
+              boxShadow:
+                  isSelected
+                      ? [
+                        BoxShadow(
+                          color: const Color(0xFF468A73).withOpacity(0.3),
+                          blurRadius: 8,
+                          offset: const Offset(0, 4),
+                        ),
+                      ]
+                      : [],
             ),
             child: Icon(
               icon,
@@ -572,7 +591,10 @@ class _TaskInstructionsScreenState extends State<TaskInstructionsScreen>
             style: GoogleFonts.inter(
               fontSize: 13,
               fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-              color: isSelected ? const Color(0xFF468A73) : const Color(0xFF666666),
+              color:
+                  isSelected
+                      ? const Color(0xFF468A73)
+                      : const Color(0xFF666666),
             ),
           ),
         ],
@@ -591,7 +613,10 @@ class _TaskInstructionsScreenState extends State<TaskInstructionsScreen>
     }
   }
 
-  Widget _buildDashedTargetArea({required String text, required VoidCallback onTap}) {
+  Widget _buildDashedTargetArea({
+    required String text,
+    required VoidCallback onTap,
+  }) {
     return GestureDetector(
       onTap: onTap,
       child: CustomPaint(
@@ -633,7 +658,7 @@ class _TaskInstructionsScreenState extends State<TaskInstructionsScreen>
         onTap: _showImagePickerBottomSheet,
       );
     }
-    
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -641,7 +666,9 @@ class _TaskInstructionsScreenState extends State<TaskInstructionsScreen>
           height: 90,
           child: ListView.builder(
             scrollDirection: Axis.horizontal,
-            itemCount: _taskImagesBase64.length + (_taskImagesBase64.length < 5 ? 1 : 0),
+            itemCount:
+                _taskImagesBase64.length +
+                (_taskImagesBase64.length < 5 ? 1 : 0),
             itemBuilder: (context, index) {
               if (index == _taskImagesBase64.length) {
                 return GestureDetector(
@@ -654,11 +681,14 @@ class _TaskInstructionsScreenState extends State<TaskInstructionsScreen>
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(color: const Color(0xFFE0E0E0)),
                     ),
-                    child: const Icon(Icons.add_a_photo_outlined, color: Color(0xFF757575)),
+                    child: const Icon(
+                      Icons.add_a_photo_outlined,
+                      color: Color(0xFF757575),
+                    ),
                   ),
                 );
               }
-              
+
               final imgBase64 = _taskImagesBase64[index];
               final bytes = base64Decode(imgBase64.split(',').last);
               return Stack(
@@ -693,7 +723,11 @@ class _TaskInstructionsScreenState extends State<TaskInstructionsScreen>
                           color: Colors.black54,
                           shape: BoxShape.circle,
                         ),
-                        child: const Icon(Icons.close, color: Colors.white, size: 14),
+                        child: const Icon(
+                          Icons.close,
+                          color: Colors.white,
+                          size: 14,
+                        ),
                       ),
                     ),
                   ),
@@ -742,11 +776,22 @@ class _TaskInstructionsScreenState extends State<TaskInstructionsScreen>
                 onPressed: _toggleAudioAction,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.redAccent,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                  ),
                   elevation: 0,
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 8,
+                  ),
                 ),
-                child: Text('STOP', style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: Colors.white)),
+                child: Text(
+                  'STOP',
+                  style: GoogleFonts.inter(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
               ),
             ],
           ),
@@ -808,7 +853,7 @@ class _TaskInstructionsScreenState extends State<TaskInstructionsScreen>
                 });
                 _audioPlayer.stop();
               },
-            )
+            ),
           ],
         ),
       );
@@ -833,7 +878,10 @@ class _TaskInstructionsScreenState extends State<TaskInstructionsScreen>
         style: GoogleFonts.inter(fontSize: 14, color: Colors.black87),
         decoration: InputDecoration(
           hintText: 'Add text message or special instructions...',
-          hintStyle: GoogleFonts.inter(color: const Color(0xFF9E9E9E), fontSize: 13),
+          hintStyle: GoogleFonts.inter(
+            color: const Color(0xFF9E9E9E),
+            fontSize: 13,
+          ),
           border: InputBorder.none,
           contentPadding: const EdgeInsets.all(16),
         ),
@@ -926,15 +974,22 @@ class _TaskInstructionsScreenState extends State<TaskInstructionsScreen>
             );
             return;
           }
-          if (_selectedWorkType == 'Other (please specify)' && _msgController.text.trim().isEmpty) {
-             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Please add a description to specify the work type')),
+          if (_selectedWorkType == 'Other (please specify)' &&
+              _msgController.text.trim().isEmpty) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text(
+                  'Please add a description to specify the work type',
+                ),
+              ),
             );
             return;
           }
           if (_isRecording) {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Please stop recording your voice note first')),
+              const SnackBar(
+                content: Text('Please stop recording your voice note first'),
+              ),
             );
             return;
           }
@@ -946,15 +1001,20 @@ class _TaskInstructionsScreenState extends State<TaskInstructionsScreen>
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => ServiceRequestScreen(
-                category: widget.category,
-                isInstant: widget.isInstant,
-                numberOfWorkers: _workerCount,
-                workType: _selectedWorkType!,
-                taskImagesBase64: _taskImagesBase64.isNotEmpty ? _taskImagesBase64 : null,
-                taskAudioBase64: _taskAudioBase64,
-                taskNotes: _msgController.text.isNotEmpty ? _msgController.text : null,
-              ),
+              builder:
+                  (context) => ServiceRequestScreen(
+                    category: widget.category,
+                    isInstant: widget.isInstant,
+                    numberOfWorkers: _workerCount,
+                    workType: _selectedWorkType!,
+                    taskImagesBase64:
+                        _taskImagesBase64.isNotEmpty ? _taskImagesBase64 : null,
+                    taskAudioBase64: _taskAudioBase64,
+                    taskNotes:
+                        _msgController.text.isNotEmpty
+                            ? _msgController.text
+                            : null,
+                  ),
             ),
           );
         },
@@ -983,10 +1043,7 @@ class _WorkTypePickerSheet extends StatefulWidget {
   final List<String> options;
   final String? selected;
 
-  const _WorkTypePickerSheet({
-    required this.options,
-    required this.selected,
-  });
+  const _WorkTypePickerSheet({required this.options, required this.selected});
 
   @override
   State<_WorkTypePickerSheet> createState() => _WorkTypePickerSheetState();
@@ -1095,9 +1152,10 @@ class _WorkTypePickerSheetState extends State<_WorkTypePickerSheet>
                               vertical: 14,
                             ),
                             decoration: BoxDecoration(
-                              color: isSelected
-                                  ? const Color(0xFFEBEBEB)
-                                  : Colors.transparent,
+                              color:
+                                  isSelected
+                                      ? const Color(0xFFEBEBEB)
+                                      : Colors.transparent,
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: Row(
@@ -1107,9 +1165,10 @@ class _WorkTypePickerSheetState extends State<_WorkTypePickerSheet>
                                     label,
                                     style: GoogleFonts.inter(
                                       fontSize: 15,
-                                      fontWeight: isSelected
-                                          ? FontWeight.w600
-                                          : FontWeight.w500,
+                                      fontWeight:
+                                          isSelected
+                                              ? FontWeight.w600
+                                              : FontWeight.w500,
                                       color: Colors.black,
                                     ),
                                   ),
@@ -1141,13 +1200,14 @@ class _WorkTypePickerSheetState extends State<_WorkTypePickerSheet>
 class DotPatternPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = Colors.white.withOpacity(0.08)
-      ..style = PaintingStyle.fill;
-    
+    final paint =
+        Paint()
+          ..color = Colors.white.withOpacity(0.08)
+          ..style = PaintingStyle.fill;
+
     const double spacing = 18.0;
     const double radius = 2.0;
-    
+
     for (double y = 0; y < size.height; y += spacing) {
       for (double x = 0; x < size.width; x += spacing) {
         canvas.drawCircle(Offset(x, y), radius, paint);
@@ -1177,16 +1237,19 @@ class DashedBorderPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = color
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = strokeWidth;
+    final paint =
+        Paint()
+          ..color = color
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = strokeWidth;
 
-    final path = Path()
-      ..addRRect(RRect.fromRectAndRadius(
-        Rect.fromLTWH(0, 0, size.width, size.height),
-        Radius.circular(borderRadius),
-      ));
+    final path =
+        Path()..addRRect(
+          RRect.fromRectAndRadius(
+            Rect.fromLTWH(0, 0, size.width, size.height),
+            Radius.circular(borderRadius),
+          ),
+        );
 
     final dashPath = Path();
     for (final PathMetric pathMetric in path.computeMetrics()) {

@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:isolate';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/api_service.dart';
@@ -123,7 +124,10 @@ class LocationProvider with ChangeNotifier {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString(await _getScopedKey('current_address'), address);
-      await prefs.setString(await _getScopedKey('current_label'), _currentLabel!);
+      await prefs.setString(
+        await _getScopedKey('current_label'),
+        _currentLabel!,
+      );
       if (houseNumber != null) {
         await prefs.setString(
           await _getScopedKey('current_house_number'),
@@ -168,7 +172,9 @@ class LocationProvider with ChangeNotifier {
         await _getScopedKey('saved_locations'),
       );
       if (locationsJson != null) {
-        final List<dynamic> decoded = jsonDecode(locationsJson);
+        final List<dynamic> decoded = await Isolate.run(
+          () => jsonDecode(locationsJson) as List<dynamic>,
+        );
         _savedLocations =
             decoded.map((item) => SavedLocation.fromJson(item)).toList();
         notifyListeners();
@@ -202,7 +208,10 @@ class LocationProvider with ChangeNotifier {
         await _persistLocations();
       }
     } catch (e) {
-      _error = ErrorHandler.getErrorMessage(e, action: 'Failed to load locations');
+      _error = ErrorHandler.getErrorMessage(
+        e,
+        action: 'Failed to load locations',
+      );
       notifyListeners();
     } finally {
       _isLoading = false;
@@ -240,9 +249,8 @@ class LocationProvider with ChangeNotifier {
   Future<void> _persistLocations() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final String encoded = jsonEncode(
-        _savedLocations.map((loc) => loc.toJson()).toList(),
-      );
+      final locationsList = _savedLocations.map((loc) => loc.toJson()).toList();
+      final String encoded = await Isolate.run(() => jsonEncode(locationsList));
       await prefs.setString(await _getScopedKey('saved_locations'), encoded);
     } catch (e) {
       debugPrint('Error persisting locations: $e');

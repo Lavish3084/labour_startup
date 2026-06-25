@@ -67,10 +67,12 @@ class _SplashScreenState extends State<SplashScreen>
     _screenSlideAnimation = Tween<Offset>(
       begin: Offset.zero,
       end: const Offset(0, -1),
-    ).animate(CurvedAnimation(
-      parent: _screenSlideController,
-      curve: Curves.easeInOutCubic,
-    ));
+    ).animate(
+      CurvedAnimation(
+        parent: _screenSlideController,
+        curve: Curves.easeInOutCubic,
+      ),
+    );
     _brandFadeController.forward();
     _runSplashFlow();
   }
@@ -189,8 +191,11 @@ class _SplashScreenState extends State<SplashScreen>
       }
 
       final place = placemarks.first;
-      final resolved =
-          _fromPlacemark(place, position.latitude, position.longitude);
+      final resolved = _fromPlacemark(
+        place,
+        position.latitude,
+        position.longitude,
+      );
 
       locationProvider.updateCurrentAddress(
         address: resolved.fullAddress,
@@ -201,21 +206,25 @@ class _SplashScreenState extends State<SplashScreen>
 
       if (mounted) setState(() => _resolvedLocation = resolved);
     } catch (e) {
-      debugPrint(ErrorHandler.getErrorMessage(e, action: 'Location fetch failed'));
+      debugPrint(
+        ErrorHandler.getErrorMessage(e, action: 'Location fetch failed'),
+      );
       _applyFallback();
     }
   }
 
   _ResolvedLocation _fromPlacemark(Placemark place, double lat, double lng) {
-    final locality = (place.locality?.isNotEmpty == true)
-        ? place.locality!
-        : (place.subAdministrativeArea?.isNotEmpty == true)
+    final locality =
+        (place.locality?.isNotEmpty == true)
+            ? place.locality!
+            : (place.subAdministrativeArea?.isNotEmpty == true)
             ? place.subAdministrativeArea!
             : 'Your area';
 
     final parts = <String>[
       if (place.locality?.isNotEmpty == true) place.locality!,
-      if (place.administrativeArea?.isNotEmpty == true) place.administrativeArea!,
+      if (place.administrativeArea?.isNotEmpty == true)
+        place.administrativeArea!,
       if (place.postalCode?.isNotEmpty == true) place.postalCode!,
     ];
 

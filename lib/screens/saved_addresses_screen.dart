@@ -16,7 +16,11 @@ class SavedAddressesScreen extends StatelessWidget {
         elevation: 0,
         centerTitle: true,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.black, size: 20),
+          icon: const Icon(
+            Icons.arrow_back_ios_new_rounded,
+            color: Colors.black,
+            size: 20,
+          ),
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
@@ -31,7 +35,9 @@ class SavedAddressesScreen extends StatelessWidget {
       body: Consumer<LocationProvider>(
         builder: (context, locationProvider, child) {
           if (locationProvider.isLoading) {
-            return const Center(child: CircularProgressIndicator(color: Color(0xFF4A9782)));
+            return const Center(
+              child: CircularProgressIndicator(color: Color(0xFF4A9782)),
+            );
           }
 
           final savedLocations = locationProvider.savedLocations;
@@ -76,7 +82,12 @@ class SavedAddressesScreen extends StatelessWidget {
           }
 
           return ListView.builder(
-            padding: EdgeInsets.fromLTRB(24, 24, 24, MediaQuery.of(context).padding.bottom + 24),
+            padding: EdgeInsets.fromLTRB(
+              24,
+              24,
+              24,
+              MediaQuery.of(context).padding.bottom + 24,
+            ),
             itemCount: savedLocations.length,
             itemBuilder: (context, index) {
               final loc = savedLocations[index];
@@ -164,45 +175,53 @@ class SavedAddressesScreen extends StatelessWidget {
   ) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text(
-          'Delete Address',
-          style: GoogleFonts.roboto(fontWeight: FontWeight.w700),
-        ),
-        content: Text(
-          'Are you sure you want to delete "${location.label}"?',
-          style: GoogleFonts.roboto(fontSize: 15, color: const Color(0xFF595959)),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(
-              'Cancel',
+      builder:
+          (context) => AlertDialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+            ),
+            title: Text(
+              'Delete Address',
+              style: GoogleFonts.roboto(fontWeight: FontWeight.w700),
+            ),
+            content: Text(
+              'Are you sure you want to delete "${location.label}"?',
               style: GoogleFonts.roboto(
+                fontSize: 15,
                 color: const Color(0xFF595959),
-                fontWeight: FontWeight.w600,
               ),
             ),
-          ),
-          TextButton(
-            onPressed: () {
-              locationProvider.deleteLocation(location.id);
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Address deleted successfully')),
-              );
-            },
-            child: Text(
-              'Delete',
-              style: GoogleFonts.roboto(
-                color: const Color(0xFFE53935),
-                fontWeight: FontWeight.w700,
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text(
+                  'Cancel',
+                  style: GoogleFonts.roboto(
+                    color: const Color(0xFF595959),
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
               ),
-            ),
+              TextButton(
+                onPressed: () {
+                  locationProvider.deleteLocation(location.id);
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Address deleted successfully'),
+                    ),
+                  );
+                },
+                child: Text(
+                  'Delete',
+                  style: GoogleFonts.roboto(
+                    color: const Color(0xFFE53935),
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
     );
   }
 }

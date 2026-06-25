@@ -315,7 +315,10 @@ class _LocationSearchScreenState extends State<LocationSearchScreen> {
     } catch (e) {
       setState(() {
         _isLoading = false;
-        _errorMessage = ErrorHandler.getErrorMessage(e, action: 'Search failed');
+        _errorMessage = ErrorHandler.getErrorMessage(
+          e,
+          action: 'Search failed',
+        );
         debugPrint('Search error: $e');
         _searchResults = [];
       });
@@ -434,7 +437,14 @@ class _LocationSearchScreenState extends State<LocationSearchScreen> {
                   debugPrint('Error in reverse geocoding: $e');
                   if (mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text(ErrorHandler.getErrorMessage(e, action: 'Location failed'))),
+                      SnackBar(
+                        content: Text(
+                          ErrorHandler.getErrorMessage(
+                            e,
+                            action: 'Location failed',
+                          ),
+                        ),
+                      ),
                     );
                   }
                 } finally {

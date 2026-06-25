@@ -59,11 +59,7 @@ class FeatureCategoryCard extends StatelessWidget {
                         color: Colors.white.withValues(alpha: 0.15),
                         borderRadius: BorderRadius.circular(16),
                       ),
-                      child: Icon(
-                        category.icon,
-                        color: Colors.white,
-                        size: 24,
-                      ),
+                      child: Icon(category.icon, color: Colors.white, size: 24),
                     ),
                     const Spacer(),
                     Text(

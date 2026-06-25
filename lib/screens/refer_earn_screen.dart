@@ -34,13 +34,20 @@ class _ReferEarnScreenState extends State<ReferEarnScreen> {
       if (mounted) {
         if (result['success'] == true) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Referral applied! ₹100 added to your wallet.')),
+            const SnackBar(
+              content: Text('Referral applied! ₹100 added to your wallet.'),
+            ),
           );
-          Provider.of<AppStateProvider>(context, listen: false).fetchWalletBalance();
+          Provider.of<AppStateProvider>(
+            context,
+            listen: false,
+          ).fetchWalletBalance();
           _referralController.clear();
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(result['message'] ?? 'Failed to apply referral.')),
+            SnackBar(
+              content: Text(result['message'] ?? 'Failed to apply referral.'),
+            ),
           );
         }
       }
@@ -56,19 +63,21 @@ class _ReferEarnScreenState extends State<ReferEarnScreen> {
   }
 
   void _shareReferral(String code) {
-    final String shareMessage = 
+    final String shareMessage =
         'Hey! I’m using WILL to book professional services. Join me and get ₹100 in your wallet on your first booking!\n\n'
         '1. Download the WILL app\n'
         '2. Sign up using my referral code: $code\n\n'
         'Start booking now!';
-    
+
     Share.share(shareMessage);
   }
 
   @override
   Widget build(BuildContext context) {
     final user = Provider.of<AppStateProvider>(context).profileData?['user'];
-    final myCode = user?['referralCode'] ?? 'WILL${user?['_id']?.toString().substring(0, 5).toUpperCase() ?? 'REF'}';
+    final myCode =
+        user?['referralCode'] ??
+        'WILL${user?['_id']?.toString().substring(0, 5).toUpperCase() ?? 'REF'}';
 
     return Scaffold(
       backgroundColor: const Color(0xFFF9F9F9),
@@ -76,7 +85,11 @@ class _ReferEarnScreenState extends State<ReferEarnScreen> {
         backgroundColor: Colors.white,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.black, size: 20),
+          icon: const Icon(
+            Icons.arrow_back_ios_new_rounded,
+            color: Colors.black,
+            size: 20,
+          ),
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
@@ -89,7 +102,12 @@ class _ReferEarnScreenState extends State<ReferEarnScreen> {
         ),
       ),
       body: SingleChildScrollView(
-        padding: EdgeInsets.fromLTRB(24, 24, 24, MediaQuery.of(context).padding.bottom + 24),
+        padding: EdgeInsets.fromLTRB(
+          24,
+          24,
+          24,
+          MediaQuery.of(context).padding.bottom + 24,
+        ),
         child: Column(
           children: [
             const SizedBox(height: 20),
@@ -101,7 +119,11 @@ class _ReferEarnScreenState extends State<ReferEarnScreen> {
               ),
               child: Column(
                 children: [
-                  const Icon(Icons.card_giftcard_rounded, size: 80, color: Color(0xFF4A9782)),
+                  const Icon(
+                    Icons.card_giftcard_rounded,
+                    size: 80,
+                    color: Color(0xFF4A9782),
+                  ),
                   const SizedBox(height: 24),
                   Text(
                     'Refer your friends and earn ₹100!',
@@ -143,11 +165,18 @@ class _ReferEarnScreenState extends State<ReferEarnScreen> {
                 );
               },
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 16,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: const Color(0xFF4A9782), width: 2, style: BorderStyle.solid),
+                  border: Border.all(
+                    color: const Color(0xFF4A9782),
+                    width: 2,
+                    style: BorderStyle.solid,
+                  ),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
@@ -162,7 +191,11 @@ class _ReferEarnScreenState extends State<ReferEarnScreen> {
                       ),
                     ),
                     const SizedBox(width: 16),
-                    const Icon(Icons.copy_rounded, color: Color(0xFF4A9782), size: 20),
+                    const Icon(
+                      Icons.copy_rounded,
+                      color: Color(0xFF4A9782),
+                      size: 20,
+                    ),
                   ],
                 ),
               ),
@@ -173,7 +206,11 @@ class _ReferEarnScreenState extends State<ReferEarnScreen> {
               height: 52,
               child: ElevatedButton.icon(
                 onPressed: () => _shareReferral(myCode),
-                icon: const Icon(Icons.share_rounded, size: 20, color: Colors.white),
+                icon: const Icon(
+                  Icons.share_rounded,
+                  size: 20,
+                  color: Colors.white,
+                ),
                 label: Text(
                   'Share Referral Link',
                   style: GoogleFonts.roboto(
@@ -217,14 +254,28 @@ class _ReferEarnScreenState extends State<ReferEarnScreen> {
                   borderRadius: BorderRadius.circular(12),
                   borderSide: const BorderSide(color: Color(0xFFEEEEEE)),
                 ),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 16,
+                ),
                 suffixIcon: Padding(
                   padding: const EdgeInsets.only(right: 8),
                   child: TextButton(
                     onPressed: _isApplying ? null : _applyReferral,
-                    child: _isApplying 
-                      ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
-                      : const Text('Apply', style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF4A9782))),
+                    child:
+                        _isApplying
+                            ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                            : const Text(
+                              'Apply',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF4A9782),
+                              ),
+                            ),
                   ),
                 ),
               ),

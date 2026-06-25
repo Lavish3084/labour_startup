@@ -10,9 +10,9 @@ class ErrorHandler {
     }
 
     String message;
-    if (error is SocketException || 
+    if (error is SocketException ||
         error is HttpException ||
-        error.toString().contains('SocketException') || 
+        error.toString().contains('SocketException') ||
         error.toString().contains('Connection failed') ||
         error.toString().contains('Network is unreachable') ||
         error.toString().contains('TimeoutException') ||

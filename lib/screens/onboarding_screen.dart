@@ -18,22 +18,26 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     {
       'image': 'assets/images/last1.png',
       'title': 'Premium Skill & Speed',
-      'desc': 'Find elite, fully vetted professionals tailored for your specialized projects instantly.',
+      'desc':
+          'Find elite, fully vetted professionals tailored for your specialized projects instantly.',
     },
     {
       'image': 'assets/images/last2.png',
       'title': 'Verified & Vetted Quality',
-      'desc': 'Access top-rated experts who combine transparent pricing with unparalleled efficiency.',
+      'desc':
+          'Access top-rated experts who combine transparent pricing with unparalleled efficiency.',
     },
     {
       'image': 'assets/images/last4.png',
       'title': 'Ready at Your Door',
-      'desc': 'Book the specific service you need in under 60 seconds and watch us take care of the rest.',
+      'desc':
+          'Book the specific service you need in under 60 seconds and watch us take care of the rest.',
     },
     {
       'image': 'assets/images/last3.png',
       'title': 'Exclusive Launch Offer',
-      'desc': 'Start today and claim an incredible flat 50% OFF on your very first professional booking!',
+      'desc':
+          'Start today and claim an incredible flat 50% OFF on your very first professional booking!',
     },
   ];
 
@@ -51,7 +55,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   @override
   Widget build(BuildContext context) {
     final isLastPage = _currentPage == _slides.length - 1;
-    
+
     return Scaffold(
       backgroundColor: const Color(0xFFFCFCFC),
       body: SafeArea(
@@ -99,7 +103,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 ],
               ),
             ),
-            
+
             // PageView Content
             Expanded(
               flex: 3,
@@ -143,7 +147,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                           ),
                         ),
                         const SizedBox(height: 40),
-                        
+
                         // Text Content
                         Text(
                           slide['title']!,
@@ -175,7 +179,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 },
               ),
             ),
-            
+
             // Bottom Control Section
             Expanded(
               flex: 1,
@@ -195,16 +199,17 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                           height: 8,
                           width: isActive ? 24 : 8,
                           decoration: BoxDecoration(
-                            color: isActive 
-                                ? const Color(0xFF2E876E) 
-                                : Colors.grey[300],
+                            color:
+                                isActive
+                                    ? const Color(0xFF2E876E)
+                                    : Colors.grey[300],
                             borderRadius: BorderRadius.circular(4),
                           ),
                         );
                       }),
                     ),
                     const SizedBox(height: 40),
-                    
+
                     // Action Button
                     SizedBox(
                       width: double.infinity,

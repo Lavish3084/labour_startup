@@ -7,16 +7,14 @@ import '../utils/app_theme.dart';
 class VoiceSearchSheet extends StatefulWidget {
   final Function(String) onResult;
 
-  const VoiceSearchSheet({
-    Key? key,
-    required this.onResult,
-  }) : super(key: key);
+  const VoiceSearchSheet({Key? key, required this.onResult}) : super(key: key);
 
   @override
   State<VoiceSearchSheet> createState() => _VoiceSearchSheetState();
 }
 
-class _VoiceSearchSheetState extends State<VoiceSearchSheet> with TickerProviderStateMixin {
+class _VoiceSearchSheetState extends State<VoiceSearchSheet>
+    with TickerProviderStateMixin {
   late AnimationController _pulseController;
   late AnimationController _rippleController;
   String _statusText = "Listening...";
@@ -42,7 +40,7 @@ class _VoiceSearchSheetState extends State<VoiceSearchSheet> with TickerProvider
           _statusText = "Searching for 'Electrician'...";
           _isFinished = true;
         });
-        
+
         Timer(const Duration(milliseconds: 800), () {
           if (mounted) {
             widget.onResult("Electrician");
@@ -79,8 +77,14 @@ class _VoiceSearchSheetState extends State<VoiceSearchSheet> with TickerProvider
                   return Stack(
                     alignment: Alignment.center,
                     children: [
-                      _buildRipple(1.0 + (_rippleController.value * 0.5), 0.3 - (_rippleController.value * 0.3)),
-                      _buildRipple(1.0 + ((_rippleController.value + 0.3) % 1.0 * 0.5), 0.2 - ((_rippleController.value + 0.3) % 1.0 * 0.2)),
+                      _buildRipple(
+                        1.0 + (_rippleController.value * 0.5),
+                        0.3 - (_rippleController.value * 0.3),
+                      ),
+                      _buildRipple(
+                        1.0 + ((_rippleController.value + 0.3) % 1.0 * 0.5),
+                        0.2 - ((_rippleController.value + 0.3) % 1.0 * 0.2),
+                      ),
                     ],
                   );
                 },
@@ -95,16 +99,23 @@ class _VoiceSearchSheetState extends State<VoiceSearchSheet> with TickerProvider
                 const SizedBox(height: 20),
                 Center(
                   child: ScaleTransition(
-                    scale: Tween(begin: 0.95, end: 1.05).animate(_pulseController),
+                    scale: Tween(
+                      begin: 0.95,
+                      end: 1.05,
+                    ).animate(_pulseController),
                     child: Container(
                       width: 100,
                       height: 100,
                       decoration: BoxDecoration(
-                        color: _isFinished ? AppTheme.success : AppTheme.saffron,
+                        color:
+                            _isFinished ? AppTheme.success : AppTheme.saffron,
                         shape: BoxShape.circle,
                         boxShadow: [
                           BoxShadow(
-                            color: (_isFinished ? AppTheme.success : AppTheme.saffron).withValues(alpha: 0.3),
+                            color: (_isFinished
+                                    ? AppTheme.success
+                                    : AppTheme.saffron)
+                                .withValues(alpha: 0.3),
                             blurRadius: 30,
                             spreadRadius: 10,
                           ),
@@ -130,7 +141,9 @@ class _VoiceSearchSheetState extends State<VoiceSearchSheet> with TickerProvider
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  _isFinished ? 'Found matches!' : 'Try saying "Plumber near me" or "Electrician"',
+                  _isFinished
+                      ? 'Found matches!'
+                      : 'Try saying "Plumber near me" or "Electrician"',
                   style: GoogleFonts.inter(
                     fontSize: 14,
                     color: AppTheme.textMuted,
@@ -152,7 +165,7 @@ class _VoiceSearchSheetState extends State<VoiceSearchSheet> with TickerProvider
               ],
             ),
           ),
-          
+
           // Top Handle
           Positioned(
             top: 12,

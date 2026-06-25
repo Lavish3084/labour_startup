@@ -36,7 +36,7 @@ class SearchingWorkerScreen extends StatefulWidget {
   State<SearchingWorkerScreen> createState() => _SearchingWorkerScreenState();
 }
 
-class _SearchingWorkerScreenState extends State<SearchingWorkerScreen> 
+class _SearchingWorkerScreenState extends State<SearchingWorkerScreen>
     with TickerProviderStateMixin, WidgetsBindingObserver {
   late AnimationController _pulseController;
   final SocketService _socketService = SocketService();
@@ -45,7 +45,7 @@ class _SearchingWorkerScreenState extends State<SearchingWorkerScreen>
   bool _isTimedOut = false;
   bool _isRecreating = false;
   String? _currentBookingId;
-  
+
   // Timer state
   late int _remainingSeconds;
   Timer? _countdownTimer;
@@ -54,8 +54,9 @@ class _SearchingWorkerScreenState extends State<SearchingWorkerScreen>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    _currentBookingId = (widget.bookingData?['_id'] ?? widget.bookingData?['id'])?.toString();
-    
+    _currentBookingId =
+        (widget.bookingData?['_id'] ?? widget.bookingData?['id'])?.toString();
+
     // Calculate remaining seconds based on createdAt to ensure persistence
     final createdAtStr = widget.bookingData?['createdAt'];
     if (createdAtStr != null) {
@@ -64,7 +65,7 @@ class _SearchingWorkerScreenState extends State<SearchingWorkerScreen>
         final expiryTime = createdAt.add(const Duration(minutes: 30));
         final now = DateTime.now();
         _remainingSeconds = expiryTime.difference(now).inSeconds;
-        
+
         if (_remainingSeconds <= 0) {
           _remainingSeconds = 0;
           _isTimedOut = true;
@@ -75,7 +76,7 @@ class _SearchingWorkerScreenState extends State<SearchingWorkerScreen>
     } else {
       _remainingSeconds = 30 * 60;
     }
-    
+
     _pulseController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 3),
@@ -85,7 +86,9 @@ class _SearchingWorkerScreenState extends State<SearchingWorkerScreen>
       _startCountdown();
       if (_currentBookingId != null) {
         _initSocket(_currentBookingId!);
-        _notificationSubscription = NotificationService.onNotification.listen((_) {
+        _notificationSubscription = NotificationService.onNotification.listen((
+          _,
+        ) {
           _checkBookingStatus(_currentBookingId!);
         });
       }
@@ -123,7 +126,7 @@ class _SearchingWorkerScreenState extends State<SearchingWorkerScreen>
 
   Future<void> _handleExpiry() async {
     if (_isNavigating || _isTimedOut) return;
-    
+
     if (_currentBookingId != null) {
       try {
         // Call API to cancel the booking as it has expired
@@ -132,14 +135,14 @@ class _SearchingWorkerScreenState extends State<SearchingWorkerScreen>
         debugPrint('Error cancelling expired booking: $e');
       }
     }
-    
+
     if (mounted) {
       _countdownTimer?.cancel();
       setState(() {
         _isTimedOut = true;
         _remainingSeconds = 0;
       });
-      
+
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Search timed out. You can try searching again.'),
@@ -152,14 +155,16 @@ class _SearchingWorkerScreenState extends State<SearchingWorkerScreen>
 
   Future<void> _handleSearchAgain() async {
     if (_isRecreating) return;
-    
+
     setState(() {
       _isRecreating = true;
     });
 
     try {
       // Prepare new booking data from existing one
-      final newBookingData = Map<String, dynamic>.from(widget.bookingData ?? {});
+      final newBookingData = Map<String, dynamic>.from(
+        widget.bookingData ?? {},
+      );
       // Remove identifying fields to trigger a new creation
       newBookingData.remove('_id');
       newBookingData.remove('id');
@@ -177,8 +182,14 @@ class _SearchingWorkerScreenState extends State<SearchingWorkerScreen>
         address: widget.address,
         latitude: widget.latitude,
         longitude: widget.longitude,
-        numberOfHours: int.tryParse(widget.bookingData?['numberOfHours']?.toString() ?? ''),
-        numberOfWorkers: int.tryParse(widget.bookingData?['numberOfWorkers']?.toString() ?? '1') ?? 1,
+        numberOfHours: int.tryParse(
+          widget.bookingData?['numberOfHours']?.toString() ?? '',
+        ),
+        numberOfWorkers:
+            int.tryParse(
+              widget.bookingData?['numberOfWorkers']?.toString() ?? '1',
+            ) ??
+            1,
         notes: widget.bookingData?['notes']?.toString(),
         problemTitle: widget.bookingData?['problemTitle']?.toString(),
         landmark: widget.bookingData?['landmark']?.toString(),
@@ -197,7 +208,7 @@ class _SearchingWorkerScreenState extends State<SearchingWorkerScreen>
 
         _startCountdown();
         _initSocket(newId);
-        
+
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Search restarted!'),
@@ -238,7 +249,9 @@ class _SearchingWorkerScreenState extends State<SearchingWorkerScreen>
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
-      debugPrint('SearchingWorkerScreen: App resumed from background. Syncing...');
+      debugPrint(
+        'SearchingWorkerScreen: App resumed from background. Syncing...',
+      );
       if (_currentBookingId != null) {
         _checkBookingStatus(_currentBookingId!);
         _initSocket(_currentBookingId!);
@@ -274,20 +287,23 @@ class _SearchingWorkerScreenState extends State<SearchingWorkerScreen>
       if (assignedWorker != null) {
         Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute(
-            builder: (context) => WorkerAssignedScreen(
-              category: widget.category,
-              address: widget.address,
-              scheduledTime: widget.scheduledTime,
-              bookingData: bookingData,
-              worker: assignedWorker!,
-            ),
+            builder:
+                (context) => WorkerAssignedScreen(
+                  category: widget.category,
+                  address: widget.address,
+                  scheduledTime: widget.scheduledTime,
+                  bookingData: bookingData,
+                  worker: assignedWorker!,
+                ),
           ),
           (route) => false,
         );
       } else {
         // Fallback if worker data is somehow missing but status is confirmed
         Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (context) => const MainScreen(initialIndex: 1)),
+          MaterialPageRoute(
+            builder: (context) => const MainScreen(initialIndex: 1),
+          ),
           (route) => false,
         );
       }
@@ -297,38 +313,54 @@ class _SearchingWorkerScreenState extends State<SearchingWorkerScreen>
   void _handleCancel() {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: Colors.white,
-        title: Text('Cancel Search?', style: GoogleFonts.inter(fontWeight: FontWeight.bold)),
-        content: Text('Are you sure you want to cancel the search?', style: GoogleFonts.inter()),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('Keep Waiting', style: GoogleFonts.inter(color: Colors.grey)),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              final rawId = widget.bookingData?['_id'] ?? widget.bookingData?['id'];
-              if (rawId != null) {
-                // Actual API call to cancel the search
-                await ApiService.updateBookingStatus(rawId.toString(), 'cancelled');
-              }
-              if (mounted) {
-                Navigator.pop(context); // Pop dialog
-                Navigator.of(context).pushAndRemoveUntil(
-                  MaterialPageRoute(builder: (context) => const MainScreen(initialIndex: 0)),
-                  (route) => false,
-                );
-              }
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.redAccent,
-              foregroundColor: Colors.white,
+      builder:
+          (context) => AlertDialog(
+            backgroundColor: Colors.white,
+            title: Text(
+              'Cancel Search?',
+              style: GoogleFonts.inter(fontWeight: FontWeight.bold),
             ),
-            child: const Text('Cancel Request'),
+            content: Text(
+              'Are you sure you want to cancel the search?',
+              style: GoogleFonts.inter(),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text(
+                  'Keep Waiting',
+                  style: GoogleFonts.inter(color: Colors.grey),
+                ),
+              ),
+              ElevatedButton(
+                onPressed: () async {
+                  final rawId =
+                      widget.bookingData?['_id'] ?? widget.bookingData?['id'];
+                  if (rawId != null) {
+                    // Actual API call to cancel the search
+                    await ApiService.updateBookingStatus(
+                      rawId.toString(),
+                      'cancelled',
+                    );
+                  }
+                  if (mounted) {
+                    Navigator.pop(context); // Pop dialog
+                    Navigator.of(context).pushAndRemoveUntil(
+                      MaterialPageRoute(
+                        builder: (context) => const MainScreen(initialIndex: 0),
+                      ),
+                      (route) => false,
+                    );
+                  }
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.redAccent,
+                  foregroundColor: Colors.white,
+                ),
+                child: const Text('Cancel Request'),
+              ),
+            ],
           ),
-        ],
-      ),
     );
   }
 
@@ -375,9 +407,9 @@ class _SearchingWorkerScreenState extends State<SearchingWorkerScreen>
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    _isTimedOut 
-                      ? 'No worker accepted the request in time.\nYou can restart the search to try again!'
-                      : 'We will notify you, once we assign\na worker for the task!',
+                    _isTimedOut
+                        ? 'No worker accepted the request in time.\nYou can restart the search to try again!'
+                        : 'We will notify you, once we assign\na worker for the task!',
                     textAlign: TextAlign.center,
                     style: GoogleFonts.inter(
                       fontSize: 14,
@@ -416,11 +448,7 @@ class _SearchingWorkerScreenState extends State<SearchingWorkerScreen>
       ),
       child: Stack(
         children: [
-          Positioned.fill(
-            child: CustomPaint(
-              painter: DotPatternPainter(),
-            ),
-          ),
+          Positioned.fill(child: CustomPaint(painter: DotPatternPainter())),
           SafeArea(
             child: Center(
               child: Padding(
@@ -429,9 +457,9 @@ class _SearchingWorkerScreenState extends State<SearchingWorkerScreen>
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text(
-                      _isTimedOut 
-                        ? 'Search Timed Out' 
-                        : 'Notifying ${widget.category.name}\nworkers near you',
+                      _isTimedOut
+                          ? 'Search Timed Out'
+                          : 'Notifying ${widget.category.name}\nworkers near you',
                       textAlign: TextAlign.center,
                       style: GoogleFonts.roboto(
                         fontSize: 26,
@@ -453,7 +481,11 @@ class _SearchingWorkerScreenState extends State<SearchingWorkerScreen>
                           ),
                         ),
                         const SizedBox(width: 4),
-                        const Icon(Icons.arrow_drop_down, color: Colors.white, size: 20),
+                        const Icon(
+                          Icons.arrow_drop_down,
+                          color: Colors.white,
+                          size: 20,
+                        ),
                       ],
                     ),
                   ],
@@ -507,7 +539,9 @@ class _SearchingWorkerScreenState extends State<SearchingWorkerScreen>
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     border: Border.all(
-                      color: const Color(0xFF2E876E).withOpacity(1.0 - progress),
+                      color: const Color(
+                        0xFF2E876E,
+                      ).withOpacity(1.0 - progress),
                       width: 2,
                     ),
                   ),
@@ -516,11 +550,7 @@ class _SearchingWorkerScreenState extends State<SearchingWorkerScreen>
             );
           }),
           // Center Marker
-          const Icon(
-            Icons.location_on,
-            color: Color(0xFF4A9782),
-            size: 40,
-          ),
+          const Icon(Icons.location_on, color: Color(0xFF4A9782), size: 40),
         ],
       ),
     );
@@ -530,7 +560,7 @@ class _SearchingWorkerScreenState extends State<SearchingWorkerScreen>
     // We visually represent a 30 min progress bar
     double total = 30 * 60;
     double progress = (total - _remainingSeconds) / total;
-    
+
     return Container(
       height: 6,
       width: 250,
@@ -570,20 +600,24 @@ class _SearchingWorkerScreenState extends State<SearchingWorkerScreen>
                     borderRadius: BorderRadius.circular(24),
                   ),
                 ),
-                child: _isRecreating 
-                  ? const SizedBox(
-                      width: 20, 
-                      height: 20, 
-                      child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)
-                    )
-                  : Text(
-                      _isTimedOut ? 'Search Again' : 'Cancel Search',
-                      style: GoogleFonts.inter(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.white,
-                      ),
-                    ),
+                child:
+                    _isRecreating
+                        ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2,
+                          ),
+                        )
+                        : Text(
+                          _isTimedOut ? 'Search Again' : 'Cancel Search',
+                          style: GoogleFonts.inter(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white,
+                          ),
+                        ),
               ),
             ),
             const SizedBox(width: 16),
@@ -598,11 +632,17 @@ class _SearchingWorkerScreenState extends State<SearchingWorkerScreen>
               child: IconButton(
                 onPressed: () {
                   Navigator.of(context).pushAndRemoveUntil(
-                    MaterialPageRoute(builder: (context) => const MainScreen(initialIndex: 0)),
+                    MaterialPageRoute(
+                      builder: (context) => const MainScreen(initialIndex: 0),
+                    ),
                     (route) => false,
                   );
                 },
-                icon: const Icon(Icons.home_rounded, color: Colors.white, size: 24),
+                icon: const Icon(
+                  Icons.home_rounded,
+                  color: Colors.white,
+                  size: 24,
+                ),
               ),
             ),
           ],
@@ -626,5 +666,3 @@ class _SearchingWorkerScreenState extends State<SearchingWorkerScreen>
     );
   }
 }
-
-

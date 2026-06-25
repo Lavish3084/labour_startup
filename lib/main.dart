@@ -8,6 +8,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:provider/provider.dart';
 import 'providers/app_state_provider.dart';
 import 'providers/location_provider.dart';
+import 'providers/cart_provider.dart';
 import 'utils/app_theme.dart';
 import 'services/api_service.dart';
 
@@ -36,6 +37,7 @@ void main() async {
       providers: [
         ChangeNotifierProvider(create: (_) => AppStateProvider()),
         ChangeNotifierProvider(create: (_) => LocationProvider()),
+        ChangeNotifierProvider(create: (_) => CartProvider()),
       ],
       child: const MyApp(),
     ),
@@ -56,6 +58,7 @@ class MyApp extends StatelessWidget {
     );
   }
 }
+
 class MyHttpOverrides extends HttpOverrides {
   @override
   HttpClient createHttpClient(SecurityContext? context) {

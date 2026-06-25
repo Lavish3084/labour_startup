@@ -26,7 +26,13 @@ class _WalletScreenState extends State<WalletScreen> {
   @override
   void initState() {
     super.initState();
-    _amountController = TextEditingController(text: '250');
+    final appState = Provider.of<AppStateProvider>(context, listen: false);
+    appState.fetchWalletBalance();
+
+    // Default to 0 for new accounts (0 balance), otherwise 250
+    final defaultAmount = appState.walletBalance == 0 ? '0' : '250';
+    _amountController = TextEditingController(text: defaultAmount);
+
     _paymentService.initialize(
       onSuccess: _handlePaymentSuccess,
       onFailure: _handlePaymentFailure,
@@ -68,7 +74,10 @@ class _WalletScreenState extends State<WalletScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text("Money added successfully!")),
           );
-          Provider.of<AppStateProvider>(context, listen: false).fetchWalletBalance();
+          Provider.of<AppStateProvider>(
+            context,
+            listen: false,
+          ).fetchWalletBalance();
         }
       } else {
         if (mounted) {
@@ -98,12 +107,12 @@ class _WalletScreenState extends State<WalletScreen> {
   Future<void> _startPayment() async {
     final amountText = _amountController.text;
     if (amountText.isEmpty) return;
-    
+
     final int amount = int.tryParse(amountText) ?? 0;
     if (amount < 100) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Minimum amount is ₹100")),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("Minimum amount is ₹100")));
       return;
     }
 
@@ -114,7 +123,11 @@ class _WalletScreenState extends State<WalletScreen> {
         fallback: 'rzp_test_YourKeyIDHere',
       );
 
-      final user = Provider.of<AppStateProvider>(context, listen: false).profileData?['user'];
+      final user =
+          Provider.of<AppStateProvider>(
+            context,
+            listen: false,
+          ).profileData?['user'];
 
       _paymentService.openCheckout(
         keyId: razorpayKeyId,
@@ -160,7 +173,7 @@ class _WalletScreenState extends State<WalletScreen> {
                 children: [
                   // 1. Bright gradient green header block
                   _buildHeader(context),
-                  
+
                   // Content section shifting slightly upwards onto green header
                   Transform.translate(
                     offset: const Offset(0, -32),
@@ -171,23 +184,28 @@ class _WalletScreenState extends State<WalletScreen> {
                           // 2. White Balance Card
                           _buildBalanceCard(balance),
                           const SizedBox(height: 16),
-                          
-                          
+
                           // 4. White Add Money Container
-                          _buildAddMoneyCard(typedAmount, cashback, totalWalletValue),
+                          _buildAddMoneyCard(
+                            typedAmount,
+                            cashback,
+                            totalWalletValue,
+                          ),
                           const SizedBox(height: 24),
-                          
+
                           // 5. Grid of 3 top-up features
                           _buildFeaturesGrid(),
                           const SizedBox(height: 16),
-                          
+
                           // 6. How it works timeline card
                           _buildHowItWorksCard(),
                           const SizedBox(height: 16),
-                          
+
                           // 7. Using your balance policies card
                           _buildUsingBalanceCard(),
-                          SizedBox(height: MediaQuery.of(context).padding.bottom + 32),
+                          SizedBox(
+                            height: MediaQuery.of(context).padding.bottom + 32,
+                          ),
                         ],
                       ),
                     ),
@@ -238,13 +256,19 @@ class _WalletScreenState extends State<WalletScreen> {
                     color: Colors.black.withOpacity(0.15),
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(Icons.arrow_back, color: Colors.white, size: 20),
+                  child: const Icon(
+                    Icons.arrow_back,
+                    color: Colors.white,
+                    size: 20,
+                  ),
                 ),
               ),
               GestureDetector(
                 onTap: () {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Support request details coming soon.')),
+                    const SnackBar(
+                      content: Text('Support request details coming soon.'),
+                    ),
                   );
                 },
                 child: Container(
@@ -253,7 +277,11 @@ class _WalletScreenState extends State<WalletScreen> {
                     color: Colors.black.withOpacity(0.15),
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(Icons.help_outline_rounded, color: Colors.white, size: 20),
+                  child: const Icon(
+                    Icons.help_outline_rounded,
+                    color: Colors.white,
+                    size: 20,
+                  ),
                 ),
               ),
             ],
@@ -311,7 +339,11 @@ class _WalletScreenState extends State<WalletScreen> {
                 ),
               ),
               const SizedBox(width: 6),
-              Icon(Icons.info_outline_rounded, size: 16, color: Colors.grey[400]),
+              Icon(
+                Icons.info_outline_rounded,
+                size: 16,
+                color: Colors.grey[400],
+              ),
             ],
           ),
           const SizedBox(height: 12),
@@ -325,7 +357,7 @@ class _WalletScreenState extends State<WalletScreen> {
           ),
           const SizedBox(height: 12),
           Text(
-            balance <= 50 
+            balance <= 50
                 ? 'Your balance is low. Please add money to continue enjoying benefits.'
                 : 'Your wallet has active credits. Top up now to secure extra rewards.',
             textAlign: TextAlign.center,
@@ -340,8 +372,11 @@ class _WalletScreenState extends State<WalletScreen> {
     );
   }
 
-  
-  Widget _buildAddMoneyCard(int typedAmount, double cashback, double totalWalletValue) {
+  Widget _buildAddMoneyCard(
+    int typedAmount,
+    double cashback,
+    double totalWalletValue,
+  ) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),
@@ -368,7 +403,7 @@ class _WalletScreenState extends State<WalletScreen> {
             ),
           ),
           const SizedBox(height: 16),
-          
+
           // TextField Container
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
@@ -382,9 +417,7 @@ class _WalletScreenState extends State<WalletScreen> {
                   child: TextField(
                     controller: _amountController,
                     keyboardType: TextInputType.number,
-                    inputFormatters: [
-                      FilteringTextInputFormatter.digitsOnly,
-                    ],
+                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                     style: GoogleFonts.inter(
                       fontSize: 26,
                       fontWeight: FontWeight.w900,
@@ -404,7 +437,10 @@ class _WalletScreenState extends State<WalletScreen> {
                 ),
                 if (cashback > 0)
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 6,
+                    ),
                     decoration: BoxDecoration(
                       color: const Color(0xFFEFF6FF),
                       borderRadius: BorderRadius.circular(12),
@@ -422,7 +458,7 @@ class _WalletScreenState extends State<WalletScreen> {
             ),
           ),
           const SizedBox(height: 10),
-          
+
           // Helper dynamic subtext
           if (typedAmount > 0)
             Text(
@@ -433,12 +469,15 @@ class _WalletScreenState extends State<WalletScreen> {
                       : 'You will get ₹$typedAmount in the wallet! Min ₹250 to unlock cashback.'),
               style: GoogleFonts.inter(
                 fontSize: 12,
-                color: typedAmount < 100 ? const Color(0xFFDC2626) : const Color(0xFF64748B),
+                color:
+                    typedAmount < 100
+                        ? const Color(0xFFDC2626)
+                        : const Color(0xFF64748B),
                 fontWeight: FontWeight.w500,
               ),
             ),
           const SizedBox(height: 20),
-          
+
           // Horizontal Custom Chip list
           Row(
             children: [
@@ -450,7 +489,7 @@ class _WalletScreenState extends State<WalletScreen> {
             ],
           ),
           const SizedBox(height: 24),
-          
+
           // Big green top-up button
           SizedBox(
             width: double.infinity,
@@ -495,7 +534,10 @@ class _WalletScreenState extends State<WalletScreen> {
             color: isSelected ? const Color(0xFFE6F4EA) : Colors.white,
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: isSelected ? const Color(0xFF137333) : const Color(0xFFE2E8F0),
+              color:
+                  isSelected
+                      ? const Color(0xFF137333)
+                      : const Color(0xFFE2E8F0),
               width: 1.5,
             ),
           ),
@@ -513,7 +555,10 @@ class _WalletScreenState extends State<WalletScreen> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                 decoration: BoxDecoration(
-                  color: isSelected ? const Color(0xFF137333) : const Color(0xFFE8F3F1),
+                  color:
+                      isSelected
+                          ? const Color(0xFF137333)
+                          : const Color(0xFFE8F3F1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
@@ -597,11 +642,7 @@ class _WalletScreenState extends State<WalletScreen> {
   }
 
   Widget _buildFeatureDivider() {
-    return Container(
-      height: 32,
-      width: 1,
-      color: const Color(0xFFE2E8F0),
-    );
+    return Container(height: 32, width: 1, color: const Color(0xFFE2E8F0));
   }
 
   Widget _buildHowItWorksCard() {
@@ -631,21 +672,24 @@ class _WalletScreenState extends State<WalletScreen> {
             ),
           ),
           const SizedBox(height: 20),
-          
+
           // Timeline list
           _buildTimelineStep(
             stepNumber: 1,
-            text: 'Add money to your Will wallet and receive promotional rewards.',
+            text:
+                'Add money to your Will wallet and receive promotional rewards.',
             isLast: false,
           ),
           _buildTimelineStep(
             stepNumber: 2,
-            text: 'Checkout instantly with balance in your Will wallet across all orders.',
+            text:
+                'Checkout instantly with balance in your Will wallet across all orders.',
             isLast: false,
           ),
           _buildTimelineStep(
             stepNumber: 3,
-            text: 'Wallet balance cannot be withdrawn and can only be used on Will, in accordance with applicable laws.',
+            text:
+                'Wallet balance cannot be withdrawn and can only be used on Will, in accordance with applicable laws.',
             isLast: true,
           ),
         ],
@@ -675,9 +719,7 @@ class _WalletScreenState extends State<WalletScreen> {
               Container(
                 width: 1.5,
                 height: 48,
-                decoration: const BoxDecoration(
-                  color: Color(0xFFE2E8F0),
-                ),
+                decoration: const BoxDecoration(color: Color(0xFFE2E8F0)),
               ),
           ],
         ),
@@ -726,12 +768,18 @@ class _WalletScreenState extends State<WalletScreen> {
             ),
           ),
           const SizedBox(height: 16),
-          
-          _buildPolicyItem('Seamlessly pay for bookings with balance in your wallet at Pronto.'),
+
+          _buildPolicyItem(
+            'Seamlessly pay for bookings with balance in your wallet at Pronto.',
+          ),
           const SizedBox(height: 12),
-          _buildPolicyItem('Promotional rewards expire 15 days after being credited.'),
+          _buildPolicyItem(
+            'Promotional rewards expire 15 days after being credited.',
+          ),
           const SizedBox(height: 12),
-          _buildPolicyItem('Cash balance expires 1 year from the date of credit.'),
+          _buildPolicyItem(
+            'Cash balance expires 1 year from the date of credit.',
+          ),
         ],
       ),
     );

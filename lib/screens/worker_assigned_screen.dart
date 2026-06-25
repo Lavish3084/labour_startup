@@ -64,11 +64,7 @@ class WorkerAssignedScreen extends StatelessWidget {
       ),
       child: Stack(
         children: [
-          Positioned.fill(
-            child: CustomPaint(
-              painter: DotPatternPainter(),
-            ),
-          ),
+          Positioned.fill(child: CustomPaint(painter: DotPatternPainter())),
           Positioned.fill(
             child: SafeArea(
               child: Column(
@@ -157,7 +153,7 @@ class WorkerAssignedScreen extends StatelessWidget {
               color: Colors.black.withOpacity(0.1),
               blurRadius: 4,
               offset: const Offset(0, 4),
-            )
+            ),
           ],
         ),
         child: Row(
@@ -168,9 +164,10 @@ class WorkerAssignedScreen extends StatelessWidget {
               height: 56,
               decoration: ShapeDecoration(
                 image: DecorationImage(
-                  image: worker.imageUrl.isNotEmpty
-                      ? NetworkImage(worker.imageUrl)
-                      : const NetworkImage("https://placehold.co/100x100"),
+                  image:
+                      worker.imageUrl.isNotEmpty
+                          ? NetworkImage(worker.imageUrl)
+                          : const NetworkImage("https://placehold.co/100x100"),
                   fit: BoxFit.cover,
                 ),
                 shape: OvalBorder(
@@ -241,11 +238,12 @@ class WorkerAssignedScreen extends StatelessWidget {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => ChatScreen(
-                      bookingId: bookingData['_id'],
-                      otherUserName: worker.name,
-                      otherUserPhoto: worker.imageUrl,
-                    ),
+                    builder:
+                        (context) => ChatScreen(
+                          bookingId: bookingData['_id'],
+                          otherUserName: worker.name,
+                          otherUserPhoto: worker.imageUrl,
+                        ),
                   ),
                 );
               },
@@ -283,7 +281,9 @@ class WorkerAssignedScreen extends StatelessWidget {
                 }
               } else {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text("Worker's phone number not available")),
+                  const SnackBar(
+                    content: Text("Worker's phone number not available"),
+                  ),
                 );
               }
             },
@@ -327,21 +327,29 @@ class WorkerAssignedScreen extends StatelessWidget {
             children: [
               _buildDetailColumn('Service', category.name),
               _buildVerticalDivider(),
-              _buildDetailColumn('Duration', bookingData['bookingMode'] == 'Hourly' ? '${bookingData['numberOfHours']} Hours' : 'Daily'),
+              _buildDetailColumn(
+                'Duration',
+                bookingData['bookingMode'] == 'Hourly'
+                    ? '${bookingData['numberOfHours']} Hours'
+                    : 'Daily',
+              ),
               _buildVerticalDivider(),
-              _buildDetailColumn('Date', DateFormat('dd MMMM').format(scheduledTime)),
+              _buildDetailColumn(
+                'Date',
+                DateFormat('dd MMMM').format(scheduledTime),
+              ),
             ],
           ),
           const SizedBox(height: 20),
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildDetailColumn('Arrival Time', DateFormat('hh:mm a').format(scheduledTime)),
-              _buildVerticalDivider(),
-              Expanded(
-                flex: 2,
-                child: _buildDetailColumn('Location', address),
+              _buildDetailColumn(
+                'Arrival Time',
+                DateFormat('hh:mm a').format(scheduledTime),
               ),
+              _buildVerticalDivider(),
+              Expanded(flex: 2, child: _buildDetailColumn('Location', address)),
             ],
           ),
         ],
@@ -442,7 +450,9 @@ class WorkerAssignedScreen extends StatelessWidget {
           onPressed: () {
             Navigator.of(context).push(
               MaterialPageRoute(
-                builder: (context) => TrackStatusScreen(bookingId: bookingData['_id']),
+                builder:
+                    (context) =>
+                        TrackStatusScreen(bookingId: bookingData['_id']),
               ),
             );
           },

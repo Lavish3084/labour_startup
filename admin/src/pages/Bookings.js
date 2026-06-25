@@ -20,7 +20,7 @@ const Bookings = () => {
     useEffect(() => {
         const fetchBookings = async () => {
             try {
-                const response = await api.get('/admin/bookings');
+                const response = await api.get('admin/bookings');
                 setBookings(response.data);
             } catch (err) {
                 console.error('Failed to fetch bookings:', err);

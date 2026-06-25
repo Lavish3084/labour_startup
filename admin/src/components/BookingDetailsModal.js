@@ -67,6 +67,44 @@ const BookingDetailsModal = ({ booking, onClose }) => {
                     </div>
 
                     <div style={styles.section}>
+                        <h3 style={styles.sectionTitle}>Task Specifics</h3>
+                        <div style={styles.row}>
+                            <div style={styles.item}>
+                                <span style={styles.label}>Mode</span>
+                                <span style={styles.value}>{booking.bookingMode || 'N/A'}</span>
+                            </div>
+                            <div style={styles.item}>
+                                <span style={styles.label}>No. of Workers</span>
+                                <span style={styles.value}>{booking.numberOfWorkers || 1}</span>
+                            </div>
+                        </div>
+                        {(booking.workType || booking.problemTitle) && (
+                            <div style={{ ...styles.row, marginTop: '1rem' }}>
+                                <div style={styles.item}>
+                                    <span style={styles.label}>Work Type</span>
+                                    <span style={styles.value}>{booking.workType || 'N/A'}</span>
+                                </div>
+                                <div style={styles.item}>
+                                    <span style={styles.label}>Problem</span>
+                                    <span style={styles.value}>{booking.problemTitle || 'N/A'}</span>
+                                </div>
+                            </div>
+                        )}
+                        {(booking.commissionAmount !== undefined || booking.workerPayoutAmount !== undefined) && (
+                            <div style={{ ...styles.row, marginTop: '1rem' }}>
+                                <div style={styles.item}>
+                                    <span style={styles.label}>Admin Commission</span>
+                                    <span style={{...styles.value, color: '#f59e0b'}}>₹{booking.commissionAmount || 0}</span>
+                                </div>
+                                <div style={styles.item}>
+                                    <span style={styles.label}>Worker Payout</span>
+                                    <span style={{...styles.value, color: '#059669'}}>₹{booking.workerPayoutAmount || 0}</span>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    <div style={styles.section}>
                         <h3 style={styles.sectionTitle}>Customer</h3>
                         <div style={styles.row}>
                             <div style={styles.item}>
@@ -109,6 +147,26 @@ const BookingDetailsModal = ({ booking, onClose }) => {
                             </div>
                         </div>
                     </div>
+
+                    {(booking.taskImages && booking.taskImages.length > 0) && (
+                        <div style={styles.section}>
+                            <h3 style={styles.sectionTitle}>Task Images</h3>
+                            <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                                {booking.taskImages.map((img, index) => (
+                                    <a key={index} href={img} target="_blank" rel="noreferrer">
+                                        <img src={img} alt={`Task ${index}`} style={{ width: '80px', height: '80px', objectFit: 'cover', borderRadius: '8px', border: '1px solid #e2e8f0' }} />
+                                    </a>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                    
+                    {booking.taskAudio && (
+                        <div style={styles.section}>
+                            <h3 style={styles.sectionTitle}>Task Audio</h3>
+                            <audio controls src={booking.taskAudio} style={{ width: '100%', height: '40px', outline: 'none' }} />
+                        </div>
+                    )}
                 </div>
                 
                 <div style={styles.footer}>

@@ -24,6 +24,7 @@ import '../widgets/pattern_painter.dart';
 import 'settings_screen.dart';
 import 'refer_earn_screen.dart';
 import 'wallet_screen.dart';
+import 'profile_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -42,6 +43,28 @@ class _HomeScreenState extends State<HomeScreen> {
   String? _lastCategoriesError;
   int? _selectedCategoryIndex;
 
+  final PageController _bannerPageController = PageController();
+  int _currentBannerIndex = 0;
+  Timer? _bannerTimer;
+
+  final List<Map<String, String>> _bannerData = [
+    {
+      'title': 'Need strong\nhands?',
+      'subtitle': 'Skilled masonry & labour',
+      'image': 'assets/images/banner_masonry.png',
+    },
+    {
+      'title': 'Electrical\nissues?',
+      'subtitle': 'Expert wiring & repair',
+      'image': 'assets/images/banner_electrician.png',
+    },
+    {
+      'title': 'We are here\nfor you',
+      'subtitle': 'All your home needs sorted',
+      'image': 'assets/images/banner_general.png',
+    },
+  ];
+
   @override
   void initState() {
     super.initState();
@@ -51,6 +74,18 @@ class _HomeScreenState extends State<HomeScreen> {
       _appState?.fetchBookings(); // Load bookings for active card
       _initLocation();
       _appState?.addListener(_errorListener);
+    });
+
+    _bannerTimer = Timer.periodic(const Duration(seconds: 4), (timer) {
+      if (_bannerPageController.hasClients) {
+        int nextPage = _currentBannerIndex + 1;
+        if (nextPage >= _bannerData.length) nextPage = 0;
+        _bannerPageController.animateToPage(
+          nextPage,
+          duration: const Duration(milliseconds: 800),
+          curve: Curves.easeInOut,
+        );
+      }
     });
   }
 
@@ -80,6 +115,8 @@ class _HomeScreenState extends State<HomeScreen> {
   void dispose() {
     _searchController.dispose();
     _appState?.removeListener(_errorListener);
+    _bannerTimer?.cancel();
+    _bannerPageController.dispose();
     super.dispose();
   }
 
@@ -262,13 +299,133 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  Widget _buildBannerCarousel(bool isCityActive) {
+    return Positioned(
+      top: 0,
+      left: 0,
+      right: 0,
+      child: ClipRect(
+        child: SizedBox(
+          height: MediaQuery.of(context).size.width * 0.85,
+          child: Stack(
+            children: [
+              PageView.builder(
+                controller: _bannerPageController,
+                onPageChanged: (index) {
+                  setState(() {
+                    _currentBannerIndex = index;
+                  });
+                },
+                itemCount: _bannerData.length,
+                itemBuilder: (context, index) {
+                  final data = _bannerData[index];
+                  return Stack(
+                    children: [
+                      Image.asset(
+                        data['image']!,
+                        fit: BoxFit.cover,
+                        width: double.infinity,
+                        height: double.infinity,
+                        alignment: Alignment.center,
+                      ),
+                      // Text Overlay
+                      Positioned(
+                        left: 24,
+                        top: 130,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            SizedBox(
+                              width: MediaQuery.of(context).size.width * 0.5,
+                              child: Text(
+                                data['title']!,
+                                style: GoogleFonts.inter(
+                                  fontSize: 26,
+                                  fontWeight: FontWeight.w900,
+                                  color: const Color(0xFF4A3B2C),
+                                  height: 1.1,
+                                  letterSpacing: -0.5,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              data['subtitle']!,
+                              style: GoogleFonts.inter(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: const Color(0xFF6B5A49),
+                              ),
+                            ),
+                            const SizedBox(height: 24),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 8,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(8),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.05),
+                                    blurRadius: 4,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
+                              ),
+                              child: Text(
+                                'BOOK NOW',
+                                style: GoogleFonts.inter(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w800,
+                                  color: const Color(0xFF4A3B2C),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  );
+                },
+              ),
+              // Carousel Dots
+              Positioned(
+                bottom: 24,
+                left: 24,
+                child: Row(
+                  children: List.generate(_bannerData.length, (index) {
+                    return AnimatedContainer(
+                      duration: const Duration(milliseconds: 300),
+                      margin: const EdgeInsets.only(right: 4),
+                      height: 6,
+                      width: _currentBannerIndex == index ? 16 : 6,
+                      decoration: BoxDecoration(
+                        color:
+                            _currentBannerIndex == index
+                                ? const Color(0xFF4A3B2C)
+                                : const Color(0xFF4A3B2C).withOpacity(0.3),
+                        borderRadius: BorderRadius.circular(3),
+                      ),
+                    );
+                  }),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
       behavior: HitTestBehavior.opaque,
       child: Scaffold(
-        backgroundColor: AppTheme.scaffoldBg,
+        backgroundColor: const Color(0xFFF2ECE6), // Match mockup background
         body: RefreshIndicator(
           onRefresh: () async {
             setState(() => _isRefreshing = true);
@@ -316,93 +473,73 @@ class _HomeScreenState extends State<HomeScreen> {
                         ? rawAddress.split(',').first.trim()
                         : rawAddress;
 
-                return Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                return Stack(
                   children: [
-                    _buildLocationHeader(isCityActive: isCityActive),
-                    if (hasActive && isCityActive) ...[
-                      const SizedBox(height: 32),
-                      _buildActiveBookingList(activeBookings),
-                    ],
-                    if (!isCityActive) ...[
-                      _buildComingSoonState(cityName),
-                      const SizedBox(height: 24),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 20),
-                        child: Text(
-                          'Top Reasons to Choose',
-                          style: GoogleFonts.roboto(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w700,
-                            color: Colors.black,
-                            height: 1.5,
-                            letterSpacing: 0.5,
+                    // Top Poster Image Carousel
+                    _buildBannerCarousel(isCityActive),
+                    Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildLocationHeader(isCityActive: isCityActive),
+                        const SizedBox(
+                          height: 190,
+                        ), // Transparent space for the poster to show
+                        Container(
+                          decoration: const BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.vertical(
+                              top: Radius.circular(32),
+                            ),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const SizedBox(height: 24),
+                              if (!isCityActive) ...[
+                                _buildComingSoonState(cityName),
+                                const SizedBox(height: 24),
+                                _buildReliableTrustworthySection(),
+                                const SizedBox(height: 24),
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 20,
+                                  ),
+                                  child: Text(
+                                    'Refer & Earn',
+                                    style: GoogleFonts.roboto(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w700,
+                                      color: Colors.black,
+                                      height: 1.5,
+                                      letterSpacing: 0.5,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 6),
+                                _buildReferEarnSection(),
+                                const SizedBox(height: 12),
+                                _buildBrandingFooter(),
+                              ] else ...[
+                                if (hasActive && isCityActive) ...[
+                                  _buildActiveBookingList(activeBookings),
+                                  const SizedBox(height: 32),
+                                ],
+                                if (hasCategories) ...[
+                                  _buildCategoriesSection(activeBookings),
+                                  const SizedBox(height: 32),
+                                  _buildBookingOptionTiles(),
+                                ],
+                                const SizedBox(height: 32),
+                                _buildReliableTrustworthySection(),
+                                const SizedBox(height: 24),
+                                _buildBrandingFooter(),
+                              ],
+                            ],
                           ),
                         ),
-                      ),
-                      const SizedBox(height: 12),
-                      _buildTrustBanner(),
-                      const SizedBox(height: 24),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 20),
-                        child: Text(
-                          'Refer & Earn',
-                          style: GoogleFonts.roboto(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w700,
-                            color: Colors.black,
-                            height: 1.5,
-                            letterSpacing: 0.5,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      _buildReferEarnSection(),
-                      const SizedBox(height: 12),
-                      _buildBrandingFooter(),
-                    ] else ...[
-                      if (hasCategories) ...[
-                        const SizedBox(height: 32),
-                        _buildBookingOptionTiles(),
-                        const SizedBox(height: 32),
-                        _buildCategoriesSection(activeBookings),
                       ],
-                      const SizedBox(height: 16),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 20),
-                        child: Text(
-                          'Top Reasons to Choose',
-                          style: GoogleFonts.roboto(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w700,
-                            color: Colors.black,
-                            height: 1.5,
-                            letterSpacing: 0.5,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      _buildTrustBanner(),
-                      const SizedBox(height: 24),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 20),
-                        child: Text(
-                          'Refer & Earn',
-                          style: GoogleFonts.roboto(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w700,
-                            color: Colors.black,
-                            height: 1.5,
-                            letterSpacing: 0.5,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      _buildReferEarnSection(),
-                      const SizedBox(height: 12),
-                      _buildBrandingFooter(),
-                    ],
+                    ),
                   ],
                 );
               },
@@ -416,60 +553,79 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildBrandingFooter() {
     return Container(
       width: double.infinity,
-      color: AppTheme.scaffoldBg, // Same as rest of the screen (light theme)
-      padding: const EdgeInsets.fromLTRB(
-        24,
-        12,
-        24,
-        120,
-      ), // 120 bottom padding to clear navigation bar
+      color: const Color(0xFFF8FAFC),
+      padding: const EdgeInsets.fromLTRB(24, 32, 24, 120),
       child: Column(
-        crossAxisAlignment:
-            CrossAxisAlignment.start, // Align all items to the left!
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Text(
-            "India's premium local workforce app ❤️",
+            "Clean Home. Zero Stress.",
             style: GoogleFonts.inter(
-              fontSize: 18,
-              fontWeight: FontWeight.w800,
-              color: const Color(0xFF1E293B), // Premium dark slate color
-              letterSpacing: -0.5,
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+              color: const Color(0xFF64748B),
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 16),
           Text(
             "will",
             style: GoogleFonts.inter(
-              fontSize: 84, // Stretched extremely large ("extend a lot")
+              fontSize: 48,
               fontWeight: FontWeight.w900,
-              color: Colors.black.withOpacity(0.045), // Subtle gray watermark
-              letterSpacing: -2.5,
+              color: const Color(0xFF10B981),
+              letterSpacing: -1.5,
               height: 1.1,
-            ),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            "Will – Your Ultimate Marketplace for Skilled Labor!",
-            style: GoogleFonts.inter(
-              fontSize: 14,
-              fontWeight: FontWeight.w700,
-              color: const Color(0xFF334155), // Premium slate-700
-              height: 1.4,
             ),
           ),
           const SizedBox(height: 8),
           Text(
-            """Built for every job, big or small — Will connects trusted skilled workers with people who need reliable help, anytime and anywhere.""",
+            "Trusted by 600k+ families",
             style: GoogleFonts.inter(
-              fontSize: 12,
-              fontWeight: FontWeight.w400,
-              color: const Color(0xFF64748B), // Soft slate-500
-              height: 1.5,
-              letterSpacing: 0.1,
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: const Color(0xFF1E293B),
             ),
+          ),
+          const SizedBox(height: 24),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              _buildTrustBadge(Icons.verified_user_rounded, "Verified"),
+              const SizedBox(width: 16),
+              _buildTrustBadge(Icons.model_training_rounded, "Trained"),
+              const SizedBox(width: 16),
+              _buildTrustBadge(Icons.thumb_up_rounded, "Reliable"),
+            ],
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildTrustBadge(IconData icon, String text) {
+    return Column(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8),
+            ],
+          ),
+          child: Icon(icon, color: const Color(0xFF10B981), size: 20),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          text,
+          style: GoogleFonts.inter(
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
+            color: const Color(0xFF64748B),
+          ),
+        ),
+      ],
     );
   }
 
@@ -483,23 +639,21 @@ class _HomeScreenState extends State<HomeScreen> {
     String displayLabel = 'Location';
     String displayAddress = rawAddress;
 
-    // Determine custom name/description to display at the top line
     if (rawHouseNumber.isNotEmpty) {
       displayLabel = rawHouseNumber;
     } else if (rawLabel.isNotEmpty &&
-        rawLabel != 'Saved Location' &&
-        rawLabel != 'Selected Location' &&
-        rawLabel != 'Current Location') {
+        ![
+          'Saved Location',
+          'Selected Location',
+          'Current Location',
+        ].contains(rawLabel)) {
       displayLabel = rawLabel;
     } else if (rawLabel == 'Saved Location') {
       displayLabel = 'Saved Location';
     } else if (rawLabel == 'Current Location') {
       displayLabel = 'Current Location';
-    } else {
-      displayLabel = 'Location';
     }
 
-    // Clean up address to avoid duplicating the house number description
     if (rawHouseNumber.isNotEmpty &&
         displayAddress.startsWith(rawHouseNumber)) {
       displayAddress = displayAddress
@@ -507,272 +661,163 @@ class _HomeScreenState extends State<HomeScreen> {
           .replaceAll(RegExp(r'^[\s,]+'), '');
     }
 
-    if (!isCityActive) {
-      // White location header
-      return Container(
-        width: double.infinity,
-        color: Colors.white,
-        padding: EdgeInsets.fromLTRB(
-          20,
-          MediaQuery.of(context).padding.top + 8,
-          20,
-          12,
-        ),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            GestureDetector(
-              onTap: _showAddressSelectionBottomSheet,
-              behavior: HitTestBehavior.opaque,
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  const Icon(
-                    Icons.location_on_rounded,
-                    color: AppTheme.brandGreenMain, // Brand Green
-                    size: 28,
-                  ),
-                  const SizedBox(width: 8),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            displayLabel,
-                            style: GoogleFonts.inter(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w800,
-                              color: const Color(0xFF1E293B), // Slate-800
-                            ),
-                          ),
-                          const SizedBox(width: 4),
-                          const Icon(
-                            Icons.keyboard_arrow_down_rounded,
-                            color: const Color(0xFF1E293B),
-                            size: 18,
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 2),
-                      SizedBox(
-                        width: MediaQuery.of(context).size.width * 0.52,
-                        child: Text(
-                          displayAddress,
-                          style: GoogleFonts.inter(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w500,
-                            color: const Color(0xFF64748B), // Slate-500
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            const Spacer(),
-            GestureDetector(
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const WalletScreen(),
-                  ),
-                );
-              },
-              behavior: HitTestBehavior.opaque,
-              child: const Icon(
-                Icons.account_balance_wallet_outlined,
-                color: Color(0xFF1E293B),
-                size: 24,
-              ),
-            ),
-            const SizedBox(width: 16),
-            GestureDetector(
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const SettingsScreen(),
-                  ),
-                );
-              },
-              behavior: HitTestBehavior.opaque,
-              child: const Icon(
-                Icons.settings_outlined,
-                color: const Color(0xFF1E293B),
-                size: 24,
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-
-    // Default green header (unchanged, with search bar)
     return Container(
       width: double.infinity,
-      height: 265,
-      decoration: const BoxDecoration(
-        gradient: AppTheme.headerGradientGreen,
-        borderRadius: BorderRadius.vertical(bottom: Radius.circular(24)),
+      color: Colors.transparent,
+      padding: EdgeInsets.fromLTRB(
+        20,
+        MediaQuery.of(context).padding.top + 8,
+        20,
+        12,
       ),
-      padding: EdgeInsets.zero, // Padding handled inside Stack
-      child: Stack(
+      child: Column(
         children: [
-          Positioned.fill(
-            child: CustomPaint(
-              painter: DotPatternPainter(
-                color: Colors.white.withOpacity(0.08),
-                spacing: 18.0,
-                radius: 2.0,
-              ),
-            ),
-          ),
-          Padding(
-            padding: EdgeInsets.fromLTRB(
-              20,
-              MediaQuery.of(context).padding.top + 8,
-              20,
-              24,
-            ),
-            child: Column(
-              children: [
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    GestureDetector(
-                      onTap: _showAddressSelectionBottomSheet,
-                      behavior: HitTestBehavior.opaque,
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          const Icon(
-                            Icons.location_on_rounded,
-                            color: AppTheme.brandYellow,
-                            size: 28,
-                          ),
-                          const SizedBox(width: 8),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Text(
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              // Address Section
+              Expanded(
+                child: GestureDetector(
+                  onTap: _showAddressSelectionBottomSheet,
+                  behavior: HitTestBehavior.opaque,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.9),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.location_on_rounded,
+                          color: Color(0xFF10B981),
+                          size: 20,
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Flexible(
+                                  child: Text(
                                     displayLabel,
                                     style: GoogleFonts.inter(
                                       fontSize: 16,
                                       fontWeight: FontWeight.w800,
-                                      color: Colors.white,
+                                      color: const Color(0xFF1E293B),
                                     ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
                                   ),
-                                  const SizedBox(width: 4),
-                                  const Icon(
-                                    Icons.keyboard_arrow_down_rounded,
-                                    color: Colors.white,
-                                    size: 18,
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 2),
-                              SizedBox(
-                                width: MediaQuery.of(context).size.width * 0.52,
-                                child: Text(
-                                  displayAddress,
-                                  style: GoogleFonts.inter(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w500,
-                                    color: Colors.white.withOpacity(0.85),
-                                  ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
                                 ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                    const Spacer(),
-                    GestureDetector(
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const WalletScreen(),
-                          ),
-                        );
-                      },
-                      behavior: HitTestBehavior.opaque,
-                      child: const Icon(
-                        Icons.account_balance_wallet_outlined,
-                        color: Colors.white,
-                        size: 24,
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    GestureDetector(
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const SettingsScreen(),
-                          ),
-                        );
-                      },
-                      behavior: HitTestBehavior.opaque,
-                      child: const Icon(
-                        Icons.settings_outlined,
-                        color: Colors.white,
-                        size: 24,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 74),
-                Container(
-                  height: 56, // Matching Figma
-                  decoration: BoxDecoration(
-                    color: AppTheme.surfaceContainerHigh,
-                    borderRadius: BorderRadius.circular(28),
-                  ),
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: TextField(
-                          controller: _searchController,
-                          onChanged:
-                              (value) => Provider.of<AppStateProvider>(
-                                context,
-                                listen: false,
-                              ).setSearchQuery(value),
-                          decoration: InputDecoration(
-                            hintText: 'Explore Services',
-                            hintStyle: GoogleFonts.inter(
-                              color: const Color(0xFF49454F),
-                              fontSize: 16,
-                              fontWeight: FontWeight.w400,
+                                const SizedBox(width: 4),
+                                const Icon(
+                                  Icons.keyboard_arrow_down_rounded,
+                                  color: Color(0xFF1E293B),
+                                  size: 18,
+                                ),
+                              ],
                             ),
-                            border: InputBorder.none,
-                          ),
+                            const SizedBox(height: 2),
+                            Text(
+                              displayAddress,
+                              style: GoogleFonts.inter(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w500,
+                                color: const Color(0xFF475569),
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
                         ),
                       ),
-                      const Icon(Icons.search, color: Color(0xFF49454F)),
                     ],
                   ),
                 ),
-              ],
-            ),
+              ),
+              const SizedBox(width: 8),
+              // Right Icons
+              GestureDetector(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const ReferEarnScreen(),
+                    ),
+                  );
+                },
+                child: SizedBox(
+                  width: 36,
+                  height: 36,
+                  child: Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      Image.asset(
+                        'assets/images/gift_icon.png',
+                        fit: BoxFit.contain,
+                      ),
+                      Positioned(
+                        bottom: -4,
+                        right: -4,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 4,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.amber,
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(color: Colors.white, width: 1),
+                          ),
+                          child: Text(
+                            '₹100',
+                            style: GoogleFonts.inter(
+                              fontSize: 8,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              GestureDetector(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const ProfileScreen(),
+                    ),
+                  );
+                },
+                child: Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.white, width: 2),
+                    image: const DecorationImage(
+                      image: AssetImage(
+                        'assets/images/default_avatar.png',
+                      ), // Fallback
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                  child: const Icon(Icons.person, color: Colors.grey),
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -1043,12 +1088,12 @@ class _HomeScreenState extends State<HomeScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'Categories',
+                'All house help services',
                 style: GoogleFonts.inter(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w400,
-                  color: Colors.black,
-                  letterSpacing: 0.5,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                  color: const Color(0xFF1E293B),
+                  letterSpacing: -0.2,
                 ),
               ),
               if (hasMoreThan4)
@@ -1060,50 +1105,39 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: Text(
                     _showAllCategories ? 'See Less' : 'See All',
                     style: GoogleFonts.inter(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                      color: AppTheme.activeCardBorder,
-                      letterSpacing: 0.4,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: const Color(0xFF10B981),
                     ),
                   ),
                 ),
             ],
           ),
         ),
-        const SizedBox(height: 28),
+        const SizedBox(height: 16),
         Builder(
           builder: (context) {
             final categoriesToShow =
                 _showAllCategories
                     ? allCategories
-                    : allCategories.take(4).toList();
-
-            if (_showAllCategories) {
-              return Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 10),
-                child: Wrap(
-                  alignment: WrapAlignment.start,
-                  runSpacing: 20,
-                  spacing: 0,
-                  children:
-                      categoriesToShow.map((cat) {
-                        return SizedBox(
-                          width: (MediaQuery.of(context).size.width - 20) / 4,
-                          child: _buildCategoryItem(cat),
-                        );
-                      }).toList(),
-                ),
-              );
-            }
+                    : allCategories.take(6).toList();
 
             return Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 10),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children:
-                    categoriesToShow
-                        .map((cat) => _buildCategoryItem(cat))
-                        .toList(),
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: GridView.builder(
+                padding: EdgeInsets.zero,
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 3,
+                  mainAxisSpacing: 12,
+                  crossAxisSpacing: 12,
+                  childAspectRatio: 0.75, // Taller cards
+                ),
+                itemCount: categoriesToShow.length,
+                itemBuilder: (context, index) {
+                  return _buildMockupCategoryCard(categoriesToShow[index]);
+                },
               ),
             );
           },
@@ -1112,98 +1146,269 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildCategoryItem(ServiceCategory category) {
-    IconData icon;
-    String name = category.name.toLowerCase();
-    if (name.contains('mason'))
-      icon = Icons.construction_rounded;
-    else if (name.contains('clean'))
-      icon = Icons.cleaning_services_rounded;
-    else if (name.contains('plumb'))
-      icon = Icons.plumbing_rounded;
-    else if (name.contains('elect'))
-      icon = Icons.electric_bolt_rounded;
-    else if (name.contains('paint'))
-      icon = Icons.format_paint_rounded;
-    else if (name.contains('carpent'))
-      icon = Icons.carpenter_rounded;
-    else if (name.contains('garden'))
-      icon = Icons.yard_rounded;
-    else if (name.contains('ac') || name.contains('repair'))
-      icon = Icons.handyman_rounded;
-    else
-      icon = Icons.miscellaneous_services_rounded;
+  Widget _buildMockupCategoryCard(ServiceCategory category) {
+    // Map category name to generated image or fallback icon
+    String catName = category.name.toLowerCase();
+    String? imageAsset;
+    IconData? fallbackIcon;
+    Color? fallbackColor;
+
+    if (catName.contains('clean')) {
+      imageAsset = 'assets/images/cat_cleanup.png';
+    } else if (catName.contains('plumb')) {
+      imageAsset = 'assets/images/cat_plumbing.png';
+    } else if (catName.contains('electric') || catName.contains('wir')) {
+      imageAsset = 'assets/images/cat_electrician.png';
+    } else if (catName.contains('garden')) {
+      imageAsset = 'assets/images/cat_garden.png';
+    } else if (catName.contains('mason')) {
+      imageAsset = 'assets/images/cat_masonry.png';
+    } else if (catName.contains('mov') || catName.contains('pack')) {
+      imageAsset = 'assets/images/cat_moving.png';
+    } else if (catName.contains('paint')) {
+      imageAsset = 'assets/images/cat_painting.png';
+    } else {
+      imageAsset = 'assets/images/cat_general.png';
+    }
 
     return GestureDetector(
       onTap: () => _navigateToRequest(category),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: const Color(0xFFF1F5F9), width: 1.5),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.02),
+              blurRadius: 8,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Top Image Area
+            Expanded(
+              flex: 5,
+              child: Stack(
+                children: [
+                  Container(
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      color: imageAsset == null ? fallbackColor : Colors.white,
+                      borderRadius: const BorderRadius.vertical(
+                        top: Radius.circular(14),
+                      ),
+                      image:
+                          imageAsset != null
+                              ? DecorationImage(
+                                image: AssetImage(imageAsset),
+                                fit: BoxFit.cover,
+                              )
+                              : null,
+                    ),
+                    child:
+                        imageAsset == null
+                            ? Center(
+                              child: Icon(
+                                fallbackIcon,
+                                color: Colors.black54,
+                                size: 40,
+                              ),
+                            )
+                            : null,
+                  ),
+                  Positioned(
+                    top: 6,
+                    right: 6,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 4,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(6),
+                        boxShadow: const [
+                          BoxShadow(color: Colors.black12, blurRadius: 4),
+                        ],
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(
+                            Icons.star_rounded,
+                            color: Color(0xFFFFB300),
+                            size: 10,
+                          ),
+                          const SizedBox(width: 2),
+                          Text(
+                            category.rating.toStringAsFixed(1),
+                            style: GoogleFonts.inter(
+                              fontSize: 9,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            // Bottom Info Area
+            Expanded(
+              flex: 4,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(8, 8, 8, 8),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      category.name,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.inter(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: const Color(0xFF1E293B),
+                        height: 1.2,
+                      ),
+                    ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            if (category.maxHourlyRate > category.hourlyRate)
+                              Text(
+                                '₹${category.maxHourlyRate.toInt()}',
+                                style: GoogleFonts.inter(
+                                  fontSize: 9,
+                                  decoration: TextDecoration.lineThrough,
+                                  color: const Color(0xFF94A3B8),
+                                ),
+                              ),
+                            Text(
+                              '₹${category.hourlyRate.toInt()}',
+                              style: GoogleFonts.inter(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w800,
+                                color: const Color(0xFF1E293B),
+                              ),
+                            ),
+                          ],
+                        ),
+                        Container(
+                          width: 24,
+                          height: 24,
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(color: Colors.black12, blurRadius: 4),
+                            ],
+                          ),
+                          child: const Icon(
+                            Icons.add,
+                            color: Color(0xFF10B981),
+                            size: 16,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildReliableTrustworthySection() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            width: 76,
-            height: 76,
-            decoration: const ShapeDecoration(
-              color: AppTheme.graySurface,
-              shape: OvalBorder(),
-            ),
-            child: Icon(icon, color: AppTheme.figmaHeaderEnd, size: 32),
-          ),
-          const SizedBox(height: 12),
           Text(
-            category.name,
-            textAlign: TextAlign.center,
+            'Reliable & Trustworthy',
             style: GoogleFonts.inter(
-              fontSize: 12,
-              fontWeight: FontWeight.w400,
-              color: Colors.black,
-              letterSpacing: 0.4,
-              height: 1.33,
+              fontSize: 18,
+              fontWeight: FontWeight.w800,
+              color: const Color(0xFF1E293B),
+              letterSpacing: -0.2,
             ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Ensuring integrity through verified standards',
+            style: GoogleFonts.inter(
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+              color: const Color(0xFF64748B),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: _buildTrustItem(
+                  'Verified\nProfessionals\nYou Can Trust',
+                  'assets/images/trust_worker_1.png',
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildTrustItem(
+                  'Well Trained to\ndeliver great\nservice',
+                  'assets/images/trust_worker_2.png',
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildTrustItem(
+                  'Safe, reliable,\nand consistent\nevery single\ntime',
+                  'assets/images/trust_worker_3.png',
+                ),
+              ),
+            ],
           ),
         ],
       ),
     );
   }
 
-  Widget _buildTrustBanner() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: Container(
-        width: double.infinity,
-        height: 135,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.12),
-              blurRadius: 20,
-              offset: const Offset(0, 10),
-              spreadRadius: -2,
-            ),
-          ],
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(20),
-          clipBehavior: Clip.antiAliasWithSaveLayer,
-          child: Transform.scale(
-            scale: 1.05, // Slight zoom to crop out edge artifacts
-            child: Image.asset(
-              'assets/images/branding_banner.png',
-              fit: BoxFit.cover,
-              errorBuilder: (context, error, stackTrace) {
-                return Container(
-                  color: AppTheme.primaryGreen.withOpacity(0.1),
-                  child: const Center(
-                    child: Icon(
-                      Icons.broken_image_rounded,
-                      color: AppTheme.primaryGreen,
-                    ),
-                  ),
-                );
-              },
-            ),
+  Widget _buildTrustItem(String text, String imagePath) {
+    return Column(
+      children: [
+        AspectRatio(
+          aspectRatio: 0.8,
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(16),
+            child: Image.asset(imagePath, fit: BoxFit.cover),
           ),
         ),
-      ),
+        const SizedBox(height: 12),
+        Text(
+          text,
+          textAlign: TextAlign.center,
+          style: GoogleFonts.inter(
+            fontSize: 11,
+            fontWeight: FontWeight.w700,
+            color: const Color(0xFF1E293B),
+            height: 1.3,
+          ),
+        ),
+      ],
     );
   }
 
@@ -1384,24 +1589,23 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildServiceCard(ServiceCategory category) {
-    // Mapping generated icons from services.png
-    Offset iconOffset = const Offset(0, 0);
     String catName = category.name.toLowerCase();
+    String imageAsset = 'assets/images/cat_general.png';
 
     if (catName.contains('clean')) {
-      iconOffset = const Offset(0, 0);
-    } else if (catName.contains('repair')) {
-      iconOffset = const Offset(1, 0);
-    } else if (catName.contains('paint')) {
-      iconOffset = const Offset(2, 0);
-    } else if (catName.contains('plumb')) {
-      iconOffset = const Offset(0, 1);
-    } else if (catName.contains('mov')) {
-      iconOffset = const Offset(1, 1);
+      imageAsset = 'assets/images/cat_cleanup.png';
     } else if (catName.contains('elect') || catName.contains('wir')) {
-      iconOffset = const Offset(2, 1);
-    } else {
-      iconOffset = const Offset(0, 0);
+      imageAsset = 'assets/images/cat_electrician.png';
+    } else if (catName.contains('garden')) {
+      imageAsset = 'assets/images/cat_garden.png';
+    } else if (catName.contains('mason')) {
+      imageAsset = 'assets/images/cat_masonry.png';
+    } else if (catName.contains('mov')) {
+      imageAsset = 'assets/images/cat_moving.png';
+    } else if (catName.contains('paint')) {
+      imageAsset = 'assets/images/cat_painting.png';
+    } else if (catName.contains('plumb')) {
+      imageAsset = 'assets/images/cat_plumbing.png';
     }
 
     return GestureDetector(
@@ -1427,28 +1631,14 @@ class _HomeScreenState extends State<HomeScreen> {
               Container(
                 height: 100,
                 width: double.infinity,
-                color: AppTheme.paleSaffron.withValues(alpha: 0.6),
+                color: Colors.white,
                 child: Stack(
                   children: [
-                    Center(
-                      child: SizedBox(
-                        width: 70,
-                        height: 70,
-                        child: ClipRRect(
-                          child: FractionallySizedBox(
-                            widthFactor: 3.0,
-                            heightFactor: 2.0,
-                            alignment: Alignment(
-                              -1.0 + (iconOffset.dx * 1.0),
-                              -1.0 + (iconOffset.dy * 2.0),
-                            ),
-                            child: Image.asset(
-                              'assets/icons/services.png',
-                              fit: BoxFit.cover,
-                            ),
-                          ),
-                        ),
-                      ),
+                    Image.asset(
+                      imageAsset,
+                      fit: BoxFit.cover,
+                      width: double.infinity,
+                      height: double.infinity,
                     ),
                     Positioned(
                       top: 8,
@@ -1634,197 +1824,121 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildBookingOptionTiles() {
     return Padding(
-      padding: const EdgeInsets.only(left: 20, right: 20, top: 28, bottom: 16),
-      child: Row(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Left Card: Schedule
-          Expanded(
-            flex: 4,
-            child: GestureDetector(
-              onTap: () => _showCategorySelectionSheet(false),
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(24),
-                  border: Border.all(
-                    color: Colors.black.withOpacity(0.04),
-                    width: 1.5,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.03),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      width: 48,
-                      height: 48,
-                      decoration: const BoxDecoration(
-                        color: Color(0xFFE8F3F1),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.calendar_month_rounded,
-                        color: AppTheme.brandGreenMain,
-                        size: 24,
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          'Schedule',
-                          style: GoogleFonts.inter(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w800,
-                            color: const Color(0xFF1E293B),
-                          ),
-                        ),
-                        const SizedBox(width: 2),
-                        Icon(
-                          Icons.chevron_right_rounded,
-                          color: Colors.grey.shade400,
-                          size: 18,
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Pick your time',
-                      style: GoogleFonts.inter(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                        color: Colors.grey[500],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+          Text(
+            'Book for Later',
+            style: GoogleFonts.inter(
+              fontSize: 18,
+              fontWeight: FontWeight.w800,
+              color: const Color(0xFF1E293B),
+              letterSpacing: -0.2,
             ),
           ),
-          const SizedBox(width: 16),
-          // Right Card: Instant
-          Expanded(
-            flex: 5,
-            child: GestureDetector(
-              onTap: () => _showCategorySelectionSheet(true),
-              child: Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  // Layer 1: Solid Card Shell background (fills the entire stack area dynamically)
-                  Positioned.fill(
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(24),
-                        border: Border.all(
-                          color: Colors.black.withOpacity(0.04),
-                          width: 1.5,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.03),
-                            blurRadius: 10,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  // Layer 2: Worker Image Cutout (positioned entirely inside the card on the right, clipped to card rounded corners)
-                  Positioned(
-                    bottom: 1.5,
-                    right: 1.5,
-                    top: 1.5,
-                    child: IgnorePointer(
-                      child: ClipRRect(
-                        borderRadius: const BorderRadius.only(
-                          topRight: Radius.circular(22.5),
-                          bottomRight: Radius.circular(22.5),
-                        ),
-                        child: SizedBox(
-                          width: 100, // Constrain image width so it occupies only the right portion of the card
-                          child: Image.asset(
-                            'assets/images/worker_namaste.png',
-                            fit: BoxFit.cover,
-                            alignment: Alignment.bottomCenter,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                  // Layer 3: Card Content (Non-positioned child, determines Stack size. Solid transparent layout)
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Container(
-                          width: 48,
-                          height: 48,
-                          decoration: const BoxDecoration(
-                            color: Color(0xFFE8F3F1),
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(
-                            Icons.flash_on_rounded,
-                            color: AppTheme.brandGreenMain,
-                            size: 24,
-                          ),
-                        ),
-                        const SizedBox(height: 20),
-                        Padding(
-                          padding: const EdgeInsets.only(right: 28),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                'Instant',
-                                style: GoogleFonts.inter(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w800,
-                                  color: const Color(0xFF1E293B),
-                                ),
-                              ),
-                              const SizedBox(width: 2),
-                              Icon(
-                                Icons.chevron_right_rounded,
-                                color: Colors.grey.shade400,
-                                size: 18,
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Padding(
-                          padding: const EdgeInsets.only(right: 28),
-                          child: Text(
-                            'Get help now',
-                            style: GoogleFonts.inter(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500,
-                              color: Colors.grey[500],
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
+          const SizedBox(height: 4),
+          Text(
+            'Select your slot & stay worry-free',
+            style: GoogleFonts.inter(
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+              color: const Color(0xFF64748B),
             ),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: _buildBookForLaterCard(
+                  title: 'Schedule\nBooking',
+                  discount: 'UP TO 50% OFF',
+                  imageAsset: 'assets/images/book_later_clock.png',
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildBookForLaterCard(
+                  title: 'Recurring\nBooking',
+                  discount: 'UP TO 25% OFF',
+                  imageAsset: 'assets/images/book_later_calendar.png',
+                ),
+              ),
+            ],
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildBookForLaterCard({
+    required String title,
+    required String discount,
+    required String imageAsset,
+  }) {
+    return GestureDetector(
+      onTap: () => _showCategorySelectionSheet(false),
+      child: Container(
+        height: 120,
+        decoration: BoxDecoration(
+          color: const Color(0xFFF0FDF4), // Light mint green background
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: const Color(0xFFDCFCE7), width: 1.5),
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(16),
+          child: Stack(
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: GoogleFonts.inter(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w800,
+                        color: const Color(0xFF1E293B),
+                        height: 1.2,
+                      ),
+                    ),
+                    const Spacer(),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFE0F2FE), // Light blue pill
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        discount,
+                        style: GoogleFonts.inter(
+                          fontSize: 9,
+                          fontWeight: FontWeight.w800,
+                          color: const Color(0xFF0284C7), // Blue text
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              // Positioned 3D Image on bottom right
+              Positioned(
+                bottom: -5,
+                right: -5,
+                child: Image.asset(
+                  imageAsset,
+                  width: 75,
+                  height: 75,
+                  fit: BoxFit.contain,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -1835,9 +1949,10 @@ class _HomeScreenState extends State<HomeScreen> {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) {
-        final categories = Provider.of<AppStateProvider>(context, listen: false).categories;
+        final categories =
+            Provider.of<AppStateProvider>(context, listen: false).categories;
         if (categories.isEmpty) return const SizedBox.shrink();
-        
+
         return StatefulBuilder(
           builder: (context, setStateSheet) {
             _selectedCategoryIndex ??= 0;
@@ -1883,8 +1998,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    isInstant 
-                        ? 'Select a service and view description' 
+                    isInstant
+                        ? 'Select a service and view description'
                         : 'Select a service to schedule for later',
                     textAlign: TextAlign.center,
                     style: GoogleFonts.inter(
@@ -1894,7 +2009,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ),
                   const SizedBox(height: 20),
-                  
+
                   // Horizontal scroll view for categories
                   SizedBox(
                     height: 68,
@@ -1905,7 +2020,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       itemBuilder: (context, index) {
                         final category = categories[index];
                         final isSelected = index == _selectedCategoryIndex;
-                        
+
                         IconData icon;
                         String name = category.name.toLowerCase();
                         if (name.contains('mason'))
@@ -1938,16 +2053,21 @@ class _HomeScreenState extends State<HomeScreen> {
                             child: Center(
                               child: AnimatedContainer(
                                 duration: const Duration(milliseconds: 200),
-                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 10,
+                                ),
                                 decoration: BoxDecoration(
-                                  color: isSelected 
-                                      ? const Color(0xFFE8F3F1) 
-                                      : const Color(0xFFF1F5F9),
+                                  color:
+                                      isSelected
+                                          ? const Color(0xFFE8F3F1)
+                                          : const Color(0xFFF1F5F9),
                                   borderRadius: BorderRadius.circular(24),
                                   border: Border.all(
-                                    color: isSelected 
-                                        ? const Color(0xFF4A9782) 
-                                        : const Color(0xFFE2E8F0),
+                                    color:
+                                        isSelected
+                                            ? const Color(0xFF4A9782)
+                                            : const Color(0xFFE2E8F0),
                                     width: 1.5,
                                   ),
                                 ),
@@ -1955,10 +2075,11 @@ class _HomeScreenState extends State<HomeScreen> {
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
                                     Icon(
-                                      icon, 
-                                      color: isSelected 
-                                          ? const Color(0xFF4A9782) 
-                                          : const Color(0xFF64748B), 
+                                      icon,
+                                      color:
+                                          isSelected
+                                              ? const Color(0xFF4A9782)
+                                              : const Color(0xFF64748B),
                                       size: 18,
                                     ),
                                     const SizedBox(width: 8),
@@ -1966,8 +2087,14 @@ class _HomeScreenState extends State<HomeScreen> {
                                       category.name,
                                       style: GoogleFonts.inter(
                                         fontSize: 13,
-                                        fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
-                                        color: isSelected ? const Color(0xFF1E293B) : const Color(0xFF475569),
+                                        fontWeight:
+                                            isSelected
+                                                ? FontWeight.w700
+                                                : FontWeight.w600,
+                                        color:
+                                            isSelected
+                                                ? const Color(0xFF1E293B)
+                                                : const Color(0xFF475569),
                                       ),
                                     ),
                                   ],
@@ -1980,7 +2107,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ),
                   const SizedBox(height: 12),
-                  
+
                   // Description area box
                   AnimatedContainer(
                     duration: const Duration(milliseconds: 250),
@@ -2016,8 +2143,8 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                         const SizedBox(height: 10),
                         Text(
-                          selectedCategory.description.isNotEmpty 
-                              ? selectedCategory.description 
+                          selectedCategory.description.isNotEmpty
+                              ? selectedCategory.description
                               : 'No description available for this service.',
                           style: GoogleFonts.inter(
                             fontSize: 13,
@@ -2030,7 +2157,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ),
                   const SizedBox(height: 20),
-                  
+
                   // Action Button
                   SizedBox(
                     height: 52,
@@ -2040,10 +2167,11 @@ class _HomeScreenState extends State<HomeScreen> {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => ServiceDetailScreen(
-                              category: selectedCategory,
-                              isInstant: isInstant,
-                            ),
+                            builder:
+                                (context) => ServiceDetailScreen(
+                                  category: selectedCategory,
+                                  isInstant: isInstant,
+                                ),
                           ),
                         );
                       },
@@ -2129,17 +2257,18 @@ class _HomeScreenState extends State<HomeScreen> {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => ServiceDetailScreen(
-                              category: category,
-                              isInstant: true,
-                            ),
+                            builder:
+                                (context) => ServiceDetailScreen(
+                                  category: category,
+                                  isInstant: true,
+                                ),
                           ),
                         );
                       },
                       child: Container(
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: Colors.white,
+                          color: const Color(0xFFE8F3F1),
                           borderRadius: BorderRadius.circular(16),
                           border: Border.all(
                             color: AppTheme.brandGreenMain.withOpacity(0.2),
@@ -2155,17 +2284,11 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                         child: Column(
                           children: [
-                            Container(
-                              padding: const EdgeInsets.all(10),
-                              decoration: const BoxDecoration(
-                                color: Color(0xFFE8F3F1),
-                                shape: BoxShape.circle,
-                              ),
-                              child: const Icon(
-                                Icons.flash_on_rounded,
-                                color: AppTheme.brandGreenMain,
-                                size: 24,
-                              ),
+                            Image.asset(
+                              'assets/images/book_later_clock.png',
+                              width: 64,
+                              height: 64,
+                              fit: BoxFit.contain,
                             ),
                             const SizedBox(height: 12),
                             Text(
@@ -2198,17 +2321,18 @@ class _HomeScreenState extends State<HomeScreen> {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => ServiceDetailScreen(
-                              category: category,
-                              isInstant: false,
-                            ),
+                            builder:
+                                (context) => ServiceDetailScreen(
+                                  category: category,
+                                  isInstant: false,
+                                ),
                           ),
                         );
                       },
                       child: Container(
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: Colors.white,
+                          color: const Color(0xFFE8F3F1),
                           borderRadius: BorderRadius.circular(16),
                           border: Border.all(
                             color: Colors.black.withOpacity(0.06),
@@ -2224,17 +2348,11 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                         child: Column(
                           children: [
-                            Container(
-                              padding: const EdgeInsets.all(10),
-                              decoration: const BoxDecoration(
-                                color: Color(0xFFE8F3F1),
-                                shape: BoxShape.circle,
-                              ),
-                              child: const Icon(
-                                Icons.calendar_month_rounded,
-                                color: AppTheme.brandGreenMain,
-                                size: 24,
-                              ),
+                            Image.asset(
+                              'assets/images/book_later_calendar.png',
+                              width: 64,
+                              height: 64,
+                              fit: BoxFit.contain,
                             ),
                             const SizedBox(height: 12),
                             Text(

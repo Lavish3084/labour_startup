@@ -208,7 +208,7 @@ class _AddressSelectionSheetState extends State<AddressSelectionSheet> {
             address: address,
             latitude: lat,
             longitude: lon,
-            houseNumber: '', 
+            houseNumber: '',
             landmark: '',
             label: 'Selected Location',
           );

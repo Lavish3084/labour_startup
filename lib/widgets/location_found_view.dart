@@ -21,15 +21,9 @@ class LocationFoundView extends StatelessWidget {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        LocationMapCircle(
-          latitude: latitude,
-          longitude: longitude,
-        ),
+        LocationMapCircle(latitude: latitude, longitude: longitude),
         const SizedBox(height: 28),
-        LocationAddressLabels(
-          locality: locality,
-          fullAddress: fullAddress,
-        ),
+        LocationAddressLabels(locality: locality, fullAddress: fullAddress),
       ],
     );
   }

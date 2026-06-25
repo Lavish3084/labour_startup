@@ -106,10 +106,7 @@ class _LocationLoadingIndicatorState extends State<LocationLoadingIndicator>
       child: Stack(
         alignment: Alignment.center,
         children: [
-          CustomPaint(
-            size: const Size(92, 92),
-            painter: _MapGridPainter(),
-          ),
+          CustomPaint(size: const Size(92, 92), painter: _MapGridPainter()),
           Icon(
             Icons.location_on_rounded,
             size: 44,
@@ -131,10 +128,11 @@ class _LocationLoadingIndicatorState extends State<LocationLoadingIndicator>
 class _MapGridPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = Colors.white.withValues(alpha: 0.55)
-      ..strokeWidth = 1
-      ..style = PaintingStyle.stroke;
+    final paint =
+        Paint()
+          ..color = Colors.white.withValues(alpha: 0.55)
+          ..strokeWidth = 1
+          ..style = PaintingStyle.stroke;
 
     const spacing = 14.0;
     for (double x = spacing; x < size.width; x += spacing) {

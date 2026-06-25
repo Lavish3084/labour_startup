@@ -90,6 +90,7 @@ class AppStateProvider with ChangeNotifier, WidgetsBindingObserver {
     }
     _updateActiveLanguage();
   }
+
   double _walletBalance = 0.0;
   List<dynamic> _walletTransactions = [];
   Map<String, dynamic> _settings = {};
@@ -99,17 +100,15 @@ class AppStateProvider with ChangeNotifier, WidgetsBindingObserver {
   List<dynamic> get bookings => _bookings;
   List<ServiceCategory> get categories {
     if (_searchQuery.isEmpty) return _categories;
-    return _categories
-        .where((c) => _fuzzyMatch(_searchQuery, c.name))
-        .toList();
+    return _categories.where((c) => _fuzzyMatch(_searchQuery, c.name)).toList();
   }
 
   bool _fuzzyMatch(String query, String target) {
     query = query.toLowerCase();
     target = target.toLowerCase();
-    
+
     if (target.contains(query)) return true;
-    
+
     int queryIdx = 0;
     for (int targetIdx = 0; targetIdx < target.length; targetIdx++) {
       if (queryIdx < query.length && target[targetIdx] == query[queryIdx]) {
@@ -118,6 +117,7 @@ class AppStateProvider with ChangeNotifier, WidgetsBindingObserver {
     }
     return queryIdx == query.length;
   }
+
   int get selectedTab => _selectedTab;
   String get searchQuery => _searchQuery;
   List<dynamic> get labourers => _labourers;
@@ -183,9 +183,13 @@ class AppStateProvider with ChangeNotifier, WidgetsBindingObserver {
   Future<bool> cancelBooking(Map<String, dynamic> booking) async {
     try {
       final String bookingId = booking['_id'];
-      final bool hasWorker = booking['labourerId'] != null || booking['labourer'] != null;
-      
-      final success = await ApiService.updateBookingStatus(bookingId, 'cancelled');
+      final bool hasWorker =
+          booking['labourerId'] != null || booking['labourer'] != null;
+
+      final success = await ApiService.updateBookingStatus(
+        bookingId,
+        'cancelled',
+      );
       if (success) {
         if (!hasWorker) {
           // Simulate refund if no worker was assigned
@@ -210,7 +214,10 @@ class AppStateProvider with ChangeNotifier, WidgetsBindingObserver {
     try {
       _bookings = await ApiService.getUserBookings();
     } catch (e) {
-      _bookingsError = ErrorHandler.getErrorMessage(e, action: 'Failed to load bookings');
+      _bookingsError = ErrorHandler.getErrorMessage(
+        e,
+        action: 'Failed to load bookings',
+      );
     } finally {
       _isBookingsLoading = false;
       notifyListeners();
@@ -273,11 +280,12 @@ class AppStateProvider with ChangeNotifier, WidgetsBindingObserver {
     if (locationStr == null || locationStr.trim().isEmpty) {
       return false;
     }
-    final List<String> enabledCitiesList = enabledCitiesStr
-        .split(',')
-        .map((city) => city.trim().toLowerCase())
-        .where((city) => city.isNotEmpty)
-        .toList();
+    final List<String> enabledCitiesList =
+        enabledCitiesStr
+            .split(',')
+            .map((city) => city.trim().toLowerCase())
+            .where((city) => city.isNotEmpty)
+            .toList();
     if (enabledCitiesList.isEmpty) {
       return true;
     }
@@ -293,7 +301,11 @@ class AppStateProvider with ChangeNotifier, WidgetsBindingObserver {
   /// Production-ready coordinate-based zone check using Haversine formula.
   /// Returns true if the given coordinates fall inside any configured service zone.
   /// Falls back to legacy text-based check if no zones are configured.
-  bool isCityEnabledByCoordinates(double? lat, double? lng, {String? fallbackAddress}) {
+  bool isCityEnabledByCoordinates(
+    double? lat,
+    double? lng, {
+    String? fallbackAddress,
+  }) {
     // Parse service zones from settings
     final List<Map<String, dynamic>> zones = _parseServiceZones();
 
@@ -340,22 +352,27 @@ class AppStateProvider with ChangeNotifier, WidgetsBindingObserver {
       return [];
     }
 
-    return zonesList
-        .whereType<Map<String, dynamic>>()
-        .toList();
+    return zonesList.whereType<Map<String, dynamic>>().toList();
   }
 
   /// Haversine formula — calculates great-circle distance between two GPS points.
   /// Returns distance in kilometers. Uses dart:math for precision.
-  static double _haversineKm(double lat1, double lng1, double lat2, double lng2) {
+  static double _haversineKm(
+    double lat1,
+    double lng1,
+    double lat2,
+    double lng2,
+  ) {
     const double earthRadiusKm = 6371.0;
     final double dLat = _toRadians(lat2 - lat1);
     final double dLng = _toRadians(lng2 - lng1);
 
     final double a =
         math.sin(dLat / 2) * math.sin(dLat / 2) +
-        math.cos(_toRadians(lat1)) * math.cos(_toRadians(lat2)) *
-        math.sin(dLng / 2) * math.sin(dLng / 2);
+        math.cos(_toRadians(lat1)) *
+            math.cos(_toRadians(lat2)) *
+            math.sin(dLng / 2) *
+            math.sin(dLng / 2);
 
     final double c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a));
     return earthRadiusKm * c;
@@ -386,7 +403,10 @@ class AppStateProvider with ChangeNotifier, WidgetsBindingObserver {
       final encoded = jsonEncode(_categories.map((c) => c.toJson()).toList());
       await prefs.setString('cached_categories', encoded);
     } catch (e) {
-      _categoriesError = ErrorHandler.getErrorMessage(e, action: 'Failed to load categories');
+      _categoriesError = ErrorHandler.getErrorMessage(
+        e,
+        action: 'Failed to load categories',
+      );
     } finally {
       _isCategoriesLoading = false;
       notifyListeners();
@@ -402,7 +422,10 @@ class AppStateProvider with ChangeNotifier, WidgetsBindingObserver {
       final fetchedLabourers = await ApiService.getLabourers();
       _labourers = fetchedLabourers.map((l) => l.toJson()).toList();
     } catch (e) {
-      _labourersError = ErrorHandler.getErrorMessage(e, action: 'Failed to load workers');
+      _labourersError = ErrorHandler.getErrorMessage(
+        e,
+        action: 'Failed to load workers',
+      );
     } finally {
       _isLabourersLoading = false;
       notifyListeners();
@@ -425,14 +448,16 @@ class AppStateProvider with ChangeNotifier, WidgetsBindingObserver {
     _profileError = null;
     _bookingsError = null;
     _searchQuery = '';
-    
+
     // Clear local cache asynchronously
-    SharedPreferences.getInstance().then((prefs) {
-      prefs.remove('cached_profile');
-    }).catchError((e) {
-      debugPrint('Error clearing cached profile: $e');
-    });
-    
+    SharedPreferences.getInstance()
+        .then((prefs) {
+          prefs.remove('cached_profile');
+        })
+        .catchError((e) {
+          debugPrint('Error clearing cached profile: $e');
+        });
+
     notifyListeners();
   }
 }

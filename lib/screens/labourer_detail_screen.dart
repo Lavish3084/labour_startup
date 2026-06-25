@@ -45,9 +45,10 @@ class _LabourerDetailScreenState extends State<LabourerDetailScreen> {
             ),
       );
       setState(() {
-        _selectedMode = category.supportedModes.contains('Hourly') 
-            ? 'Hourly' 
-            : category.supportedModes.first;
+        _selectedMode =
+            category.supportedModes.contains('Hourly')
+                ? 'Hourly'
+                : category.supportedModes.first;
       });
     });
   }
@@ -65,14 +66,26 @@ class _LabourerDetailScreenState extends State<LabourerDetailScreen> {
       final appState = Provider.of<AppStateProvider>(context, listen: false);
       final category = appState.categories.firstWhere(
         (c) => c.name == widget.labourer.category,
-        orElse: () => ServiceCategory(name: '', icon: Icons.work, description: '', supportedModes: [], hourlyRate: 0, dailyRate: 0, minHourlyRate: 0, maxHourlyRate: 0),
+        orElse:
+            () => ServiceCategory(
+              name: '',
+              icon: Icons.work,
+              description: '',
+              supportedModes: [],
+              hourlyRate: 0,
+              dailyRate: 0,
+              minHourlyRate: 0,
+              maxHourlyRate: 0,
+            ),
       );
 
-      final totalAmount = _selectedMode == 'Hourly' 
-          ? widget.labourer.hourlyRate * _numberOfHours 
-          : widget.labourer.hourlyRate * 8;
-      
-      final commissionAmount = (totalAmount * category.commissionPercentage) / 100;
+      final totalAmount =
+          _selectedMode == 'Hourly'
+              ? widget.labourer.hourlyRate * _numberOfHours
+              : widget.labourer.hourlyRate * 8;
+
+      final commissionAmount =
+          (totalAmount * category.commissionPercentage) / 100;
 
       await showDialog(
         context: context,
@@ -102,16 +115,39 @@ class _LabourerDetailScreenState extends State<LabourerDetailScreen> {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Text('Booking Fee (Pay Now)', style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
-                            Text('₹${commissionAmount.toInt()}', style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: Colors.blue)),
+                            Text(
+                              'Booking Fee (Pay Now)',
+                              style: GoogleFonts.inter(
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            Text(
+                              '₹${commissionAmount.toInt()}',
+                              style: GoogleFonts.inter(
+                                fontWeight: FontWeight.bold,
+                                color: Colors.blue,
+                              ),
+                            ),
                           ],
                         ),
                         const Divider(height: 16),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Text('Pay directly to worker', style: GoogleFonts.inter(color: Colors.grey[600], fontSize: 12)),
-                            Text('₹${(totalAmount - commissionAmount).toInt()}', style: GoogleFonts.inter(color: Colors.grey[600], fontSize: 12)),
+                            Text(
+                              'Pay directly to worker',
+                              style: GoogleFonts.inter(
+                                color: Colors.grey[600],
+                                fontSize: 12,
+                              ),
+                            ),
+                            Text(
+                              '₹${(totalAmount - commissionAmount).toInt()}',
+                              style: GoogleFonts.inter(
+                                color: Colors.grey[600],
+                                fontSize: 12,
+                              ),
+                            ),
                           ],
                         ),
                       ],
@@ -244,37 +280,88 @@ class _LabourerDetailScreenState extends State<LabourerDetailScreen> {
                           builder: (context, appState, child) {
                             final category = appState.categories.firstWhere(
                               (c) => c.name == widget.labourer.category,
-                              orElse: () => ServiceCategory(name: '', icon: Icons.work, description: '', supportedModes: [], hourlyRate: 0, dailyRate: 0, minHourlyRate: 0, maxHourlyRate: 0),
+                              orElse:
+                                  () => ServiceCategory(
+                                    name: '',
+                                    icon: Icons.work,
+                                    description: '',
+                                    supportedModes: [],
+                                    hourlyRate: 0,
+                                    dailyRate: 0,
+                                    minHourlyRate: 0,
+                                    maxHourlyRate: 0,
+                                  ),
                             );
-                            final total = _selectedMode == 'Hourly' 
-                                ? widget.labourer.hourlyRate * _numberOfHours 
-                                : widget.labourer.hourlyRate * 8;
-                            final commission = (total * category.commissionPercentage) / 100;
+                            final total =
+                                _selectedMode == 'Hourly'
+                                    ? widget.labourer.hourlyRate *
+                                        _numberOfHours
+                                    : widget.labourer.hourlyRate * 8;
+                            final commission =
+                                (total * category.commissionPercentage) / 100;
                             final toWorker = total - commission;
-                            
+
                             return Column(
                               children: [
                                 Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
                                   children: [
-                                    Text('Total Job Amount', style: GoogleFonts.inter(fontSize: 14)),
-                                    Text('₹${total.toInt()}', style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.bold)),
+                                    Text(
+                                      'Total Job Amount',
+                                      style: GoogleFonts.inter(fontSize: 14),
+                                    ),
+                                    Text(
+                                      '₹${total.toInt()}',
+                                      style: GoogleFonts.inter(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
                                   ],
                                 ),
                                 const Divider(height: 20),
                                 Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
                                   children: [
-                                    Text('Booking Fee (Pay Now)', style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.blue.shade700)),
-                                    Text('₹${commission.toInt()}', style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w900, color: Colors.blue.shade700)),
+                                    Text(
+                                      'Booking Fee (Pay Now)',
+                                      style: GoogleFonts.inter(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w600,
+                                        color: Colors.blue.shade700,
+                                      ),
+                                    ),
+                                    Text(
+                                      '₹${commission.toInt()}',
+                                      style: GoogleFonts.inter(
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.w900,
+                                        color: Colors.blue.shade700,
+                                      ),
+                                    ),
                                   ],
                                 ),
                                 const SizedBox(height: 4),
                                 Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
                                   children: [
-                                    Text('Pay to Worker (After Work)', style: GoogleFonts.inter(fontSize: 13, color: Colors.grey.shade700)),
-                                    Text('₹${toWorker.toInt()}', style: GoogleFonts.inter(fontSize: 13, color: Colors.grey.shade700)),
+                                    Text(
+                                      'Pay to Worker (After Work)',
+                                      style: GoogleFonts.inter(
+                                        fontSize: 13,
+                                        color: Colors.grey.shade700,
+                                      ),
+                                    ),
+                                    Text(
+                                      '₹${toWorker.toInt()}',
+                                      style: GoogleFonts.inter(
+                                        fontSize: 13,
+                                        color: Colors.grey.shade700,
+                                      ),
+                                    ),
                                   ],
                                 ),
                               ],
@@ -329,14 +416,15 @@ class _LabourerDetailScreenState extends State<LabourerDetailScreen> {
         bookingMode: _selectedMode,
         numberOfHours: _selectedMode == 'Hourly' ? _numberOfHours : null,
         notes: notes,
-        address: null, 
+        address: null,
         houseNumber: null,
         landmark: null,
         latitude: null,
         longitude: null,
-        amount: (_selectedMode == 'Hourly'
-            ? widget.labourer.hourlyRate * _numberOfHours
-            : widget.labourer.hourlyRate * 8),
+        amount:
+            (_selectedMode == 'Hourly'
+                ? widget.labourer.hourlyRate * _numberOfHours
+                : widget.labourer.hourlyRate * 8),
         minAmount: null,
         maxAmount: null,
       );
@@ -389,13 +477,17 @@ class _LabourerDetailScreenState extends State<LabourerDetailScreen> {
                 pinned: true,
                 backgroundColor: AppTheme.primary,
                 flexibleSpace: FlexibleSpaceBar(
-                  background: (widget.labourer.imageUrl.isNotEmpty && widget.labourer.imageUrl.startsWith('http'))
-                    ? Image.network(
-                        widget.labourer.imageUrl,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) => _buildPlaceholder(),
-                      )
-                    : _buildPlaceholder(),
+                  background:
+                      (widget.labourer.imageUrl.isNotEmpty &&
+                              widget.labourer.imageUrl.startsWith('http'))
+                          ? Image.network(
+                            widget.labourer.imageUrl,
+                            fit: BoxFit.cover,
+                            errorBuilder:
+                                (context, error, stackTrace) =>
+                                    _buildPlaceholder(),
+                          )
+                          : _buildPlaceholder(),
                 ),
                 leading: IconButton(
                   icon: Container(
@@ -473,20 +565,29 @@ class _LabourerDetailScreenState extends State<LabourerDetailScreen> {
                                   ),
                                 ),
                                 const SizedBox(height: 4),
-                                 Row(
+                                Row(
                                   children: [
                                     if (widget.labourer.hourlyRate <
-                                        Provider.of<AppStateProvider>(context, listen: false)
-                                            .categories
-                                            .firstWhere((c) => c.name == widget.labourer.category)
+                                        Provider.of<AppStateProvider>(
+                                              context,
+                                              listen: false,
+                                            ).categories
+                                            .firstWhere(
+                                              (c) =>
+                                                  c.name ==
+                                                  widget.labourer.category,
+                                            )
                                             .maxHourlyRate)
                                       Padding(
-                                        padding: const EdgeInsets.only(right: 8),
+                                        padding: const EdgeInsets.only(
+                                          right: 8,
+                                        ),
                                         child: Text(
                                           '₹${Provider.of<AppStateProvider>(context, listen: false).categories.firstWhere((c) => c.name == widget.labourer.category).maxHourlyRate.toInt()}',
                                           style: GoogleFonts.inter(
                                             fontSize: 14,
-                                            decoration: TextDecoration.lineThrough,
+                                            decoration:
+                                                TextDecoration.lineThrough,
                                             color: Colors.grey[400],
                                           ),
                                         ),
@@ -648,7 +749,12 @@ class _LabourerDetailScreenState extends State<LabourerDetailScreen> {
             left: 0,
             right: 0,
             child: Container(
-              padding: EdgeInsets.fromLTRB(20, 20, 20, MediaQuery.of(context).padding.bottom + 12),
+              padding: EdgeInsets.fromLTRB(
+                20,
+                20,
+                20,
+                MediaQuery.of(context).padding.bottom + 12,
+              ),
               decoration: BoxDecoration(
                 color: Colors.white,
                 boxShadow: [
@@ -702,22 +808,37 @@ class _LabourerDetailScreenState extends State<LabourerDetailScreen> {
                         builder: (context, appState, child) {
                           final category = appState.categories.firstWhere(
                             (c) => c.name == widget.labourer.category,
-                            orElse: () => ServiceCategory(name: '', icon: Icons.work, description: '', supportedModes: [], hourlyRate: 0, dailyRate: 0, minHourlyRate: 0, maxHourlyRate: 0),
+                            orElse:
+                                () => ServiceCategory(
+                                  name: '',
+                                  icon: Icons.work,
+                                  description: '',
+                                  supportedModes: [],
+                                  hourlyRate: 0,
+                                  dailyRate: 0,
+                                  minHourlyRate: 0,
+                                  maxHourlyRate: 0,
+                                ),
                           );
-                          final totalAmount = _selectedMode == 'Hourly' 
-                              ? widget.labourer.hourlyRate * _numberOfHours 
-                              : widget.labourer.hourlyRate * 8;
-                          final commission = (totalAmount * category.commissionPercentage) / 100;
-                          
+                          final totalAmount =
+                              _selectedMode == 'Hourly'
+                                  ? widget.labourer.hourlyRate * _numberOfHours
+                                  : widget.labourer.hourlyRate * 8;
+                          final commission =
+                              (totalAmount * category.commissionPercentage) /
+                              100;
+
                           return Text(
-                            _isLoading ? 'Processing...' : 'Book for ₹${commission.toInt()}',
+                            _isLoading
+                                ? 'Processing...'
+                                : 'Book for ₹${commission.toInt()}',
                             style: GoogleFonts.inter(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
                               color: Colors.white,
                             ),
                           );
-                        }
+                        },
                       ),
                     ),
                   ),
@@ -734,11 +855,7 @@ class _LabourerDetailScreenState extends State<LabourerDetailScreen> {
     return Container(
       color: Colors.grey[300],
       child: const Center(
-        child: Icon(
-          Icons.person,
-          size: 100,
-          color: Colors.grey,
-        ),
+        child: Icon(Icons.person, size: 100, color: Colors.grey),
       ),
     );
   }

@@ -27,8 +27,10 @@ class NotificationService {
   final FlutterLocalNotificationsPlugin _localNotifications =
       FlutterLocalNotificationsPlugin();
 
-  static final StreamController<void> _notificationStreamController = StreamController<void>.broadcast();
-  static Stream<void> get onNotification => _notificationStreamController.stream;
+  static final StreamController<void> _notificationStreamController =
+      StreamController<void>.broadcast();
+  static Stream<void> get onNotification =>
+      _notificationStreamController.stream;
 
   String? _fcmToken;
   String? get fcmToken => _fcmToken;
@@ -71,7 +73,8 @@ class NotificationService {
     const AndroidNotificationChannel channel = AndroidNotificationChannel(
       'high_importance_channel', // id
       'High Importance Notifications', // title
-      description: 'This channel is used for important notifications.', // description
+      description:
+          'This channel is used for important notifications.', // description
       importance: Importance.max,
     );
 
@@ -80,7 +83,8 @@ class NotificationService {
 
     await flutterLocalNotificationsPlugin
         .resolvePlatformSpecificImplementation<
-            AndroidFlutterLocalNotificationsPlugin>()
+          AndroidFlutterLocalNotificationsPlugin
+        >()
         ?.createNotificationChannel(channel);
 
     // 4. Get Messaging Token
@@ -109,15 +113,18 @@ class NotificationService {
         );
         _showLocalNotification(message);
       }
-      
+
       // Broadcast that a notification was received for real-time UI refresh
       _notificationStreamController.add(null);
     });
 
     // 7. Handle initial message if app was terminated
-    RemoteMessage? initialMessage = await _firebaseMessaging.getInitialMessage();
+    RemoteMessage? initialMessage =
+        await _firebaseMessaging.getInitialMessage();
     if (initialMessage != null) {
-      print("NotificationService: App started from terminated state via notification");
+      print(
+        "NotificationService: App started from terminated state via notification",
+      );
       // We need a small delay to ensure navigator is ready
       Future.delayed(const Duration(seconds: 1), () {
         _handleNotificationClick(null); // Simple redirect to bookings for now

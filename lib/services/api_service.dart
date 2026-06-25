@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:isolate';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../config.dart';
@@ -12,7 +13,11 @@ class ApiService {
   static const String baseUrl = Config.baseUrl;
 
   /// Retry a GET request up to [maxRetries] times on transient server errors (500/503).
-  static Future<http.Response> _retryGet(Uri uri, {Map<String, String>? headers, int maxRetries = 2}) async {
+  static Future<http.Response> _retryGet(
+    Uri uri, {
+    Map<String, String>? headers,
+    int maxRetries = 2,
+  }) async {
     http.Response? lastResponse;
     for (int attempt = 0; attempt <= maxRetries; attempt++) {
       lastResponse = await http.get(uri, headers: headers ?? {});
@@ -51,10 +56,10 @@ class ApiService {
         final data = jsonDecode(response.body);
         final dataMap = data is Map ? data : {};
         await _saveAuthData(
-          dataMap['token']?.toString(), 
-          dataMap['role']?.toString(), 
-          dataMap['name']?.toString(), 
-          email
+          dataMap['token']?.toString(),
+          dataMap['role']?.toString(),
+          dataMap['name']?.toString(),
+          email,
         );
         return {'success': true, 'data': dataMap};
       } else {
@@ -64,7 +69,13 @@ class ApiService {
         } catch (_) {
           error = null;
         }
-        return {'success': false, 'message': (error is Map && error.containsKey('msg')) ? error['msg'] : 'Something went wrong'};
+        return {
+          'success': false,
+          'message':
+              (error is Map && error.containsKey('msg'))
+                  ? error['msg']
+                  : 'Something went wrong',
+        };
       }
     } catch (e) {
       return {'success': false, 'message': ErrorHandler.getErrorMessage(e)};
@@ -86,10 +97,10 @@ class ApiService {
         final data = jsonDecode(response.body);
         final dataMap = data is Map ? data : {};
         await _saveAuthData(
-          dataMap['token']?.toString(), 
-          dataMap['role']?.toString(), 
-          dataMap['name']?.toString(), 
-          email
+          dataMap['token']?.toString(),
+          dataMap['role']?.toString(),
+          dataMap['name']?.toString(),
+          email,
         );
         // Update FCM Token
         await updateFcmToken();
@@ -101,7 +112,13 @@ class ApiService {
         } catch (_) {
           error = null;
         }
-        return {'success': false, 'message': (error is Map && error.containsKey('msg')) ? error['msg'] : 'Something went wrong'};
+        return {
+          'success': false,
+          'message':
+              (error is Map && error.containsKey('msg'))
+                  ? error['msg']
+                  : 'Something went wrong',
+        };
       }
     } catch (e) {
       return {'success': false, 'message': ErrorHandler.getErrorMessage(e)};
@@ -114,23 +131,27 @@ class ApiService {
     String action = 'login',
   }) async {
     try {
-      print('ApiService: Sending POST /auth/google | role=$role, action=$action');
+      print(
+        'ApiService: Sending POST /auth/google | role=$role, action=$action',
+      );
       final response = await http.post(
         Uri.parse('$baseUrl/auth/google'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'idToken': idToken, 'role': role, 'action': action}),
       );
 
-      print('ApiService: Google Response [${response.statusCode}]: ${response.body}');
+      print(
+        'ApiService: Google Response [${response.statusCode}]: ${response.body}',
+      );
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         final dataMap = data is Map ? data : {};
         await _saveAuthData(
-          dataMap['token']?.toString(), 
-          dataMap['role']?.toString(), 
-          dataMap['name']?.toString(), 
-          '' // email is usually in token
+          dataMap['token']?.toString(),
+          dataMap['role']?.toString(),
+          dataMap['name']?.toString(),
+          '', // email is usually in token
         );
         await updateFcmToken();
         return {'success': true, 'data': dataMap};
@@ -143,8 +164,14 @@ class ApiService {
         }
         return {
           'success': false,
-          'message': (error is Map && error.containsKey('msg')) ? error['msg'] : 'Google Login failed',
-          'code': (error is Map && error.containsKey('code')) ? error['code'] : null,
+          'message':
+              (error is Map && error.containsKey('msg'))
+                  ? error['msg']
+                  : 'Google Login failed',
+          'code':
+              (error is Map && error.containsKey('code'))
+                  ? error['code']
+                  : null,
         };
       }
     } catch (e) {
@@ -159,7 +186,7 @@ class ApiService {
     await prefs.remove('role');
     await prefs.remove('name');
     await prefs.remove('email');
-    
+
     try {
       await GoogleSignIn().disconnect();
     } catch (e) {
@@ -210,7 +237,10 @@ class ApiService {
       );
 
       if (response.statusCode == 200) {
-        return jsonDecode(response.body);
+        final bodyText = response.body;
+        return await Isolate.run(
+          () => jsonDecode(bodyText) as Map<String, dynamic>,
+        );
       } else if (response.statusCode == 401) {
         await logout();
         throw Exception('Unauthorized');
@@ -335,17 +365,23 @@ class ApiService {
       if (response.statusCode == 200) {
         return jsonDecode(response.body);
       }
-      
-      print('ApiService: createWalletOrder failed. URL: ${response.request?.url}, Status: ${response.statusCode}, Body: ${response.body}');
-      
+
+      print(
+        'ApiService: createWalletOrder failed. URL: ${response.request?.url}, Status: ${response.statusCode}, Body: ${response.body}',
+      );
+
       dynamic errorData;
       try {
         errorData = jsonDecode(response.body);
       } catch (_) {}
-      
+
       String msg = 'Failed to create wallet order';
       if (errorData is Map) {
-        msg = errorData['detail'] ?? errorData['msg'] ?? errorData['message'] ?? msg;
+        msg =
+            errorData['detail'] ??
+            errorData['msg'] ??
+            errorData['message'] ??
+            msg;
       } else {
         msg = '$msg (${response.statusCode}): ${response.body}';
       }
@@ -401,7 +437,10 @@ class ApiService {
         if (data is Map<String, dynamic>) {
           return data;
         }
-        return {'success': false, 'message': 'Invalid response format from server.'};
+        return {
+          'success': false,
+          'message': 'Invalid response format from server.',
+        };
       } else {
         dynamic error;
         try {
@@ -409,9 +448,12 @@ class ApiService {
         } catch (_) {
           error = null;
         }
-        final message = (error is Map && error.containsKey('message')) 
-            ? error['message'] 
-            : ((error is Map && error.containsKey('msg')) ? error['msg'] : 'Failed to apply referral.');
+        final message =
+            (error is Map && error.containsKey('message'))
+                ? error['message']
+                : ((error is Map && error.containsKey('msg'))
+                    ? error['msg']
+                    : 'Failed to apply referral.');
         return {'success': false, 'message': message};
       }
     } catch (e) {
@@ -517,10 +559,7 @@ class ApiService {
             errorMsg = error['msg'] ?? 'Something went wrong';
           }
         }
-        return {
-          'success': false,
-          'message': errorMsg
-        };
+        return {'success': false, 'message': errorMsg};
       }
     } catch (e) {
       return {'success': false, 'message': ErrorHandler.getErrorMessage(e)};
@@ -568,7 +607,6 @@ class ApiService {
     }
   }
 
-
   static Future<bool> updateBookingStatus(
     String bookingId,
     String status,
@@ -589,10 +627,7 @@ class ApiService {
     }
   }
 
-  static Future<bool> acceptWorker(
-    String bookingId,
-    String workerId,
-  ) async {
+  static Future<bool> acceptWorker(String bookingId, String workerId) async {
     try {
       final token = await getToken();
       final response = await http.put(
@@ -609,7 +644,11 @@ class ApiService {
     }
   }
 
-  static Future<bool> rateWorker(String bookingId, double rating, String comment) async {
+  static Future<bool> rateWorker(
+    String bookingId,
+    double rating,
+    String comment,
+  ) async {
     try {
       final token = await getToken();
       final response = await http.post(
@@ -618,10 +657,7 @@ class ApiService {
           'Content-Type': 'application/json',
           'x-auth-token': token ?? '',
         },
-        body: jsonEncode({
-          'rating': rating,
-          'comment': comment,
-        }),
+        body: jsonEncode({'rating': rating, 'comment': comment}),
       );
       return response.statusCode == 200;
     } catch (e) {
@@ -700,7 +736,7 @@ class ApiService {
         if (errorData is Map && errorData['code'] == 'ALREADY_PAID') {
           throw Exception('ALREADY_PAID');
         }
-        
+
         String errorMsg = 'Payment error';
         if (errorData is Map) {
           errorMsg = errorData['msg'] ?? errorData['detail'] ?? 'Payment error';
@@ -745,12 +781,13 @@ class ApiService {
         if (errorData is Map && errorData['code'] == 'ALREADY_PAID') {
           throw Exception('ALREADY_PAID');
         }
-        
+
         String errorMsg = 'Payment error';
         if (errorData is Map) {
           errorMsg = errorData['detail'] ?? errorData['msg'] ?? 'Payment error';
         } else {
-          errorMsg = 'Server error (${response.statusCode}): ${response.body.isNotEmpty ? response.body : "No response"}';
+          errorMsg =
+              'Server error (${response.statusCode}): ${response.body.isNotEmpty ? response.body : "No response"}';
         }
         throw Exception(errorMsg);
       }
@@ -790,7 +827,9 @@ class ApiService {
     }
   }
 
-  static Future<Map<String, dynamic>> confirmFreeBooking(String bookingId) async {
+  static Future<Map<String, dynamic>> confirmFreeBooking(
+    String bookingId,
+  ) async {
     try {
       final token = await getToken();
       final response = await http.post(
@@ -799,9 +838,7 @@ class ApiService {
           'Content-Type': 'application/json',
           'x-auth-token': token ?? '',
         },
-        body: jsonEncode({
-          'bookingId': bookingId,
-        }),
+        body: jsonEncode({'bookingId': bookingId}),
       );
 
       if (response.statusCode == 200) {
@@ -821,10 +858,7 @@ class ApiService {
             errorMsg = error['msg'] ?? 'Failed to confirm booking';
           }
         }
-        return {
-          'success': false,
-          'message': errorMsg
-        };
+        return {'success': false, 'message': errorMsg};
       }
     } catch (e) {
       return {'success': false, 'message': ErrorHandler.getErrorMessage(e)};
@@ -919,7 +953,10 @@ class ApiService {
     }
   }
 
-  static Future<Map<String, dynamic>?> sendMessage(String bookingId, String text) async {
+  static Future<Map<String, dynamic>?> sendMessage(
+    String bookingId,
+    String text,
+  ) async {
     try {
       final token = await getToken();
       final response = await http.post(
@@ -940,7 +977,10 @@ class ApiService {
     }
   }
 
-  static Future<Map<String, dynamic>> submitHelpRequest(String subject, String message) async {
+  static Future<Map<String, dynamic>> submitHelpRequest(
+    String subject,
+    String message,
+  ) async {
     try {
       final token = await getToken();
       final response = await http.post(
@@ -949,19 +989,22 @@ class ApiService {
           'Content-Type': 'application/json',
           'x-auth-token': token ?? '',
         },
-        body: jsonEncode({
-          'subject': subject,
-          'message': message,
-        }),
+        body: jsonEncode({'subject': subject, 'message': message}),
       );
 
       if (response.statusCode == 201) {
-        return {'success': true, 'message': 'Help request submitted successfully'};
+        return {
+          'success': true,
+          'message': 'Help request submitted successfully',
+        };
       } else {
         final data = jsonDecode(response.body);
         return {
           'success': false,
-          'message': (data is Map && data.containsKey('msg')) ? data['msg'] : 'Failed to submit help request'
+          'message':
+              (data is Map && data.containsKey('msg'))
+                  ? data['msg']
+                  : 'Failed to submit help request',
         };
       }
     } catch (e) {
@@ -972,7 +1015,9 @@ class ApiService {
   static Future<List<dynamic>> getFaqsForCategory(String categoryName) async {
     try {
       final response = await http.get(
-        Uri.parse('$baseUrl/faqs?category=${Uri.encodeComponent(categoryName)}'),
+        Uri.parse(
+          '$baseUrl/faqs?category=${Uri.encodeComponent(categoryName)}',
+        ),
       );
 
       if (response.statusCode == 200) {

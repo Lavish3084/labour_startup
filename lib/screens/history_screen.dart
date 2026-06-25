@@ -67,7 +67,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
     if (status == 'completed' || status == 'cancelled') return true;
 
     final date = DateTime.parse(booking['date']).toLocal();
-    final hours = int.tryParse(booking['numberOfHours']?.toString() ?? '2') ?? 2;
+    final hours =
+        int.tryParse(booking['numberOfHours']?.toString() ?? '2') ?? 2;
     final endTime = date.add(Duration(hours: hours));
 
     return DateTime.now().isAfter(endTime);
@@ -85,7 +86,20 @@ class _HistoryScreenState extends State<HistoryScreen> {
   }
 
   String _getMonthName(int month) {
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
     return months[month - 1];
   }
 
@@ -110,7 +124,10 @@ class _HistoryScreenState extends State<HistoryScreen> {
         ),
         leading: IconButton(
           onPressed: () => Navigator.pop(context),
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: AppTheme.textPrimary),
+          icon: const Icon(
+            Icons.arrow_back_ios_new_rounded,
+            color: AppTheme.textPrimary,
+          ),
         ),
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -125,17 +142,16 @@ class _HistoryScreenState extends State<HistoryScreen> {
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
-                  colors: [
-                    AppTheme.primaryLight,
-                    Colors.white,
-                  ],
+                  colors: [AppTheme.primaryLight, Colors.white],
                 ),
               ),
             ),
           ),
-          
+
           _isRefreshing || (isLoading && historyBookings.isEmpty)
-              ? const Center(child: CircularProgressIndicator(color: AppTheme.saffron))
+              ? const Center(
+                child: CircularProgressIndicator(color: AppTheme.saffron),
+              )
               : (historyBookings.isEmpty
                   ? _buildEmptyState()
                   : _buildHistoryList(historyBookings)),
@@ -149,11 +165,19 @@ class _HistoryScreenState extends State<HistoryScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.history_rounded, size: 64, color: AppTheme.textMuted.withValues(alpha: 0.3)),
+          Icon(
+            Icons.history_rounded,
+            size: 64,
+            color: AppTheme.textMuted.withValues(alpha: 0.3),
+          ),
           const SizedBox(height: 16),
           Text(
             'No History Found',
-            style: GoogleFonts.baloo2(fontSize: 22, fontWeight: FontWeight.bold, color: AppTheme.textMuted),
+            style: GoogleFonts.baloo2(
+              fontSize: 22,
+              fontWeight: FontWeight.bold,
+              color: AppTheme.textMuted,
+            ),
           ),
           const SizedBox(height: 8),
           Text(
@@ -173,7 +197,12 @@ class _HistoryScreenState extends State<HistoryScreen> {
       onRefresh: _refreshBookings,
       color: AppTheme.saffron,
       child: ListView.builder(
-        padding: EdgeInsets.only(top: 120, left: 20, right: 20, bottom: MediaQuery.of(context).padding.bottom + 24),
+        padding: EdgeInsets.only(
+          top: 120,
+          left: 20,
+          right: 20,
+          bottom: MediaQuery.of(context).padding.bottom + 24,
+        ),
         itemCount: sortedBookings.length,
         itemBuilder: (context, index) {
           final booking = sortedBookings[index];
@@ -197,7 +226,12 @@ class _HistoryScreenState extends State<HistoryScreen> {
                   padding: const EdgeInsets.fromLTRB(4, 16, 0, 12),
                   child: Text(
                     dateHeader.toUpperCase(),
-                    style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w800, color: AppTheme.textMuted, letterSpacing: 1.2),
+                    style: GoogleFonts.inter(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w800,
+                      color: AppTheme.textMuted,
+                      letterSpacing: 1.2,
+                    ),
                   ),
                 ),
               _buildHistoryCard(booking),
@@ -213,8 +247,9 @@ class _HistoryScreenState extends State<HistoryScreen> {
     final isExpanded = _expandedBookingIds.contains(bookingId);
     final status = (booking['status'] as String).toLowerCase();
     final date = DateTime.parse(booking['date']).toLocal();
-    final timeString = "${date.hour % 12 == 0 ? 12 : date.hour % 12}:${date.minute.toString().padLeft(2, '0')} ${date.hour >= 12 ? 'PM' : 'AM'}";
-    
+    final timeString =
+        "${date.hour % 12 == 0 ? 12 : date.hour % 12}:${date.minute.toString().padLeft(2, '0')} ${date.hour >= 12 ? 'PM' : 'AM'}";
+
     // Determine display status for expired bookings
     String displayStatus = status;
     Color statusColor = Colors.grey;
@@ -241,14 +276,26 @@ class _HistoryScreenState extends State<HistoryScreen> {
     }
 
     return GestureDetector(
-      onTap: () => setState(() => isExpanded ? _expandedBookingIds.remove(bookingId) : _expandedBookingIds.add(bookingId)),
+      onTap:
+          () => setState(
+            () =>
+                isExpanded
+                    ? _expandedBookingIds.remove(bookingId)
+                    : _expandedBookingIds.add(bookingId),
+          ),
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),
         decoration: BoxDecoration(
           color: Colors.white.withValues(alpha: 0.9),
           borderRadius: BorderRadius.circular(24),
           border: Border.all(color: Colors.white, width: 1.5),
-          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 10, offset: const Offset(0, 4))],
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.03),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
         child: Column(
           children: [
@@ -258,7 +305,10 @@ class _HistoryScreenState extends State<HistoryScreen> {
                 children: [
                   Container(
                     padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(color: statusColor.withValues(alpha: 0.1), shape: BoxShape.circle),
+                    decoration: BoxDecoration(
+                      color: statusColor.withValues(alpha: 0.1),
+                      shape: BoxShape.circle,
+                    ),
                     child: Icon(statusIcon, color: statusColor, size: 24),
                   ),
                   const SizedBox(width: 16),
@@ -268,11 +318,18 @@ class _HistoryScreenState extends State<HistoryScreen> {
                       children: [
                         Text(
                           booking['category'] ?? 'Service',
-                          style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 16, color: AppTheme.textPrimary),
+                          style: GoogleFonts.inter(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                            color: AppTheme.textPrimary,
+                          ),
                         ),
                         Text(
                           '$timeString • ${booking['bookingMode'] ?? 'On-demand'}',
-                          style: GoogleFonts.inter(fontSize: 12, color: AppTheme.textMuted),
+                          style: GoogleFonts.inter(
+                            fontSize: 12,
+                            color: AppTheme.textMuted,
+                          ),
                         ),
                       ],
                     ),
@@ -282,12 +339,19 @@ class _HistoryScreenState extends State<HistoryScreen> {
                     children: [
                       Text(
                         displayStatus.toUpperCase(),
-                        style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w900, color: statusColor),
+                        style: GoogleFonts.inter(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w900,
+                          color: statusColor,
+                        ),
                       ),
                       if (booking['amount'] != null)
                         Text(
                           '₹${booking['amount']}',
-                          style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: AppTheme.textPrimary),
+                          style: GoogleFonts.inter(
+                            fontWeight: FontWeight.bold,
+                            color: AppTheme.textPrimary,
+                          ),
                         ),
                     ],
                   ),
@@ -304,22 +368,45 @@ class _HistoryScreenState extends State<HistoryScreen> {
                     const SizedBox(height: 16),
                     Row(
                       children: [
-                        Expanded(child: _buildDetailRow('BOOKING ID', '#${(bookingId as String).substring(bookingId.length - 6).toUpperCase()}')),
+                        Expanded(
+                          child: _buildDetailRow(
+                            'BOOKING ID',
+                            '#${(bookingId as String).substring(bookingId.length - 6).toUpperCase()}',
+                          ),
+                        ),
                         Expanded(
                           child: InkWell(
-                            onTap: booking['labourer'] != null ? () => _showWorkerProfile(booking['labourer']) : null,
-                            child: _buildDetailRow('WORKER', booking['labourer']?['name'] ?? 'Not assigned'),
+                            onTap:
+                                booking['labourer'] != null
+                                    ? () =>
+                                        _showWorkerProfile(booking['labourer'])
+                                    : null,
+                            child: _buildDetailRow(
+                              'WORKER',
+                              booking['labourer']?['name'] ?? 'Not assigned',
+                            ),
                           ),
                         ),
                       ],
                     ),
                     const SizedBox(height: 16),
-                    _buildDetailRow('ADDRESS', '${booking['houseNumber'] ?? ''}, ${booking['address'] ?? 'No address'}'),
-                    if (booking['landmark'] != null && booking['landmark'].toString().isNotEmpty) ...[
+                    _buildDetailRow(
+                      'ADDRESS',
+                      '${booking['houseNumber'] ?? ''}, ${booking['address'] ?? 'No address'}',
+                    ),
+                    if (booking['landmark'] != null &&
+                        booking['landmark'].toString().isNotEmpty) ...[
                       const SizedBox(height: 8),
-                      Text('Landmark: ${booking['landmark']}', style: GoogleFonts.inter(fontSize: 12, color: AppTheme.textMuted)),
+                      Text(
+                        'Landmark: ${booking['landmark']}',
+                        style: GoogleFonts.inter(
+                          fontSize: 12,
+                          color: AppTheme.textMuted,
+                        ),
+                      ),
                     ],
-                    if (booking['notes'] != null && booking['notes'].toString().isNotEmpty) ...[
+                    if (booking['notes'] != null &&
+                        booking['notes'].toString().isNotEmpty) ...[
                       const SizedBox(height: 16),
                       _buildDetailRow('REQUIREMENTS', '${booking['notes']}'),
                     ],
@@ -331,7 +418,10 @@ class _HistoryScreenState extends State<HistoryScreen> {
               width: 30,
               height: 4,
               margin: const EdgeInsets.only(bottom: 8),
-              decoration: BoxDecoration(color: Colors.grey[200], borderRadius: BorderRadius.circular(10)),
+              decoration: BoxDecoration(
+                color: Colors.grey[200],
+                borderRadius: BorderRadius.circular(10),
+              ),
             ),
           ],
         ),
@@ -341,7 +431,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
   void _showWorkerProfile(dynamic worker) {
     final reviews = (worker['reviews'] as List<dynamic>?) ?? [];
-    
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -359,8 +449,12 @@ class _HistoryScreenState extends State<HistoryScreen> {
               const SizedBox(height: 12),
               Center(
                 child: Container(
-                  width: 40, height: 4,
-                  decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(4)),
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
                 ),
               ),
               const SizedBox(height: 24),
@@ -372,9 +466,10 @@ class _HistoryScreenState extends State<HistoryScreen> {
                     CircleAvatar(
                       radius: 36,
                       backgroundImage: NetworkImage(
-                        (worker['imageUrl'] != null && worker['imageUrl'].toString().isNotEmpty)
-                          ? worker['imageUrl']
-                          : 'https://randomuser.me/api/portraits/lego/1.jpg'
+                        (worker['imageUrl'] != null &&
+                                worker['imageUrl'].toString().isNotEmpty)
+                            ? worker['imageUrl']
+                            : 'https://randomuser.me/api/portraits/lego/1.jpg',
                       ),
                     ),
                     const SizedBox(width: 16),
@@ -382,8 +477,22 @@ class _HistoryScreenState extends State<HistoryScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(worker['name'] ?? 'Worker', style: GoogleFonts.baloo2(fontSize: 24, fontWeight: FontWeight.bold, color: AppTheme.textPrimary)),
-                          Text(worker['category'] ?? '', style: GoogleFonts.inter(fontSize: 14, color: AppTheme.primary, fontWeight: FontWeight.w600)),
+                          Text(
+                            worker['name'] ?? 'Worker',
+                            style: GoogleFonts.baloo2(
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                              color: AppTheme.textPrimary,
+                            ),
+                          ),
+                          Text(
+                            worker['category'] ?? '',
+                            style: GoogleFonts.inter(
+                              fontSize: 14,
+                              color: AppTheme.primary,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
                         ],
                       ),
                     ),
@@ -399,18 +508,35 @@ class _HistoryScreenState extends State<HistoryScreen> {
                     Expanded(
                       child: Container(
                         padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(color: AppTheme.primaryLight, borderRadius: BorderRadius.circular(16)),
+                        decoration: BoxDecoration(
+                          color: AppTheme.primaryLight,
+                          borderRadius: BorderRadius.circular(16),
+                        ),
                         child: Column(
                           children: [
-                            const Icon(Icons.star_rounded, color: Colors.amber, size: 28),
+                            const Icon(
+                              Icons.star_rounded,
+                              color: Colors.amber,
+                              size: 28,
+                            ),
                             const SizedBox(height: 8),
                             Text(
-                              (worker['rating']?.toDouble() ?? 0.0) > 0 
-                                  ? (worker['rating']?.toDouble() ?? 0.0).toStringAsFixed(1) 
+                              (worker['rating']?.toDouble() ?? 0.0) > 0
+                                  ? (worker['rating']?.toDouble() ?? 0.0)
+                                      .toStringAsFixed(1)
                                   : 'New',
-                              style: GoogleFonts.inter(fontSize: 20, fontWeight: FontWeight.bold),
+                              style: GoogleFonts.inter(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
-                            Text('Rating', style: GoogleFonts.inter(fontSize: 12, color: AppTheme.textSecondary)),
+                            Text(
+                              'Rating',
+                              style: GoogleFonts.inter(
+                                fontSize: 12,
+                                color: AppTheme.textSecondary,
+                              ),
+                            ),
                           ],
                         ),
                       ),
@@ -419,13 +545,32 @@ class _HistoryScreenState extends State<HistoryScreen> {
                     Expanded(
                       child: Container(
                         padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(color: Colors.blue.shade50, borderRadius: BorderRadius.circular(16)),
+                        decoration: BoxDecoration(
+                          color: Colors.blue.shade50,
+                          borderRadius: BorderRadius.circular(16),
+                        ),
                         child: Column(
                           children: [
-                            Icon(Icons.work_rounded, color: Colors.blue.shade700, size: 28),
+                            Icon(
+                              Icons.work_rounded,
+                              color: Colors.blue.shade700,
+                              size: 28,
+                            ),
                             const SizedBox(height: 8),
-                            Text('${worker['jobsCompleted'] ?? 0}', style: GoogleFonts.inter(fontSize: 20, fontWeight: FontWeight.bold)),
-                            Text('Jobs Done', style: GoogleFonts.inter(fontSize: 12, color: AppTheme.textSecondary)),
+                            Text(
+                              '${worker['jobsCompleted'] ?? 0}',
+                              style: GoogleFonts.inter(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            Text(
+                              'Jobs Done',
+                              style: GoogleFonts.inter(
+                                fontSize: 12,
+                                color: AppTheme.textSecondary,
+                              ),
+                            ),
                           ],
                         ),
                       ),
@@ -437,49 +582,94 @@ class _HistoryScreenState extends State<HistoryScreen> {
               // Reviews
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: Text('Customer Reviews (${reviews.length})', style: GoogleFonts.baloo2(fontSize: 20, fontWeight: FontWeight.bold)),
+                child: Text(
+                  'Customer Reviews (${reviews.length})',
+                  style: GoogleFonts.baloo2(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
               ),
               const SizedBox(height: 16),
               Expanded(
-                child: reviews.isEmpty 
-                  ? Center(child: Text('No reviews yet', style: GoogleFonts.inter(color: AppTheme.textMuted)))
-                  : ListView.separated(
-                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-                      itemCount: reviews.length,
-                      separatorBuilder: (context, index) => const Divider(height: 32),
-                      itemBuilder: (context, index) {
-                        final rev = reviews[index];
-                        final rDate = rev['date'] != null ? DateTime.parse(rev['date']).toLocal() : DateTime.now();
-                        return Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                child:
+                    reviews.isEmpty
+                        ? Center(
+                          child: Text(
+                            'No reviews yet',
+                            style: GoogleFonts.inter(color: AppTheme.textMuted),
+                          ),
+                        )
+                        : ListView.separated(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 24,
+                            vertical: 8,
+                          ),
+                          itemCount: reviews.length,
+                          separatorBuilder:
+                              (context, index) => const Divider(height: 32),
+                          itemBuilder: (context, index) {
+                            final rev = reviews[index];
+                            final rDate =
+                                rev['date'] != null
+                                    ? DateTime.parse(rev['date']).toLocal()
+                                    : DateTime.now();
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(rev['userName'] ?? 'Customer', style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 14)),
-                                Text('${rDate.day}/${rDate.month}/${rDate.year}', style: GoogleFonts.inter(fontSize: 12, color: AppTheme.textMuted)),
+                                Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Text(
+                                      rev['userName'] ?? 'Customer',
+                                      style: GoogleFonts.inter(
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: 14,
+                                      ),
+                                    ),
+                                    Text(
+                                      '${rDate.day}/${rDate.month}/${rDate.year}',
+                                      style: GoogleFonts.inter(
+                                        fontSize: 12,
+                                        color: AppTheme.textMuted,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 4),
+                                Row(
+                                  children: List.generate(
+                                    5,
+                                    (i) => Icon(
+                                      i < (rev['rating'] ?? 0)
+                                          ? Icons.star_rounded
+                                          : Icons.star_border_rounded,
+                                      size: 14,
+                                      color: Colors.amber,
+                                    ),
+                                  ),
+                                ),
+                                if (rev['comment'] != null &&
+                                    rev['comment'].toString().isNotEmpty) ...[
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    rev['comment'],
+                                    style: GoogleFonts.inter(
+                                      fontSize: 13,
+                                      color: AppTheme.textSecondary,
+                                    ),
+                                  ),
+                                ],
                               ],
-                            ),
-                            const SizedBox(height: 4),
-                            Row(
-                              children: List.generate(5, (i) => Icon(
-                                i < (rev['rating'] ?? 0) ? Icons.star_rounded : Icons.star_border_rounded,
-                                size: 14, color: Colors.amber,
-                              )),
-                            ),
-                            if (rev['comment'] != null && rev['comment'].toString().isNotEmpty) ...[
-                              const SizedBox(height: 8),
-                              Text(rev['comment'], style: GoogleFonts.inter(fontSize: 13, color: AppTheme.textSecondary)),
-                            ]
-                          ],
-                        );
-                      },
-                    ),
+                            );
+                          },
+                        ),
               ),
             ],
           ),
         );
-      }
+      },
     );
   }
 
@@ -489,12 +679,21 @@ class _HistoryScreenState extends State<HistoryScreen> {
       children: [
         Text(
           label,
-          style: GoogleFonts.inter(fontSize: 9, fontWeight: FontWeight.w800, color: AppTheme.textMuted, letterSpacing: 1),
+          style: GoogleFonts.inter(
+            fontSize: 9,
+            fontWeight: FontWeight.w800,
+            color: AppTheme.textMuted,
+            letterSpacing: 1,
+          ),
         ),
         const SizedBox(height: 4),
         Text(
           value,
-          style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w700, color: AppTheme.textPrimary),
+          style: GoogleFonts.inter(
+            fontSize: 13,
+            fontWeight: FontWeight.w700,
+            color: AppTheme.textPrimary,
+          ),
         ),
       ],
     );

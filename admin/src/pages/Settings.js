@@ -21,7 +21,7 @@ const Settings = () => {
 
     const fetchSettings = async () => {
         try {
-            const res = await api.get('/settings');
+            const res = await api.get('settings');
             setSettings({
                 adminCommissionPercentage: res.data.adminCommissionPercentage || 0,
                 cancellationRefundPercentage: res.data.cancellationRefundPercentage ?? 50,
@@ -52,7 +52,7 @@ const Settings = () => {
         setMessage({ type: '', text: '' });
 
         try {
-            await api.put('/settings', {
+            await api.put('settings', {
                 ...settings,
                 serviceZones: serviceZones,
             });

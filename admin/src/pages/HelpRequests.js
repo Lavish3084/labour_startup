@@ -26,7 +26,7 @@ const HelpRequests = () => {
     const fetchRequests = async () => {
         setLoading(true);
         try {
-            const response = await api.get('/admin/help-requests');
+            const response = await api.get('admin/help-requests');
             setRequests(response.data);
             setFilteredRequests(response.data);
         } catch (err) {

@@ -7,7 +7,7 @@ class AppTheme {
   AppTheme._();
 
   // ─── Brand Colors ─────────────────────────────────────────────
-  static const Color primary = Color(0xFFFF6B00);        // Saffron primary
+  static const Color primary = Color(0xFFFF6B00); // Saffron primary
   static const Color primaryDark = Color(0xFFE65100);
   static const Color primaryLight = Color(0xFFFFF4EB);
   static const Color primaryStatusGreen = Color(0xFF2E876E);
@@ -21,7 +21,7 @@ class AppTheme {
   static const Color black = Colors.black;
   static const Color white = Colors.white;
 
-  static const Color accent = Color(0xFF2952CC);          // Vibrant blue
+  static const Color accent = Color(0xFF2952CC); // Vibrant blue
   static const Color accentLight = Color(0xFFEEF2FF);
   static const Color scaffoldBg = Color(0xFFF9F9F9); // Updated as requested
   static const Color surfaceLight = Color(0xFFF3F4F6);
@@ -31,8 +31,8 @@ class AppTheme {
   static const Color successGreen = Color(0xFF10B981);
   static const Color offWhite = Color(0xFFFFFAF5);
 
-  static const Color highlight = Color(0xFF0D9488);       // Teal — actions/CTAs
-  
+  static const Color highlight = Color(0xFF0D9488); // Teal — actions/CTAs
+
   // ─── Figma / Refined UI Colors ───────────────────────────────
   static const Color figmaHeaderStart = Color(0xFF06644A);
   static const Color figmaHeaderEnd = Color(0xFF4A9782);
@@ -46,7 +46,7 @@ class AppTheme {
   static const Color border = Color(0xFFD1D5DB);
 
   // ─── Text Colors ──────────────────────────────────────────────
-  static const Color textPrimary = Color(0xFF111827);     // Near-black
+  static const Color textPrimary = Color(0xFF111827); // Near-black
   static const Color textSecondary = Color(0xFF4B5563);
   static const Color textMuted = Color(0xFF9CA3AF);
   static const Color textLight = Color(0xFF6B7280);
@@ -245,9 +245,10 @@ class AppTheme {
       hintStyle: GoogleFonts.inter(color: textMuted, fontSize: 14),
       filled: true,
       fillColor: const Color(0xFFF9FAFB),
-      prefixIcon: prefixIcon != null
-          ? Icon(prefixIcon, color: textMuted, size: 20)
-          : null,
+      prefixIcon:
+          prefixIcon != null
+              ? Icon(prefixIcon, color: textMuted, size: 20)
+              : null,
       suffixIcon: suffix,
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       border: OutlineInputBorder(
@@ -278,10 +279,7 @@ class AppTheme {
     shape: RoundedRectangleBorder(
       borderRadius: BorderRadius.circular(radiusSm),
     ),
-    textStyle: GoogleFonts.inter(
-      fontSize: 15,
-      fontWeight: FontWeight.w600,
-    ),
+    textStyle: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w600),
   );
 
   static ButtonStyle get secondaryButton => ElevatedButton.styleFrom(
@@ -292,10 +290,7 @@ class AppTheme {
     shape: RoundedRectangleBorder(
       borderRadius: BorderRadius.circular(radiusSm),
     ),
-    textStyle: GoogleFonts.inter(
-      fontSize: 15,
-      fontWeight: FontWeight.w600,
-    ),
+    textStyle: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w600),
   );
 
   static ButtonStyle get outlineButton => OutlinedButton.styleFrom(
@@ -305,10 +300,7 @@ class AppTheme {
     shape: RoundedRectangleBorder(
       borderRadius: BorderRadius.circular(radiusSm),
     ),
-    textStyle: GoogleFonts.inter(
-      fontSize: 15,
-      fontWeight: FontWeight.w600,
-    ),
+    textStyle: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w600),
   );
 
   static ButtonStyle get dangerButton => ElevatedButton.styleFrom(
@@ -319,10 +311,7 @@ class AppTheme {
     shape: RoundedRectangleBorder(
       borderRadius: BorderRadius.circular(radiusSm),
     ),
-    textStyle: GoogleFonts.inter(
-      fontSize: 15,
-      fontWeight: FontWeight.w600,
-    ),
+    textStyle: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w600),
   );
 
   // ─── Card Decoration ──────────────────────────────────────────
@@ -403,9 +392,6 @@ class AppTheme {
     ),
     textTheme: GoogleFonts.interTextTheme(),
     elevatedButtonTheme: ElevatedButtonThemeData(style: primaryButton),
-    dividerTheme: const DividerThemeData(
-      color: divider,
-      thickness: 1,
-    ),
+    dividerTheme: const DividerThemeData(color: divider, thickness: 1),
   );
 }

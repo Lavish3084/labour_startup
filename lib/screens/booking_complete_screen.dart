@@ -7,10 +7,7 @@ import 'main_screen.dart';
 class BookingCompleteScreen extends StatefulWidget {
   final Map<String, dynamic> booking;
 
-  const BookingCompleteScreen({
-    super.key,
-    required this.booking,
-  });
+  const BookingCompleteScreen({super.key, required this.booking});
 
   @override
   State<BookingCompleteScreen> createState() => _BookingCompleteScreenState();
@@ -23,9 +20,9 @@ class _BookingCompleteScreenState extends State<BookingCompleteScreen> {
 
   Future<void> _submitRating() async {
     if (_rating == 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select a rating')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Please select a rating')));
       return;
     }
 
@@ -45,7 +42,9 @@ class _BookingCompleteScreenState extends State<BookingCompleteScreen> {
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Failed to submit rating. Please try again.')),
+        const SnackBar(
+          content: Text('Failed to submit rating. Please try again.'),
+        ),
       );
     } finally {
       setState(() => _isSubmitting = false);
@@ -55,7 +54,8 @@ class _BookingCompleteScreenState extends State<BookingCompleteScreen> {
   @override
   Widget build(BuildContext context) {
     final labourerData = widget.booking['labourer'];
-    final labourer = labourerData != null ? Labourer.fromJson(labourerData) : null;
+    final labourer =
+        labourerData != null ? Labourer.fromJson(labourerData) : null;
     final amount = widget.booking['amount'] ?? 0;
     final workerName = labourer?.name ?? "Worker";
 
@@ -163,17 +163,28 @@ class _BookingCompleteScreenState extends State<BookingCompleteScreen> {
                               height: 50,
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
-                                border: Border.all(color: const Color(0xFF4A9782)),
-                                image: labourer?.imageUrl != null && labourer!.imageUrl.isNotEmpty
-                                    ? DecorationImage(
-                                        image: NetworkImage(labourer.imageUrl),
-                                        fit: BoxFit.cover,
-                                      )
-                                    : null,
+                                border: Border.all(
+                                  color: const Color(0xFF4A9782),
+                                ),
+                                image:
+                                    labourer?.imageUrl != null &&
+                                            labourer!.imageUrl.isNotEmpty
+                                        ? DecorationImage(
+                                          image: NetworkImage(
+                                            labourer.imageUrl,
+                                          ),
+                                          fit: BoxFit.cover,
+                                        )
+                                        : null,
                               ),
-                              child: labourer?.imageUrl == null || labourer!.imageUrl.isEmpty
-                                  ? const Icon(Icons.person, color: Color(0xFF4A9782))
-                                  : null,
+                              child:
+                                  labourer?.imageUrl == null ||
+                                          labourer!.imageUrl.isEmpty
+                                      ? const Icon(
+                                        Icons.person,
+                                        color: Color(0xFF4A9782),
+                                      )
+                                      : null,
                             ),
                             const SizedBox(width: 16),
                             Expanded(
@@ -204,13 +215,16 @@ class _BookingCompleteScreenState extends State<BookingCompleteScreen> {
                         if (!_hasRated)
                           TextButton(
                             onPressed: _isSubmitting ? null : _submitRating,
-                            child: _isSubmitting
-                                ? const SizedBox(
-                                    width: 20,
-                                    height: 20,
-                                    child: CircularProgressIndicator(strokeWidth: 2),
-                                  )
-                                : const Text('Submit Rating'),
+                            child:
+                                _isSubmitting
+                                    ? const SizedBox(
+                                      width: 20,
+                                      height: 20,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                      ),
+                                    )
+                                    : const Text('Submit Rating'),
                           ),
                       ],
                     ),
@@ -229,7 +243,9 @@ class _BookingCompleteScreenState extends State<BookingCompleteScreen> {
                   onPressed: () {
                     Navigator.pushAndRemoveUntil(
                       context,
-                      MaterialPageRoute(builder: (context) => const MainScreen()),
+                      MaterialPageRoute(
+                        builder: (context) => const MainScreen(),
+                      ),
                       (route) => false,
                     );
                   },
@@ -263,11 +279,14 @@ class _BookingCompleteScreenState extends State<BookingCompleteScreen> {
       mainAxisAlignment: MainAxisAlignment.center,
       children: List.generate(5, (index) {
         return GestureDetector(
-          onTap: _hasRated ? null : () {
-            setState(() {
-              _rating = index + 1.0;
-            });
-          },
+          onTap:
+              _hasRated
+                  ? null
+                  : () {
+                    setState(() {
+                      _rating = index + 1.0;
+                    });
+                  },
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 4),
             child: Icon(

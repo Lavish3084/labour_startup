@@ -25,9 +25,15 @@ class _ManageProfileScreenState extends State<ManageProfileScreen> {
   @override
   void initState() {
     super.initState();
-    final user = Provider.of<AppStateProvider>(context, listen: false).profileData?['user'];
+    final user =
+        Provider.of<AppStateProvider>(
+          context,
+          listen: false,
+        ).profileData?['user'];
     _nameController = TextEditingController(text: user?['name'] ?? '');
-    _phoneController = TextEditingController(text: user?['phoneNumber'] ?? user?['phone'] ?? '');
+    _phoneController = TextEditingController(
+      text: user?['phoneNumber'] ?? user?['phone'] ?? '',
+    );
   }
 
   @override
@@ -52,9 +58,14 @@ class _ManageProfileScreenState extends State<ManageProfileScreen> {
 
         final success = await ApiService.updateProfilePicture(base64Image);
         if (success && mounted) {
-          await Provider.of<AppStateProvider>(context, listen: false).fetchProfile();
+          await Provider.of<AppStateProvider>(
+            context,
+            listen: false,
+          ).fetchProfile();
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Profile picture updated successfully')),
+            const SnackBar(
+              content: Text('Profile picture updated successfully'),
+            ),
           );
         }
       }
@@ -74,18 +85,22 @@ class _ManageProfileScreenState extends State<ManageProfileScreen> {
     final phone = _phoneController.text.trim();
 
     if (name.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Name cannot be empty')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Name cannot be empty')));
       return;
     }
 
     setState(() => _isSaving = true);
     try {
       final nameSuccess = await ApiService.updateProfileName(name);
-      
+
       bool phoneSuccess = true;
-      final user = Provider.of<AppStateProvider>(context, listen: false).profileData?['user'];
+      final user =
+          Provider.of<AppStateProvider>(
+            context,
+            listen: false,
+          ).profileData?['user'];
       final originalPhone = user?['phoneNumber'] ?? user?['phone'] ?? '';
       if (phone != originalPhone) {
         if (phone.isEmpty) {
@@ -99,14 +114,21 @@ class _ManageProfileScreenState extends State<ManageProfileScreen> {
       }
 
       if (nameSuccess && phoneSuccess && mounted) {
-        await Provider.of<AppStateProvider>(context, listen: false).fetchProfile();
+        await Provider.of<AppStateProvider>(
+          context,
+          listen: false,
+        ).fetchProfile();
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Profile updated successfully')),
         );
         Navigator.pop(context);
       } else if (!phoneSuccess && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Failed to update phone number. It may already be in use.')),
+          const SnackBar(
+            content: Text(
+              'Failed to update phone number. It may already be in use.',
+            ),
+          ),
         );
       }
     } catch (e) {
@@ -123,7 +145,7 @@ class _ManageProfileScreenState extends State<ManageProfileScreen> {
   @override
   Widget build(BuildContext context) {
     final user = Provider.of<AppStateProvider>(context).profileData?['user'];
-    
+
     return Scaffold(
       backgroundColor: const Color(0xFFF9F9F9),
       appBar: AppBar(
@@ -131,7 +153,11 @@ class _ManageProfileScreenState extends State<ManageProfileScreen> {
         elevation: 0,
         centerTitle: true,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.black, size: 20),
+          icon: const Icon(
+            Icons.arrow_back_ios_new_rounded,
+            color: Colors.black,
+            size: 20,
+          ),
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
@@ -144,7 +170,12 @@ class _ManageProfileScreenState extends State<ManageProfileScreen> {
         ),
       ),
       body: SingleChildScrollView(
-        padding: EdgeInsets.fromLTRB(24, 24, 24, MediaQuery.of(context).padding.bottom + 24),
+        padding: EdgeInsets.fromLTRB(
+          24,
+          24,
+          24,
+          MediaQuery.of(context).padding.bottom + 24,
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
@@ -158,9 +189,14 @@ class _ManageProfileScreenState extends State<ManageProfileScreen> {
                     color: const Color(0xFFF2F2F2),
                     image: _getProfileImage(user),
                   ),
-                  child: user?['profilePicture'] == null
-                      ? const Icon(Icons.person, size: 60, color: Colors.grey)
-                      : null,
+                  child:
+                      user?['profilePicture'] == null
+                          ? const Icon(
+                            Icons.person,
+                            size: 60,
+                            color: Colors.grey,
+                          )
+                          : null,
                 ),
                 Positioned(
                   bottom: 0,
@@ -173,9 +209,21 @@ class _ManageProfileScreenState extends State<ManageProfileScreen> {
                         color: Color(0xFF4A9782),
                         shape: BoxShape.circle,
                       ),
-                      child: _isPickingImage 
-                        ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                        : const Icon(Icons.camera_alt_rounded, color: Colors.white, size: 20),
+                      child:
+                          _isPickingImage
+                              ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  color: Colors.white,
+                                  strokeWidth: 2,
+                                ),
+                              )
+                              : const Icon(
+                                Icons.camera_alt_rounded,
+                                color: Colors.white,
+                                size: 20,
+                              ),
                     ),
                   ),
                 ),
@@ -207,19 +255,22 @@ class _ManageProfileScreenState extends State<ManageProfileScreen> {
                 onPressed: _isSaving ? null : _saveProfile,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF4A9782),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
                   elevation: 0,
                 ),
-                child: _isSaving 
-                  ? const CircularProgressIndicator(color: Colors.white)
-                  : Text(
-                      'Save Changes',
-                      style: GoogleFonts.roboto(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.white,
-                      ),
-                    ),
+                child:
+                    _isSaving
+                        ? const CircularProgressIndicator(color: Colors.white)
+                        : Text(
+                          'Save Changes',
+                          style: GoogleFonts.roboto(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white,
+                          ),
+                        ),
               ),
             ),
           ],
@@ -304,7 +355,11 @@ class _ManageProfileScreenState extends State<ManageProfileScreen> {
                 ),
               ),
               const Spacer(),
-              const Icon(Icons.lock_outline_rounded, color: Colors.grey, size: 16),
+              const Icon(
+                Icons.lock_outline_rounded,
+                color: Colors.grey,
+                size: 16,
+              ),
             ],
           ),
         ),
@@ -313,7 +368,8 @@ class _ManageProfileScreenState extends State<ManageProfileScreen> {
   }
 
   DecorationImage? _getProfileImage(dynamic user) {
-    if (user?['profilePicture'] == null || user!['profilePicture'].toString().isEmpty) {
+    if (user?['profilePicture'] == null ||
+        user!['profilePicture'].toString().isEmpty) {
       return null;
     }
     final String pic = user['profilePicture'].toString();

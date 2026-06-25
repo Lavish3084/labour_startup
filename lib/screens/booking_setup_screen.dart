@@ -113,7 +113,10 @@ class _BookingSetupScreenState extends State<BookingSetupScreen> {
       onExternalWallet: _handleExternalWallet,
     );
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      Provider.of<AppStateProvider>(context, listen: false).fetchWalletBalance();
+      Provider.of<AppStateProvider>(
+        context,
+        listen: false,
+      ).fetchWalletBalance();
     });
   }
 
@@ -140,13 +143,17 @@ class _BookingSetupScreenState extends State<BookingSetupScreen> {
         _navigateToNextScreen();
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Payment verification failed. Please contact support.')),
+          const SnackBar(
+            content: Text(
+              'Payment verification failed. Please contact support.',
+            ),
+          ),
         );
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error: $e')));
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -161,52 +168,58 @@ class _BookingSetupScreenState extends State<BookingSetupScreen> {
 
   void _handleExternalWallet(ExternalWalletResponse response) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('External Wallet Selected: ${response.walletName}')),
+      SnackBar(
+        content: Text('External Wallet Selected: ${response.walletName}'),
+      ),
     );
   }
 
   void _navigateToNextScreen() {
-    final hoursDifference = widget.scheduledTime.difference(DateTime.now()).inHours;
-    
+    final hoursDifference =
+        widget.scheduledTime.difference(DateTime.now()).inHours;
+
     if (hoursDifference <= 12) {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-          builder: (context) => SearchingWorkerScreen(
-            category: widget.category,
-            address: widget.address,
-            scheduledTime: widget.scheduledTime,
-            latitude: widget.latitude,
-            longitude: widget.longitude,
-            bookingData: {'_id': _currentBookingId}, 
-          ),
+          builder:
+              (context) => SearchingWorkerScreen(
+                category: widget.category,
+                address: widget.address,
+                scheduledTime: widget.scheduledTime,
+                latitude: widget.latitude,
+                longitude: widget.longitude,
+                bookingData: {'_id': _currentBookingId},
+              ),
         ),
       );
     } else {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-          builder: (context) => BookingAcceptedScreen(
-            category: widget.category,
-            address: widget.address,
-            scheduledTime: widget.scheduledTime,
-            bookingData: {'_id': _currentBookingId}, 
-          ),
+          builder:
+              (context) => BookingAcceptedScreen(
+                category: widget.category,
+                address: widget.address,
+                scheduledTime: widget.scheduledTime,
+                bookingData: {'_id': _currentBookingId},
+              ),
         ),
       );
     }
   }
-  
-  double get _bookingFee => (widget.category.commissionPercentage / 100) * widget.amount;
-  
+
+  double get _bookingFee =>
+      (widget.category.commissionPercentage / 100) * widget.amount;
+
   int get _finalFeeAmount => _serverFee ?? _bookingFee.ceil();
-  
+
   Future<void> _handleBookNow() async {
     setState(() => _isLoading = true);
 
     try {
       final finalAmount = widget.amount + _selectedTip;
-      
+
       // 1. Create the booking FIRST (Pending Payment, not broadcasted yet)
       final result = await ApiService.createBooking(
         category: widget.category.name,
@@ -228,20 +241,27 @@ class _BookingSetupScreenState extends State<BookingSetupScreen> {
       if (result['success']) {
         final bookingData = result['data'];
         _currentBookingId = bookingData['_id'];
-        
+
         // Capture the official fee from the server
         if (bookingData['commissionAmount'] != null) {
           _serverFee = (bookingData['commissionAmount'] as num).toInt();
         }
-        
+
         if (_finalFeeAmount <= 0) {
           // Skip payment gateway for 0-fee bookings
-          final result = await ApiService.confirmFreeBooking(_currentBookingId!);
+          final result = await ApiService.confirmFreeBooking(
+            _currentBookingId!,
+          );
           if (result['success']) {
             _navigateToNextScreen();
           } else {
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(result['message'] ?? 'Failed to confirm booking. Please try again.')),
+              SnackBar(
+                content: Text(
+                  result['message'] ??
+                      'Failed to confirm booking. Please try again.',
+                ),
+              ),
             );
           }
         } else if (_useWallet) {
@@ -251,51 +271,61 @@ class _BookingSetupScreenState extends State<BookingSetupScreen> {
             _navigateToNextScreen();
           } else {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Failed to pay with wallet. Please try again.')),
+              const SnackBar(
+                content: Text('Failed to pay with wallet. Please try again.'),
+              ),
             );
           }
         } else {
           // 2. Create Razorpay Order for the platform fee
           final int feeInPaise = _finalFeeAmount * 100;
-          final orderData = await ApiService.createPaymentOrder(_currentBookingId!, feeInPaise);
-          
+          final orderData = await ApiService.createPaymentOrder(
+            _currentBookingId!,
+            feeInPaise,
+          );
+
           // 3. Open Razorpay Checkout
-          final String razorpayKeyId = dotenv.get('RAZORPAY_KEY_ID', fallback: '');
-          
+          final String razorpayKeyId = dotenv.get(
+            'RAZORPAY_KEY_ID',
+            fallback: '',
+          );
+
           _paymentService.openCheckout(
             keyId: razorpayKeyId,
             orderId: orderData['id'],
             name: 'Labour App',
             description: '${widget.category.name} Booking Fee',
-            email: '', 
-            contact: '', 
+            email: '',
+            contact: '',
             amount: feeInPaise,
           );
         }
       } else {
         setState(() => _isLoading = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(result['message'] ?? 'Failed to create booking')),
+          SnackBar(
+            content: Text(result['message'] ?? 'Failed to create booking'),
+          ),
         );
       }
     } catch (e) {
       setState(() => _isLoading = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error: $e')));
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
   }
 
   static const double _headerHeight = 272;
+
   /// White sheet starts below the header title (no overlap on load).
   static const double _sheetOverlapTop = 224;
 
   @override
   Widget build(BuildContext context) {
-    final bottomBarPadding =
-        120.0 + MediaQuery.of(context).padding.bottom;
+    final bottomBarPadding = 120.0 + MediaQuery.of(context).padding.bottom;
 
     return Scaffold(
       backgroundColor: const Color(0xFF2E876E),
@@ -386,7 +416,7 @@ class _BookingSetupScreenState extends State<BookingSetupScreen> {
       builder: (context, appState, child) {
         final walletBalance = appState.walletBalance;
         final hasEnoughBalance = walletBalance >= _finalFeeAmount;
-        
+
         return Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
@@ -402,7 +432,10 @@ class _BookingSetupScreenState extends State<BookingSetupScreen> {
                   color: const Color(0xFFE8F5E9),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: const Icon(Icons.account_balance_wallet, color: Color(0xFF2E876E)),
+                child: const Icon(
+                  Icons.account_balance_wallet,
+                  color: Color(0xFF2E876E),
+                ),
               ),
               const SizedBox(width: 16),
               Expanded(
@@ -411,14 +444,21 @@ class _BookingSetupScreenState extends State<BookingSetupScreen> {
                   children: [
                     Text(
                       'Pay with Wallet',
-                      style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.black87),
+                      style: GoogleFonts.inter(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.black87,
+                      ),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       'Balance: ₹${walletBalance.toStringAsFixed(2)}',
                       style: GoogleFonts.inter(
-                        fontSize: 14, 
-                        color: hasEnoughBalance ? const Color(0xFF4A9782) : Colors.red,
+                        fontSize: 14,
+                        color:
+                            hasEnoughBalance
+                                ? const Color(0xFF4A9782)
+                                : Colors.red,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -427,11 +467,14 @@ class _BookingSetupScreenState extends State<BookingSetupScreen> {
               ),
               Switch(
                 value: _useWallet,
-                onChanged: hasEnoughBalance ? (val) {
-                  setState(() {
-                    _useWallet = val;
-                  });
-                } : null,
+                onChanged:
+                    hasEnoughBalance
+                        ? (val) {
+                          setState(() {
+                            _useWallet = val;
+                          });
+                        }
+                        : null,
                 activeColor: const Color(0xFF2E876E),
               ),
             ],
@@ -451,7 +494,11 @@ class _BookingSetupScreenState extends State<BookingSetupScreen> {
           backgroundColor: Colors.white,
           radius: 20,
           child: IconButton(
-            icon: const Icon(Icons.arrow_back, color: Color(0xFF2E876E), size: 20),
+            icon: const Icon(
+              Icons.arrow_back,
+              color: Color(0xFF2E876E),
+              size: 20,
+            ),
             onPressed: () => Navigator.pop(context),
           ),
         ),
@@ -468,11 +515,7 @@ class _BookingSetupScreenState extends State<BookingSetupScreen> {
         color: const Color(0xFF2E876E),
         child: Stack(
           children: [
-            Positioned.fill(
-              child: CustomPaint(
-                painter: DotPatternPainter(),
-              ),
-            ),
+            Positioned.fill(child: CustomPaint(painter: DotPatternPainter())),
             Positioned(
               bottom: 48,
               left: 20,
@@ -480,7 +523,10 @@ class _BookingSetupScreenState extends State<BookingSetupScreen> {
               child: Column(
                 children: [
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 6,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(20),
@@ -488,7 +534,11 @@ class _BookingSetupScreenState extends State<BookingSetupScreen> {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(Icons.check_circle_outline, color: Color(0xFF2E876E), size: 16),
+                        const Icon(
+                          Icons.check_circle_outline,
+                          color: Color(0xFF2E876E),
+                          size: 16,
+                        ),
                         const SizedBox(width: 6),
                         Text(
                           '100% Refundable*',
@@ -581,7 +631,11 @@ class _BookingSetupScreenState extends State<BookingSetupScreen> {
           const SizedBox(height: 16),
           const Divider(height: 1, color: Color(0xFFF0F0F0)),
           const SizedBox(height: 16),
-          _buildDetailsRow(Icons.engineering_outlined, 'Service', widget.workType.isNotEmpty ? widget.workType : widget.category.name),
+          _buildDetailsRow(
+            Icons.engineering_outlined,
+            'Service',
+            widget.workType.isNotEmpty ? widget.workType : widget.category.name,
+          ),
           const SizedBox(height: 12),
           _buildDetailsRow(
             Icons.calendar_today_outlined,
@@ -591,17 +645,37 @@ class _BookingSetupScreenState extends State<BookingSetupScreen> {
                 : '${DateFormat('dd MMMM yyyy').format(widget.scheduledTime)} • ${DateFormat('hh:mm a').format(widget.scheduledTime)}',
           ),
           const SizedBox(height: 12),
-          _buildDetailsRow(Icons.people_outline_rounded, 'Workers Required', '${widget.numberOfWorkers.toString().padLeft(2, '0')} Worker${widget.numberOfWorkers > 1 ? "s" : ""}'),
+          _buildDetailsRow(
+            Icons.people_outline_rounded,
+            'Workers Required',
+            '${widget.numberOfWorkers.toString().padLeft(2, '0')} Worker${widget.numberOfWorkers > 1 ? "s" : ""}',
+          ),
           const SizedBox(height: 12),
-          _buildDetailsRow(Icons.access_time_rounded, 'Duration', widget.bookingMode == 'Hourly' ? '${widget.numberOfHours} Hours' : 'Daily'),
+          _buildDetailsRow(
+            Icons.access_time_rounded,
+            'Duration',
+            widget.bookingMode == 'Hourly'
+                ? '${widget.numberOfHours} Hours'
+                : 'Daily',
+          ),
           const SizedBox(height: 12),
-          _buildDetailsRow(Icons.location_on_outlined, 'Work Location', widget.address, maxLines: 3),
+          _buildDetailsRow(
+            Icons.location_on_outlined,
+            'Work Location',
+            widget.address,
+            maxLines: 3,
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildDetailsRow(IconData icon, String label, String value, {int maxLines = 1}) {
+  Widget _buildDetailsRow(
+    IconData icon,
+    String label,
+    String value, {
+    int maxLines = 1,
+  }) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -695,10 +769,7 @@ class _BookingSetupScreenState extends State<BookingSetupScreen> {
           const SizedBox(height: 6),
           Text(
             'Add a tip to show appreciation for their hard work and support.',
-            style: GoogleFonts.inter(
-              fontSize: 12,
-              color: Colors.black54,
-            ),
+            style: GoogleFonts.inter(fontSize: 12, color: Colors.black54),
           ),
           const SizedBox(height: 16),
           Row(
@@ -749,12 +820,22 @@ class _BookingSetupScreenState extends State<BookingSetupScreen> {
           const SizedBox(height: 16),
           const Divider(height: 1, color: Color(0xFFF0F0F0)),
           const SizedBox(height: 16),
-          _buildSummaryItem('Booking Fee (Pay Now)', '₹$bookingFee', isHighlight: true),
+          _buildSummaryItem(
+            'Booking Fee (Pay Now)',
+            '₹$bookingFee',
+            isHighlight: true,
+          ),
           const SizedBox(height: 12),
-          _buildSummaryItem('Service Charges (Pay Worker Later)', '₹$workerAmount'),
+          _buildSummaryItem(
+            'Service Charges (Pay Worker Later)',
+            '₹$workerAmount',
+          ),
           if (_selectedTip > 0) ...[
             const SizedBox(height: 12),
-            _buildSummaryItem('Worker Tip (Pay Worker Later)', '₹$_selectedTip'),
+            _buildSummaryItem(
+              'Worker Tip (Pay Worker Later)',
+              '₹$_selectedTip',
+            ),
           ],
           const SizedBox(height: 16),
           const Divider(height: 1, color: Color(0xFFF0F0F0)),
@@ -798,7 +879,11 @@ class _BookingSetupScreenState extends State<BookingSetupScreen> {
     );
   }
 
-  Widget _buildSummaryItem(String label, String value, {bool isHighlight = false}) {
+  Widget _buildSummaryItem(
+    String label,
+    String value, {
+    bool isHighlight = false,
+  }) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -837,16 +922,23 @@ class _BookingSetupScreenState extends State<BookingSetupScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFFD8F2E9) : Colors.black.withOpacity(0.05),
+          color:
+              isSelected
+                  ? const Color(0xFFD8F2E9)
+                  : Colors.black.withOpacity(0.05),
           borderRadius: BorderRadius.circular(15),
-          border: isSelected ? Border.all(color: const Color(0xFF4A9782), width: 1) : null,
+          border:
+              isSelected
+                  ? Border.all(color: const Color(0xFF4A9782), width: 1)
+                  : null,
         ),
         child: Text(
           '+ $amount',
           style: GoogleFonts.inter(
             fontSize: 12,
             fontWeight: FontWeight.w600,
-            color: isSelected ? const Color(0xFF2E876E) : const Color(0xFF4A9782),
+            color:
+                isSelected ? const Color(0xFF2E876E) : const Color(0xFF4A9782),
           ),
         ),
       ),
@@ -886,7 +978,12 @@ class _BookingSetupScreenState extends State<BookingSetupScreen> {
             color: Colors.white,
             borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
           ),
-          padding: EdgeInsets.fromLTRB(24, 16, 24, MediaQuery.of(context).padding.bottom + 24),
+          padding: EdgeInsets.fromLTRB(
+            24,
+            16,
+            24,
+            MediaQuery.of(context).padding.bottom + 24,
+          ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -926,49 +1023,55 @@ class _BookingSetupScreenState extends State<BookingSetupScreen> {
               const SizedBox(height: 8),
               Text(
                 'Select how you would like to secure your booking fee of ₹$_finalFeeAmount',
-                style: GoogleFonts.inter(
-                  fontSize: 13,
-                  color: Colors.grey[600],
-                ),
+                style: GoogleFonts.inter(fontSize: 13, color: Colors.grey[600]),
               ),
               const SizedBox(height: 24),
-              
+
               // Pay with Wallet Option
               InkWell(
-                onTap: !hasEnoughBalance
-                    ? null
-                    : () {
-                        Navigator.pop(context);
-                        setState(() {
-                          _useWallet = true;
-                        });
-                        _handleBookNow();
-                      },
+                onTap:
+                    !hasEnoughBalance
+                        ? null
+                        : () {
+                          Navigator.pop(context);
+                          setState(() {
+                            _useWallet = true;
+                          });
+                          _handleBookNow();
+                        },
                 borderRadius: BorderRadius.circular(16),
                 child: Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(
-                      color: hasEnoughBalance ? const Color(0xFFE5E7EB) : Colors.grey[200]!,
+                      color:
+                          hasEnoughBalance
+                              ? const Color(0xFFE5E7EB)
+                              : Colors.grey[200]!,
                     ),
-                    color: hasEnoughBalance ? Colors.white : const Color(0xFFF9FAFB),
+                    color:
+                        hasEnoughBalance
+                            ? Colors.white
+                            : const Color(0xFFF9FAFB),
                   ),
                   child: Row(
                     children: [
                       Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: hasEnoughBalance
-                              ? const Color(0xFFE8F5E9)
-                              : Colors.grey[100],
+                          color:
+                              hasEnoughBalance
+                                  ? const Color(0xFFE8F5E9)
+                                  : Colors.grey[100],
                           shape: BoxShape.circle,
                         ),
                         child: Icon(
                           Icons.account_balance_wallet_rounded,
-                          color: hasEnoughBalance
-                              ? const Color(0xFF2E876E)
-                              : Colors.grey[400],
+                          color:
+                              hasEnoughBalance
+                                  ? const Color(0xFF2E876E)
+                                  : Colors.grey[400],
                           size: 24,
                         ),
                       ),
@@ -982,7 +1085,10 @@ class _BookingSetupScreenState extends State<BookingSetupScreen> {
                               style: GoogleFonts.inter(
                                 fontSize: 15,
                                 fontWeight: FontWeight.w600,
-                                color: hasEnoughBalance ? Colors.black87 : Colors.grey[400],
+                                color:
+                                    hasEnoughBalance
+                                        ? Colors.black87
+                                        : Colors.grey[400],
                               ),
                             ),
                             const SizedBox(height: 4),
@@ -992,9 +1098,10 @@ class _BookingSetupScreenState extends State<BookingSetupScreen> {
                                   : 'Insufficient Balance: ₹${walletBalance.toStringAsFixed(2)}',
                               style: GoogleFonts.inter(
                                 fontSize: 12,
-                                color: hasEnoughBalance
-                                    ? const Color(0xFF4A9782)
-                                    : Colors.red[400],
+                                color:
+                                    hasEnoughBalance
+                                        ? const Color(0xFF4A9782)
+                                        : Colors.red[400],
                                 fontWeight: FontWeight.w500,
                               ),
                             ),
@@ -1004,7 +1111,10 @@ class _BookingSetupScreenState extends State<BookingSetupScreen> {
                       Icon(
                         Icons.arrow_forward_ios,
                         size: 14,
-                        color: hasEnoughBalance ? Colors.black54 : Colors.grey[300],
+                        color:
+                            hasEnoughBalance
+                                ? Colors.black54
+                                : Colors.grey[300],
                       ),
                     ],
                   ),
@@ -1086,7 +1196,12 @@ class _BookingSetupScreenState extends State<BookingSetupScreen> {
   Widget _buildBottomBar() {
     return Container(
       color: const Color(0xFFF9F9F9),
-      padding: EdgeInsets.fromLTRB(20, 16, 20, MediaQuery.of(context).padding.bottom + 16),
+      padding: EdgeInsets.fromLTRB(
+        20,
+        16,
+        20,
+        MediaQuery.of(context).padding.bottom + 16,
+      ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -1120,9 +1235,22 @@ class _BookingSetupScreenState extends State<BookingSetupScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Booking Fee', style: GoogleFonts.inter(fontSize: 12, color: Colors.black54)),
+                    Text(
+                      'Booking Fee',
+                      style: GoogleFonts.inter(
+                        fontSize: 12,
+                        color: Colors.black54,
+                      ),
+                    ),
                     const SizedBox(height: 4),
-                    Text('₹$_finalFeeAmount', style: GoogleFonts.inter(fontSize: 24, fontWeight: FontWeight.w800, color: const Color(0xFF4A9782))),
+                    Text(
+                      '₹$_finalFeeAmount',
+                      style: GoogleFonts.inter(
+                        fontSize: 24,
+                        fontWeight: FontWeight.w800,
+                        color: const Color(0xFF4A9782),
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -1131,35 +1259,46 @@ class _BookingSetupScreenState extends State<BookingSetupScreen> {
                 child: SizedBox(
                   height: 50,
                   child: ElevatedButton(
-                    onPressed: _isLoading
-                        ? null
-                        : () {
-                            if (_finalFeeAmount <= 0) {
-                              _handleBookNow();
-                            } else {
-                              _showPaymentSelectionSheet();
-                            }
-                          },
+                    onPressed:
+                        _isLoading
+                            ? null
+                            : () {
+                              if (_finalFeeAmount <= 0) {
+                                _handleBookNow();
+                              } else {
+                                _showPaymentSelectionSheet();
+                              }
+                            },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF4A9782),
                       foregroundColor: Colors.white,
                       elevation: 0,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(25),
+                      ),
                     ),
-                    child: _isLoading
-                        ? const SizedBox(
-                            width: 24,
-                            height: 24,
-                            child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                        : Text(
-                            'Confirm Booking',
-                            style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w600),
-                          ),
+                    child:
+                        _isLoading
+                            ? const SizedBox(
+                              width: 24,
+                              height: 24,
+                              child: CircularProgressIndicator(
+                                color: Colors.white,
+                                strokeWidth: 2,
+                              ),
+                            )
+                            : Text(
+                              'Confirm Booking',
+                              style: GoogleFonts.inter(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
                   ),
                 ),
               ),
             ],
-          )
+          ),
         ],
       ),
     );

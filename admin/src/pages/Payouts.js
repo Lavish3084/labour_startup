@@ -13,7 +13,7 @@ const Payouts = () => {
 
     const fetchPayouts = async () => {
         try {
-            const res = await api.get('/admin/bookings');
+            const res = await api.get('admin/bookings');
             // Filter bookings that have work confirmed but not released yet (or show all and just style them)
             // Let's just show all completed/confirmed work bookings
             const payoutBookings = res.data.filter(b => b.isWorkConfirmed);

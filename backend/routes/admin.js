@@ -44,10 +44,10 @@ router.get('/stats', verifyAdmin, async (req, res) => {
         });
         const activeUsers = activeUsersList.length;
 
-        // Revenue calculation
+        // Revenue calculation (Platform revenue is the commission collected)
         const revenueData = await Booking.aggregate([
             { $match: { paymentStatus: 'paid' } },
-            { $group: { _id: null, total: { $sum: "$amount" } } }
+            { $group: { _id: null, total: { $sum: "$commissionAmount" } } }
         ]);
         const totalRevenue = revenueData.length > 0 ? revenueData[0].total : 0;
 

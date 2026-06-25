@@ -11,6 +11,7 @@ class ServiceCategory {
   final double minHourlyRate;
   final double maxHourlyRate;
   final double commissionPercentage;
+  final double rating;
 
   ServiceCategory({
     required this.name,
@@ -23,6 +24,7 @@ class ServiceCategory {
     required this.minHourlyRate,
     required this.maxHourlyRate,
     this.commissionPercentage = 0.0,
+    this.rating = 0.0,
   });
 
   factory ServiceCategory.fromJson(Map<String, dynamic> json) {
@@ -32,12 +34,18 @@ class ServiceCategory {
       icon: _getIconFromName(iconName),
       iconName: iconName,
       description: json['description'] ?? '',
-      supportedModes: List<String>.from(json['supportedModes']),
+      supportedModes: List<String>.from(json['supportedModes'] ?? []),
       hourlyRate: double.tryParse(json['hourlyRate']?.toString() ?? '0') ?? 0.0,
       dailyRate: double.tryParse(json['dailyRate']?.toString() ?? '0') ?? 0.0,
-      minHourlyRate: double.tryParse(json['minHourlyRate']?.toString() ?? '0') ?? 0.0,
-      maxHourlyRate: double.tryParse(json['maxHourlyRate']?.toString() ?? '1000') ?? 1000.0,
-      commissionPercentage: double.tryParse(json['commissionPercentage']?.toString() ?? '0') ?? 0.0,
+      minHourlyRate:
+          double.tryParse(json['minHourlyRate']?.toString() ?? '0') ?? 0.0,
+      maxHourlyRate:
+          double.tryParse(json['maxHourlyRate']?.toString() ?? '1000') ??
+          1000.0,
+      commissionPercentage:
+          double.tryParse(json['commissionPercentage']?.toString() ?? '0') ??
+          0.0,
+      rating: double.tryParse(json['rating']?.toString() ?? '0') ?? 4.5,
     );
   }
 
