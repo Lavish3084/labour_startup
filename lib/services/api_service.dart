@@ -753,6 +753,41 @@ class ApiService {
     }
   }
 
+  static Future<bool> payCartWithWallet(List<String> bookingIds) async {
+    try {
+      final token = await getToken();
+      final response = await http.post(
+        Uri.parse('$baseUrl/payments/pay-cart-with-wallet'),
+        headers: {
+          'Content-Type': 'application/json',
+          'x-auth-token': token ?? '',
+        },
+        body: jsonEncode({'bookingIds': bookingIds}),
+      );
+
+      if (response.statusCode == 200) {
+        return true;
+      } else {
+        dynamic errorData;
+        try {
+          errorData = jsonDecode(response.body);
+        } catch (_) {
+          errorData = null;
+        }
+
+        String errorMsg = 'Cart Payment error';
+        if (errorData is Map) {
+          errorMsg = errorData['msg'] ?? errorData['detail'] ?? 'Cart Payment error';
+        } else {
+          errorMsg = 'Server error (${response.statusCode})';
+        }
+        throw Exception(errorMsg);
+      }
+    } catch (e) {
+      throw Exception(ErrorHandler.getErrorMessage(e));
+    }
+  }
+
   static Future<Map<String, dynamic>> createPaymentOrder(
     String bookingId,
     int amount,
@@ -818,6 +853,72 @@ class ApiService {
           'razorpay_payment_id': paymentId,
           'razorpay_signature': signature,
           'bookingId': bookingId,
+        }),
+      );
+
+      return response.statusCode == 200;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  static Future<Map<String, dynamic>> createCartPaymentOrder(
+    List<String> bookingIds,
+  ) async {
+    try {
+      final token = await getToken();
+      final response = await http.post(
+        Uri.parse('$baseUrl/payments/create-cart-order'),
+        headers: {
+          'Content-Type': 'application/json',
+          'x-auth-token': token ?? '',
+        },
+        body: jsonEncode({'bookingIds': bookingIds}),
+      );
+
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      } else {
+        dynamic errorData;
+        try {
+          errorData = jsonDecode(response.body);
+        } catch (_) {
+          errorData = null;
+        }
+
+        String errorMsg = 'Payment error';
+        if (errorData is Map) {
+          errorMsg = errorData['detail'] ?? errorData['msg'] ?? 'Payment error';
+        } else {
+          errorMsg =
+              'Server error (${response.statusCode}): ${response.body.isNotEmpty ? response.body : "No response"}';
+        }
+        throw Exception(errorMsg);
+      }
+    } catch (e) {
+      throw Exception(ErrorHandler.getErrorMessage(e));
+    }
+  }
+
+  static Future<bool> verifyCartPayment(
+    String orderId,
+    String paymentId,
+    String signature,
+    List<String> bookingIds,
+  ) async {
+    try {
+      final token = await getToken();
+      final response = await http.post(
+        Uri.parse('$baseUrl/payments/verify-cart-payment'),
+        headers: {
+          'Content-Type': 'application/json',
+          'x-auth-token': token ?? '',
+        },
+        body: jsonEncode({
+          'razorpay_order_id': orderId,
+          'razorpay_payment_id': paymentId,
+          'razorpay_signature': signature,
+          'bookingIds': bookingIds,
         }),
       );
 

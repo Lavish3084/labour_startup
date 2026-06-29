@@ -5,13 +5,12 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../utils/app_theme.dart';
-import 'worker_assigned_screen.dart';
+import 'track_status_screen.dart';
 import '../models/labourer.dart';
 import '../models/service_category.dart';
 import '../services/api_service.dart';
 import '../services/notification_service.dart';
 import '../services/socket_service.dart';
-import '../widgets/pattern_painter.dart';
 import 'main_screen.dart';
 
 class SearchingWorkerScreen extends StatefulWidget {
@@ -50,6 +49,11 @@ class _SearchingWorkerScreenState extends State<SearchingWorkerScreen>
   late int _remainingSeconds;
   Timer? _countdownTimer;
 
+  // Fake worker state
+  final List<LatLng> _fakeWorkers = [];
+  Timer? _workerMovementTimer;
+  final Random _random = Random();
+
   @override
   void initState() {
     super.initState();
@@ -79,8 +83,10 @@ class _SearchingWorkerScreenState extends State<SearchingWorkerScreen>
 
     _pulseController = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 3),
+      duration: const Duration(seconds: 2),
     )..repeat();
+
+    _initFakeWorkers();
 
     if (!_isTimedOut) {
       _startCountdown();
@@ -95,9 +101,40 @@ class _SearchingWorkerScreenState extends State<SearchingWorkerScreen>
     }
   }
 
+  void _initFakeWorkers() {
+    int workerCount = 3 + _random.nextInt(4); // 3 to 6 fake workers
+    for (int i = 0; i < workerCount; i++) {
+      // offset by roughly 0.015 degrees max (~1.5 km)
+      double latOffset = (_random.nextDouble() - 0.5) * 0.03;
+      double lngOffset = (_random.nextDouble() - 0.5) * 0.03;
+      _fakeWorkers.add(LatLng(widget.latitude + latOffset, widget.longitude + lngOffset));
+    }
+
+    _workerMovementTimer = Timer.periodic(const Duration(seconds: 2), (timer) {
+      if (mounted && !_isTimedOut && !_isNavigating) {
+        setState(() {
+          for (int i = 0; i < _fakeWorkers.length; i++) {
+            // move roughly 10-20 meters
+            double latMove = (_random.nextDouble() - 0.5) * 0.0004;
+            double lngMove = (_random.nextDouble() - 0.5) * 0.0004;
+
+            double newLat = _fakeWorkers[i].latitude + latMove;
+            double newLng = _fakeWorkers[i].longitude + lngMove;
+
+            // keep them within a bound
+            if ((newLat - widget.latitude).abs() > 0.02) newLat -= latMove * 2;
+            if ((newLng - widget.longitude).abs() > 0.02) newLng -= lngMove * 2;
+
+            _fakeWorkers[i] = LatLng(newLat, newLng);
+          }
+        });
+      }
+    });
+  }
+
   void _initSocket(String id) {
     _socketService.connect();
-    _socketService.offBookingUpdate(); // Prevent duplicate listeners
+    _socketService.offBookingUpdate();
     _socketService.joinBooking(id);
     _socketService.onBookingUpdate((data) {
       if (mounted) {
@@ -129,7 +166,6 @@ class _SearchingWorkerScreenState extends State<SearchingWorkerScreen>
 
     if (_currentBookingId != null) {
       try {
-        // Call API to cancel the booking as it has expired
         await ApiService.updateBookingStatus(_currentBookingId!, 'cancelled');
       } catch (e) {
         debugPrint('Error cancelling expired booking: $e');
@@ -161,11 +197,7 @@ class _SearchingWorkerScreenState extends State<SearchingWorkerScreen>
     });
 
     try {
-      // Prepare new booking data from existing one
-      final newBookingData = Map<String, dynamic>.from(
-        widget.bookingData ?? {},
-      );
-      // Remove identifying fields to trigger a new creation
+      final newBookingData = Map<String, dynamic>.from(widget.bookingData ?? {});
       newBookingData.remove('_id');
       newBookingData.remove('id');
       newBookingData.remove('createdAt');
@@ -174,7 +206,6 @@ class _SearchingWorkerScreenState extends State<SearchingWorkerScreen>
       newBookingData.remove('labourer');
       newBookingData.remove('__v');
 
-      // Re-create the booking via API using named parameters
       final response = await ApiService.createBooking(
         category: widget.category.name,
         date: widget.scheduledTime,
@@ -182,14 +213,8 @@ class _SearchingWorkerScreenState extends State<SearchingWorkerScreen>
         address: widget.address,
         latitude: widget.latitude,
         longitude: widget.longitude,
-        numberOfHours: int.tryParse(
-          widget.bookingData?['numberOfHours']?.toString() ?? '',
-        ),
-        numberOfWorkers:
-            int.tryParse(
-              widget.bookingData?['numberOfWorkers']?.toString() ?? '1',
-            ) ??
-            1,
+        numberOfHours: int.tryParse(widget.bookingData?['numberOfHours']?.toString() ?? ''),
+        numberOfWorkers: int.tryParse(widget.bookingData?['numberOfWorkers']?.toString() ?? '1') ?? 1,
         notes: widget.bookingData?['notes']?.toString(),
         problemTitle: widget.bookingData?['problemTitle']?.toString(),
         landmark: widget.bookingData?['landmark']?.toString(),
@@ -203,7 +228,7 @@ class _SearchingWorkerScreenState extends State<SearchingWorkerScreen>
           _currentBookingId = newId;
           _isTimedOut = false;
           _isRecreating = false;
-          _remainingSeconds = 30 * 60; // Reset to 30 mins
+          _remainingSeconds = 30 * 60;
         });
 
         _startCountdown();
@@ -241,6 +266,7 @@ class _SearchingWorkerScreenState extends State<SearchingWorkerScreen>
       _socketService.offBookingUpdate();
     }
     _countdownTimer?.cancel();
+    _workerMovementTimer?.cancel();
     _notificationSubscription?.cancel();
     _pulseController.dispose();
     super.dispose();
@@ -249,9 +275,6 @@ class _SearchingWorkerScreenState extends State<SearchingWorkerScreen>
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
-      debugPrint(
-        'SearchingWorkerScreen: App resumed from background. Syncing...',
-      );
       if (_currentBookingId != null) {
         _checkBookingStatus(_currentBookingId!);
         _initSocket(_currentBookingId!);
@@ -287,19 +310,13 @@ class _SearchingWorkerScreenState extends State<SearchingWorkerScreen>
       if (assignedWorker != null) {
         Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute(
-            builder:
-                (context) => WorkerAssignedScreen(
-                  category: widget.category,
-                  address: widget.address,
-                  scheduledTime: widget.scheduledTime,
-                  bookingData: bookingData,
-                  worker: assignedWorker!,
-                ),
+            builder: (context) => TrackStatusScreen(
+              bookingId: (bookingData['_id'] ?? bookingData['id']).toString(),
+            ),
           ),
           (route) => false,
         );
       } else {
-        // Fallback if worker data is somehow missing but status is confirmed
         Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute(
             builder: (context) => const MainScreen(initialIndex: 1),
@@ -313,54 +330,51 @@ class _SearchingWorkerScreenState extends State<SearchingWorkerScreen>
   void _handleCancel() {
     showDialog(
       context: context,
-      builder:
-          (context) => AlertDialog(
-            backgroundColor: Colors.white,
-            title: Text(
-              'Cancel Search?',
-              style: GoogleFonts.inter(fontWeight: FontWeight.bold),
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.white,
+        title: Text(
+          'Cancel Search?',
+          style: GoogleFonts.inter(fontWeight: FontWeight.bold),
+        ),
+        content: Text(
+          'Are you sure you want to cancel the search?',
+          style: GoogleFonts.inter(),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(
+              'Keep Waiting',
+              style: GoogleFonts.inter(color: Colors.grey),
             ),
-            content: Text(
-              'Are you sure you want to cancel the search?',
-              style: GoogleFonts.inter(),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: Text(
-                  'Keep Waiting',
-                  style: GoogleFonts.inter(color: Colors.grey),
-                ),
-              ),
-              ElevatedButton(
-                onPressed: () async {
-                  final rawId =
-                      widget.bookingData?['_id'] ?? widget.bookingData?['id'];
-                  if (rawId != null) {
-                    // Actual API call to cancel the search
-                    await ApiService.updateBookingStatus(
-                      rawId.toString(),
-                      'cancelled',
-                    );
-                  }
-                  if (mounted) {
-                    Navigator.pop(context); // Pop dialog
-                    Navigator.of(context).pushAndRemoveUntil(
-                      MaterialPageRoute(
-                        builder: (context) => const MainScreen(initialIndex: 0),
-                      ),
-                      (route) => false,
-                    );
-                  }
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.redAccent,
-                  foregroundColor: Colors.white,
-                ),
-                child: const Text('Cancel Request'),
-              ),
-            ],
           ),
+          ElevatedButton(
+            onPressed: () async {
+              final rawId = widget.bookingData?['_id'] ?? widget.bookingData?['id'];
+              if (rawId != null) {
+                await ApiService.updateBookingStatus(
+                  rawId.toString(),
+                  'cancelled',
+                );
+              }
+              if (mounted) {
+                Navigator.pop(context);
+                Navigator.of(context).pushAndRemoveUntil(
+                  MaterialPageRoute(
+                    builder: (context) => const MainScreen(initialIndex: 0),
+                  ),
+                  (route) => false,
+                );
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.redAccent,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Cancel Request'),
+          ),
+        ],
+      ),
     );
   }
 
@@ -374,190 +388,224 @@ class _SearchingWorkerScreenState extends State<SearchingWorkerScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
-      body: Column(
+      backgroundColor: const Color(0xFFF2F4F8),
+      body: Stack(
         children: [
-          _buildPatternedHeader(context),
-          Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 24.0),
-              child: Column(
-                children: [
-                  const SizedBox(height: 24),
-                  _buildMapContainer(),
-                  const SizedBox(height: 20),
-                  Text(
-                    _formattedTime,
-                    style: GoogleFonts.inter(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.black87,
-                    ),
+          // Bottom Layer: Map
+          _buildFullMap(),
+
+          // Top Layer: Floating Searching Bar
+          _buildTopBar(),
+
+          // Top Layer: Bottom Status Card Overlay
+          Align(
+            alignment: Alignment.bottomCenter,
+            child: _buildBottomCardOverlay(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFullMap() {
+    return FlutterMap(
+      options: MapOptions(
+        initialCenter: LatLng(widget.latitude, widget.longitude),
+        initialZoom: 14.5,
+        interactionOptions: const InteractionOptions(
+          flags: InteractiveFlag.all & ~InteractiveFlag.rotate,
+        ),
+      ),
+      children: [
+        TileLayer(
+          urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+          userAgentPackageName: 'com.lavish3084.labour',
+        ),
+        MarkerLayer(
+          markers: [
+            // Fake Workers
+            ..._fakeWorkers.map((pos) => Marker(
+              point: pos,
+              width: 48,
+              height: 48,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(color: Colors.black26, blurRadius: 4, offset: Offset(0,2)),
+                  ],
+                ),
+                child: Center(
+                  child: Image.asset(
+                    'assets/images/default_avatar.png',
+                    width: 32,
+                    height: 32,
                   ),
-                  const SizedBox(height: 12),
-                  _buildProgressBar(),
-                  const SizedBox(height: 24),
+                ),
+              ),
+            )),
+            // User Location
+            Marker(
+              point: LatLng(widget.latitude, widget.longitude),
+              width: 80,
+              height: 80,
+              child: _buildUserMarker(),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildUserMarker() {
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        AnimatedBuilder(
+          animation: _pulseController,
+          builder: (context, child) {
+            final progress = _pulseController.value;
+            return Container(
+              width: 80 * progress,
+              height: 80 * progress,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: AppTheme.brandGreenMain.withOpacity(0.4 * (1.0 - progress)),
+                border: Border.all(
+                  color: AppTheme.brandGreenMain.withOpacity(0.8 * (1.0 - progress)),
+                  width: 2,
+                ),
+              ),
+            );
+          },
+        ),
+        Container(
+          width: 28,
+          height: 28,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: Colors.black87,
+            border: Border.all(color: Colors.white, width: 2),
+            boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 4, offset: Offset(0, 2))],
+          ),
+          child: const Center(
+            child: Icon(Icons.person, color: Colors.white, size: 16),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTopBar() {
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(30),
+                boxShadow: const [
+                  BoxShadow(color: Colors.black12, blurRadius: 10, offset: Offset(0, 4)),
+                ],
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (!_isTimedOut) ...[
+                    const SizedBox(
+                      width: 14,
+                      height: 14,
+                      child: CircularProgressIndicator(strokeWidth: 2, color: AppTheme.brandGreenMain),
+                    ),
+                    const SizedBox(width: 12),
+                  ] else ...[
+                    const Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 18),
+                    const SizedBox(width: 8),
+                  ],
                   Text(
-                    _isTimedOut ? 'Search Window Closed' : 'High demand...',
+                    _isTimedOut ? 'Search Timed Out' : 'Searching for ${widget.category.name}...',
                     style: GoogleFonts.inter(
                       fontSize: 14,
                       fontWeight: FontWeight.w700,
-                      color: Colors.black,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    _isTimedOut
-                        ? 'No worker accepted the request in time.\nYou can restart the search to try again!'
-                        : 'We will notify you, once we assign\na worker for the task!',
-                    textAlign: TextAlign.center,
-                    style: GoogleFonts.inter(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w400,
                       color: Colors.black87,
-                      height: 1.5,
                     ),
                   ),
-                  const SizedBox(height: 32),
-                  _buildFooterButtons(),
-                  SizedBox(height: MediaQuery.of(context).padding.bottom + 16),
                 ],
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildPatternedHeader(BuildContext context) {
+  Widget _buildBottomCardOverlay() {
     return Container(
       width: double.infinity,
-      height: 260,
-      decoration: const BoxDecoration(
-        color: Color(0xFF388E3C),
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [Color(0xFF2E876E), Color(0xFF4A9782)],
-        ),
-        borderRadius: BorderRadius.only(
-          bottomLeft: Radius.circular(24),
-          bottomRight: Radius.circular(24),
-        ),
-      ),
-      child: Stack(
-        children: [
-          Positioned.fill(child: CustomPaint(painter: DotPatternPainter())),
-          SafeArea(
-            child: Center(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 32.0),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      _isTimedOut
-                          ? 'Search Timed Out'
-                          : 'Notifying ${widget.category.name}\nworkers near you',
-                      textAlign: TextAlign.center,
-                      style: GoogleFonts.roboto(
-                        fontSize: 26,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.white,
-                        height: 1.25,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          'View Booking Details',
-                          style: GoogleFonts.inter(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500,
-                            color: Colors.white,
-                          ),
-                        ),
-                        const SizedBox(width: 4),
-                        const Icon(
-                          Icons.arrow_drop_down,
-                          color: Colors.white,
-                          size: 20,
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildMapContainer() {
-    return Container(
-      width: double.infinity,
-      height: 280,
-      clipBehavior: Clip.antiAlias,
+      padding: const EdgeInsets.fromLTRB(24, 32, 24, 32),
       decoration: BoxDecoration(
-        color: const Color(0xFFF2F4F8),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.black12),
-      ),
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          // Actual OpenStreetMap integration
-          FlutterMap(
-            options: MapOptions(
-              initialCenter: LatLng(widget.latitude, widget.longitude),
-              initialZoom: 15.0,
-              interactionOptions: const InteractionOptions(
-                flags: InteractiveFlag.none, // Static display for clean UI
-              ),
-            ),
-            children: [
-              TileLayer(
-                urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                userAgentPackageName: 'com.lavish3084.labour',
-              ),
-            ],
+        color: Colors.white,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+        boxShadow: const [
+          BoxShadow(
+            color: Colors.black12,
+            blurRadius: 20,
+            offset: Offset(0, -5),
           ),
-          // Pulsing Circles
-          ...List.generate(4, (index) {
-            return AnimatedBuilder(
-              animation: _pulseController,
-              builder: (context, child) {
-                final progress = (_pulseController.value + (index / 4)) % 1.0;
-                return Container(
-                  width: 150 * progress,
-                  height: 150 * progress,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: const Color(
-                        0xFF2E876E,
-                      ).withOpacity(1.0 - progress),
-                      width: 2,
-                    ),
-                  ),
-                );
-              },
-            );
-          }),
-          // Center Marker
-          const Icon(Icons.location_on, color: Color(0xFF4A9782), size: 40),
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            _isTimedOut
+                ? 'Search Timed Out'
+                : 'Notifying ${widget.category.name}\nworkers near you',
+            textAlign: TextAlign.center,
+            style: GoogleFonts.roboto(
+              fontSize: 24,
+              fontWeight: FontWeight.w800,
+              color: Colors.black87,
+              height: 1.25,
+            ),
+          ),
+          const SizedBox(height: 20),
+          Text(
+            _formattedTime,
+            style: GoogleFonts.inter(
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+              color: AppTheme.brandGreenMain,
+            ),
+          ),
+          const SizedBox(height: 12),
+          _buildProgressBar(),
+          const SizedBox(height: 24),
+          Text(
+            _isTimedOut
+                ? 'No worker accepted the request in time.\nYou can restart the search to try again!'
+                : 'We will notify you, once we assign\na worker for the task!',
+            textAlign: TextAlign.center,
+            style: GoogleFonts.inter(
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              color: Colors.black54,
+              height: 1.5,
+            ),
+          ),
+          const SizedBox(height: 32),
+          _buildFooterButtons(),
         ],
       ),
     );
   }
 
   Widget _buildProgressBar() {
-    // We visually represent a 30 min progress bar
     double total = 30 * 60;
     double progress = (total - _remainingSeconds) / total;
 
@@ -565,7 +613,7 @@ class _SearchingWorkerScreenState extends State<SearchingWorkerScreen>
       height: 6,
       width: 250,
       decoration: BoxDecoration(
-        color: Colors.grey[300],
+        color: Colors.grey[200],
         borderRadius: BorderRadius.circular(3),
       ),
       child: FractionallySizedBox(
@@ -573,7 +621,7 @@ class _SearchingWorkerScreenState extends State<SearchingWorkerScreen>
         widthFactor: progress.clamp(0.01, 1.0),
         child: Container(
           decoration: BoxDecoration(
-            color: const Color(0xFF4A9782),
+            color: AppTheme.brandGreenMain,
             borderRadius: BorderRadius.circular(3),
           ),
         ),
@@ -587,46 +635,43 @@ class _SearchingWorkerScreenState extends State<SearchingWorkerScreen>
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // Cancel Button
             SizedBox(
-              width: 180,
-              height: 48,
+              width: 200,
+              height: 52,
               child: ElevatedButton(
                 onPressed: _isTimedOut ? _handleSearchAgain : _handleCancel,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF4A9782),
+                  backgroundColor: AppTheme.brandGreenMain,
                   elevation: 0,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(24),
+                    borderRadius: BorderRadius.circular(26),
                   ),
                 ),
-                child:
-                    _isRecreating
-                        ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            color: Colors.white,
-                            strokeWidth: 2,
-                          ),
-                        )
-                        : Text(
-                          _isTimedOut ? 'Search Again' : 'Cancel Search',
-                          style: GoogleFonts.inter(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.white,
-                          ),
+                child: _isRecreating
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          color: Colors.white,
+                          strokeWidth: 2,
                         ),
+                      )
+                    : Text(
+                        _isTimedOut ? 'Search Again' : 'Cancel Search',
+                        style: GoogleFonts.inter(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white,
+                        ),
+                      ),
               ),
             ),
             const SizedBox(width: 16),
-            // Home Button (Right Side, Same Color Combo)
             Container(
-              height: 48,
-              width: 48,
-              decoration: BoxDecoration(
-                color: const Color(0xFF4A9782),
+              height: 52,
+              width: 52,
+              decoration: const BoxDecoration(
+                color: Color(0xFFF1F5F9),
                 shape: BoxShape.circle,
               ),
               child: IconButton(
@@ -640,7 +685,7 @@ class _SearchingWorkerScreenState extends State<SearchingWorkerScreen>
                 },
                 icon: const Icon(
                   Icons.home_rounded,
-                  color: Colors.white,
+                  color: Colors.black87,
                   size: 24,
                 ),
               ),

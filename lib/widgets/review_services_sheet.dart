@@ -118,7 +118,7 @@ class _ReviewServicesSheetState extends State<ReviewServicesSheet> {
   }
 
   Widget _buildItemCard(BuildContext context, CartItem item, CartProvider provider) {
-    final originalPrice = item.totalPrice.toInt();
+    final originalPrice = item.originalTotalPrice.toInt();
     final bookingAmount = item.getBookingAmount(_commissionPercentage);
 
     return Container(

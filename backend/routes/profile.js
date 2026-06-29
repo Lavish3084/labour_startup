@@ -492,16 +492,23 @@ router.post('/wallet/add', verifyToken, async (req, res) => {
         const user = await User.findById(req.user.id);
         if (!user) return res.status(404).json({ msg: 'User not found' });
 
-        user.walletBalance = (user.walletBalance || 0) + amount;
-        user.walletTransactions.push({
-            amount: amount,
-            type: 'credit',
-            description: `Added via Razorpay (${paymentId})`,
-            date: new Date()
-        });
+        const updatedUser = await User.findOneAndUpdate(
+            { _id: req.user.id },
+            {
+                $inc: { walletBalance: amount },
+                $push: {
+                    walletTransactions: {
+                        amount: amount,
+                        type: 'credit',
+                        description: `Added via Razorpay (${paymentId})`,
+                        date: new Date()
+                    }
+                }
+            },
+            { new: true }
+        );
 
-        await user.save();
-        res.json({ balance: user.walletBalance, msg: 'Money added successfully' });
+        res.json({ balance: updatedUser.walletBalance, msg: 'Money added successfully' });
     } catch (err) {
         console.error(err.message);
         res.status(500).send('Server Error');
@@ -575,31 +582,43 @@ router.post('/referral/apply', verifyToken, async (req, res) => {
 
         // Apply referral reward
         // Crediting current user (referred user) ₹100
-        currentUser.referredBy = referrer._id;
-        currentUser.walletBalance = (currentUser.walletBalance || 0) + 100;
-        currentUser.walletTransactions.push({
-            amount: 100,
-            type: 'credit',
-            description: `Referral bonus (Code applied: ${referrer.referralCode})`,
-            date: new Date()
-        });
+        const updatedCurrentUser = await User.findOneAndUpdate(
+            { _id: currentUser._id },
+            {
+                $set: { referredBy: referrer._id },
+                $inc: { walletBalance: 100 },
+                $push: {
+                    walletTransactions: {
+                        amount: 100,
+                        type: 'credit',
+                        description: `Referral bonus (Code applied: ${referrer.referralCode})`,
+                        date: new Date()
+                    }
+                }
+            },
+            { new: true }
+        );
 
         // Crediting referrer ₹100
-        referrer.walletBalance = (referrer.walletBalance || 0) + 100;
-        referrer.walletTransactions.push({
-            amount: 100,
-            type: 'credit',
-            description: `Referral reward (Referred user: ${currentUser.name})`,
-            date: new Date()
-        });
-
-        await currentUser.save();
-        await referrer.save();
+        await User.findOneAndUpdate(
+            { _id: referrer._id },
+            {
+                $inc: { walletBalance: 100 },
+                $push: {
+                    walletTransactions: {
+                        amount: 100,
+                        type: 'credit',
+                        description: `Referral reward (Referred user: ${updatedCurrentUser.name})`,
+                        date: new Date()
+                    }
+                }
+            }
+        );
 
         res.json({ 
             success: true, 
             message: 'Referral applied successfully!', 
-            walletBalance: currentUser.walletBalance 
+            walletBalance: updatedCurrentUser.walletBalance 
         });
 
     } catch (err) {

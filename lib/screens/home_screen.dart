@@ -17,7 +17,6 @@ import '../widgets/glass_card.dart';
 import '../utils/app_theme.dart';
 import 'searching_worker_screen.dart';
 import 'booking_accepted_screen.dart';
-import 'worker_assigned_screen.dart';
 import 'track_status_screen.dart';
 import '../models/labourer.dart';
 import '../widgets/pattern_painter.dart';
@@ -830,16 +829,9 @@ class _HomeScreenState extends State<HomeScreen> {
     return Builder(
       builder: (context) {
         if (activeBookings.length == 1) {
-          return Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: _buildBookingCard(activeBookings.first),
-              ),
-              const SizedBox(height: 20),
-              _buildBookingDots(1, 0),
-            ],
+          return Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: _buildBookingCard(activeBookings.first),
           );
         }
 

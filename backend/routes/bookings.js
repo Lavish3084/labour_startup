@@ -632,18 +632,21 @@ router.put('/:id/status', verifyToken, async (req, res) => {
                     // Refund to user's wallet
                     if (refundAmount > 0) {
                         try {
-                            const userToRefund = await User.findById(booking.user);
-                            if (userToRefund) {
-                                userToRefund.walletBalance = (userToRefund.walletBalance || 0) + refundAmount;
-                                userToRefund.walletTransactions.push({
-                                    amount: refundAmount,
-                                    type: 'credit',
-                                    description: `Refund for cancelled booking: ${booking.category}`,
-                                    relatedBooking: booking._id,
-                                    date: new Date()
-                                });
-                                await userToRefund.save();
-                            }
+                            const userToRefund = await User.findOneAndUpdate(
+                                { _id: booking.user },
+                                {
+                                    $inc: { walletBalance: refundAmount },
+                                    $push: {
+                                        walletTransactions: {
+                                            amount: refundAmount,
+                                            type: 'credit',
+                                            description: `Refund for cancelled booking: ${booking.category}`,
+                                            relatedBooking: booking._id,
+                                            date: new Date()
+                                        }
+                                    }
+                                }
+                            );
                         } catch (err) {
                             console.error("Error refunding to wallet:", err);
                         }

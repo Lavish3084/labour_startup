@@ -129,13 +129,16 @@ class _WalletScreenState extends State<WalletScreen> {
             listen: false,
           ).profileData?['user'];
 
+      final email = user?['email']?.toString() ?? '';
+      final contact = user?['phoneNumber']?.toString() ?? '';
+
       _paymentService.openCheckout(
         keyId: razorpayKeyId,
         orderId: null, // No order ID needed for wallet top-ups
         name: "WILL Wallet",
         description: "Add money to wallet",
-        email: user?['email'] ?? "user@example.com",
-        contact: user?['phone'] ?? "9876543210",
+        email: email.isNotEmpty ? email : 'support@example.com',
+        contact: contact.isNotEmpty ? contact : '9999999999',
         amount: amount * 100, // In paise
       );
     } catch (e) {

@@ -290,13 +290,18 @@ class _BookingSetupScreenState extends State<BookingSetupScreen> {
             fallback: '',
           );
 
+          final appState = Provider.of<AppStateProvider>(context, listen: false);
+          final user = appState.profileData?['user'];
+          final email = user?['email']?.toString() ?? '';
+          final contact = user?['phoneNumber']?.toString() ?? '';
+
           _paymentService.openCheckout(
             keyId: razorpayKeyId,
             orderId: orderData['id'],
             name: 'Labour App',
             description: '${widget.category.name} Booking Fee',
-            email: '',
-            contact: '',
+            email: email.isNotEmpty ? email : 'support@example.com',
+            contact: contact.isNotEmpty ? contact : '9999999999',
             amount: feeInPaise,
           );
         }
@@ -580,6 +585,8 @@ class _BookingSetupScreenState extends State<BookingSetupScreen> {
       children: [
         _buildDetailsSection(),
         _buildTipSection(),
+        _buildWalletSection(),
+        const SizedBox(height: 20),
         _buildPaymentSummarySection(),
       ],
     );
@@ -1263,7 +1270,7 @@ class _BookingSetupScreenState extends State<BookingSetupScreen> {
                         _isLoading
                             ? null
                             : () {
-                              if (_finalFeeAmount <= 0) {
+                              if (_finalFeeAmount <= 0 || _useWallet) {
                                 _handleBookNow();
                               } else {
                                 _showPaymentSelectionSheet();

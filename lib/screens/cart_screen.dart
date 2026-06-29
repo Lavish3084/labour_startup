@@ -13,6 +13,13 @@ import '../providers/cart_provider.dart';
 import '../models/cart_item.dart';
 import '../utils/app_theme.dart';
 import '../services/api_service.dart';
+import '../providers/location_provider.dart';
+import '../services/payment_service.dart';
+import 'package:razorpay_flutter/razorpay_flutter.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import '../providers/app_state_provider.dart';
+import 'location_search_screen.dart';
+import 'searching_worker_screen.dart';
 
 enum DescribeMode { photo, voice, text }
 
@@ -25,12 +32,205 @@ class CartScreen extends StatefulWidget {
 
 class _CartScreenState extends State<CartScreen> {
   double _commissionPercentage = 10.0;
-  bool _isLoadingSettings = true;
+  bool _isCheckingOut = false;
+  late PaymentService _paymentService;
+  List<String> _generatedBookingIds = [];
+  bool _useWallet = false;
 
   @override
   void initState() {
     super.initState();
     _fetchSettings();
+    _paymentService = PaymentService();
+    _paymentService.initialize(
+      onSuccess: _handlePaymentSuccess,
+      onFailure: _handlePaymentError,
+      onExternalWallet: _handleExternalWallet,
+    );
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Provider.of<AppStateProvider>(
+        context,
+        listen: false,
+      ).fetchWalletBalance();
+    });
+  }
+
+  @override
+  void dispose() {
+    _paymentService.dispose();
+    super.dispose();
+  }
+
+  void _handlePaymentSuccess(PaymentSuccessResponse response) async {
+    if (_generatedBookingIds.isEmpty) return;
+
+    setState(() => _isCheckingOut = true);
+    try {
+      final success = await ApiService.verifyCartPayment(
+        response.orderId!,
+        response.paymentId!,
+        response.signature!,
+        _generatedBookingIds,
+      );
+
+      if (success) {
+        if (!mounted) return;
+        _navigateToNextScreen();
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Payment verification failed. Please contact support.'),
+          ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: $e')),
+      );
+    } finally {
+      if (mounted) setState(() => _isCheckingOut = false);
+    }
+  }
+
+  void _handlePaymentError(PaymentFailureResponse response) {
+    setState(() => _isCheckingOut = false);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Payment Failed: ${response.message}')),
+    );
+  }
+
+  void _handleExternalWallet(ExternalWalletResponse response) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('External Wallet Selected: ${response.walletName}'),
+      ),
+    );
+  }
+
+  void _navigateToNextScreen() {
+    final cartProvider = Provider.of<CartProvider>(context, listen: false);
+    final items = cartProvider.items;
+    if (items.isEmpty) return;
+
+    // Grab the first item's details for the SearchingWorkerScreen
+    final firstItem = items.first;
+    final locationProvider = Provider.of<LocationProvider>(context, listen: false);
+    final address = locationProvider.currentAddress ?? 'Unknown Address';
+    final lat = locationProvider.currentLatitude ?? 0.0;
+    final lng = locationProvider.currentLongitude ?? 0.0;
+    
+    // Pass the first generated booking ID
+    final firstBookingId = _generatedBookingIds.isNotEmpty ? _generatedBookingIds.first : null;
+
+    cartProvider.clearCart();
+
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (context) => SearchingWorkerScreen(
+          category: firstItem.category,
+          address: address,
+          scheduledTime: firstItem.scheduledDate != null && firstItem.scheduledTime != null
+              ? DateTime(firstItem.scheduledDate!.year, firstItem.scheduledDate!.month, firstItem.scheduledDate!.day, firstItem.scheduledTime!.hour, firstItem.scheduledTime!.minute)
+              : DateTime.now().add(const Duration(hours: 1)),
+          latitude: lat,
+          longitude: lng,
+          bookingData: firstBookingId != null ? {'_id': firstBookingId} : null,
+        ),
+      ),
+    );
+  }
+
+  Future<void> _handleCheckout(CartProvider cartProvider, LocationProvider locProvider) async {
+    if (cartProvider.items.isEmpty) return;
+    
+    final address = locProvider.currentAddress;
+    if (address == null || address.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please select an address first')),
+      );
+      return;
+    }
+
+    setState(() {
+      _isCheckingOut = true;
+      _generatedBookingIds.clear();
+    });
+
+    try {
+      // 1. Create all bookings in backend
+      for (final item in cartProvider.items) {
+        final result = await ApiService.createBooking(
+          category: item.category.name,
+          date: item.scheduledDate != null && item.scheduledTime != null
+              ? DateTime(item.scheduledDate!.year, item.scheduledDate!.month, item.scheduledDate!.day, item.scheduledTime!.hour, item.scheduledTime!.minute)
+              : DateTime.now().add(const Duration(hours: 1)),
+          bookingMode: item.isInstant ? 'Hourly' : 'Scheduled', // Assuming hourly by default or mapped
+          numberOfHours: (item.durationMinutes / 60).ceil(),
+          notes: item.taskNotes,
+          taskImages: item.taskImagesBase64,
+          taskAudio: item.taskAudioBase64,
+          address: address,
+          latitude: locProvider.currentLatitude ?? 0.0,
+          longitude: locProvider.currentLongitude ?? 0.0,
+          amount: item.getBookingAmount(_commissionPercentage).toDouble(),
+          numberOfWorkers: item.workerCount,
+          workType: item.workType ?? item.category.name,
+        );
+
+        if (result['success']) {
+          _generatedBookingIds.add(result['data']['_id']);
+        } else {
+          throw Exception(result['message'] ?? 'Failed to create a booking');
+        }
+      }
+
+      // 2. Calculate Total Fee
+      final totalFeeAmount = cartProvider.getTotalBookingAmount(_commissionPercentage);
+
+      if (totalFeeAmount <= 0) {
+        // Free bookings loop
+        for (final bId in _generatedBookingIds) {
+          await ApiService.confirmFreeBooking(bId);
+        }
+        _navigateToNextScreen();
+      } else if (_useWallet) {
+        // Pay Cart with Wallet
+        final success = await ApiService.payCartWithWallet(_generatedBookingIds);
+        if (success) {
+          _navigateToNextScreen();
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Failed to pay with wallet. Please try again.')),
+          );
+        }
+      } else {
+        // Razorpay Order
+        final orderData = await ApiService.createCartPaymentOrder(_generatedBookingIds);
+        
+        final String razorpayKeyId = dotenv.get('RAZORPAY_KEY_ID', fallback: '');
+
+        final appState = Provider.of<AppStateProvider>(context, listen: false);
+        final user = appState.profileData?['user'];
+        final email = user?['email']?.toString() ?? '';
+        final contact = user?['phoneNumber']?.toString() ?? '';
+
+        _paymentService.openCheckout(
+          keyId: razorpayKeyId,
+          orderId: orderData['id'],
+          name: 'Labour App',
+          description: 'Cart Booking Fee',
+          email: email.isNotEmpty ? email : 'support@example.com',
+          contact: contact.isNotEmpty ? contact : '9999999999',
+          amount: totalFeeAmount * 100, // paise
+        );
+      }
+    } catch (e) {
+      setState(() => _isCheckingOut = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: $e')),
+      );
+    }
   }
 
   Future<void> _fetchSettings() async {
@@ -45,10 +245,10 @@ class _CartScreenState extends State<CartScreen> {
         }
       }
     } catch (e) {
-      print('Error fetching commission: $e');
+      // Ignore settings fetch error
     } finally {
       if (mounted) {
-        setState(() => _isLoadingSettings = false);
+        setState(() {});
       }
     }
   }
@@ -133,67 +333,199 @@ class _CartScreenState extends State<CartScreen> {
                     ),
                   ],
                 ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          'Booking Amount',
-                          style: GoogleFonts.inter(
-                            fontSize: 12,
-                            color: Colors.grey[600],
-                          ),
-                        ),
-                        Text(
-                          '₹$bookingAmount',
-                          style: GoogleFonts.inter(
-                            fontSize: 24,
-                            fontWeight: FontWeight.w800,
-                            color: Colors.black,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          'Pay ₹$remainingAmount directly to worker',
-                          style: GoogleFonts.inter(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                            color: AppTheme.brandGreenMain,
-                          ),
-                        ),
-                      ],
-                    ),
-                    ElevatedButton(
-                      onPressed: () {
-                        // TODO: Final checkout logic (address selection, payment)
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Proceeding to Checkout...'),
+                    // Address Selection
+                    Consumer<LocationProvider>(
+                      builder: (context, locProvider, child) {
+                        final address = locProvider.currentAddress;
+                        return InkWell(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const LocationSearchScreen(),
+                              ),
+                            );
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                            margin: const EdgeInsets.only(bottom: 16),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFF1FAF7),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: AppTheme.brandGreenMain.withOpacity(0.3)),
+                            ),
+                            child: Row(
+                              children: [
+                                const Icon(Icons.location_on, color: AppTheme.brandGreenMain),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'Service Location',
+                                        style: GoogleFonts.inter(
+                                          fontSize: 12,
+                                          color: Colors.black54,
+                                        ),
+                                      ),
+                                      Text(
+                                        address != null && address.isNotEmpty
+                                            ? address
+                                            : 'Select your address',
+                                        style: GoogleFonts.inter(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w600,
+                                          color: Colors.black87,
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const Icon(Icons.chevron_right, color: Colors.black54),
+                              ],
+                            ),
                           ),
                         );
                       },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppTheme.brandGreenMain,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 32,
-                          vertical: 14,
+                    ),
+                    
+                    // Wallet Section
+                    Consumer<AppStateProvider>(
+                      builder: (context, appState, child) {
+                        final walletBalance = appState.walletBalance;
+                        final totalFeeAmount = cartProvider.getTotalBookingAmount(_commissionPercentage);
+                        final hasEnoughBalance = walletBalance >= totalFeeAmount;
+
+                        return Container(
+                          padding: const EdgeInsets.all(12),
+                          margin: const EdgeInsets.only(bottom: 16),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF9F9F9),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: Colors.black12),
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFE8F5E9),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: const Icon(
+                                  Icons.account_balance_wallet,
+                                  color: AppTheme.brandGreenMain,
+                                  size: 20,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Pay with Wallet',
+                                      style: GoogleFonts.inter(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w600,
+                                        color: Colors.black87,
+                                      ),
+                                    ),
+                                    Text(
+                                      'Balance: ₹${walletBalance.toStringAsFixed(2)}',
+                                      style: GoogleFonts.inter(
+                                        fontSize: 12,
+                                        color: hasEnoughBalance ? const Color(0xFF4A9782) : Colors.red,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Switch(
+                                value: _useWallet,
+                                onChanged: hasEnoughBalance
+                                    ? (val) {
+                                        setState(() {
+                                          _useWallet = val;
+                                        });
+                                      }
+                                    : null,
+                                activeColor: AppTheme.brandGreenMain,
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              'Booking Amount',
+                              style: GoogleFonts.inter(
+                                fontSize: 12,
+                                color: Colors.grey[600],
+                              ),
+                            ),
+                            Text(
+                              '₹$bookingAmount',
+                              style: GoogleFonts.inter(
+                                fontSize: 24,
+                                fontWeight: FontWeight.w800,
+                                color: Colors.black,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              'Pay ₹$remainingAmount directly to worker',
+                              style: GoogleFonts.inter(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                                color: AppTheme.brandGreenMain,
+                              ),
+                            ),
+                          ],
                         ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                        ElevatedButton(
+                          onPressed: _isCheckingOut ? null : () {
+                            final locProvider = Provider.of<LocationProvider>(context, listen: false);
+                            _handleCheckout(cartProvider, locProvider);
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppTheme.brandGreenMain,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 32,
+                              vertical: 14,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            elevation: 0,
+                          ),
+                          child: _isCheckingOut 
+                              ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                              : Text(
+                                  'Checkout',
+                                  style: GoogleFonts.inter(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
                         ),
-                        elevation: 0,
-                      ),
-                      child: Text(
-                        'Checkout',
-                        style: GoogleFonts.inter(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
+                      ],
                     ),
                   ],
                 ),
